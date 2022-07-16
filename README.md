@@ -14,3 +14,5 @@ Agloo is a embedded linux distributed application group framework
 - [ ] 支持 HAL 接口层
 - [ ] 支持数据采集协议
 - [ ] 支持数据上报
+- [ ] 支持树莓派的交叉编译
+- [ ] 支持 GDB + GDB Server 远程调试
