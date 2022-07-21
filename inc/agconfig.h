@@ -1,5 +1,7 @@
 /*
- * Copyright (c) 2022-2022, DreamGrow Teams
+ * Copyright (c) 2006-2020, DreamGrow Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Change Logs:
  * Date           Author       Notes
