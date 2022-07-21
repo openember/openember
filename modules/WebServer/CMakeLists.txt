@@ -1,7 +1,7 @@
 project(WebServer VERSION 1.0.0)
 
 set( WEB_MODULE_SRCS 
-    main.c
+    main.c mongoose.c
 )
 
 AGLOO_ADD_EXECUTABLE(TARGET ${PROJECT_NAME} 
