@@ -1,7 +1,11 @@
 set(FOLDER_NAME "third_party")
 
+if (BUILD_ZLOG)
+    add_subdirectory(zlog)
+endif()
+
 if (BUILD_CJSON)
-add_subdirectory(cJSON)
+    add_subdirectory(cJSON)
 endif()
 
 if (BUILD_MD5)

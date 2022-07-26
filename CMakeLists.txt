@@ -58,6 +58,15 @@ endif()
 ################################################################################
 # Find packages
 ################################################################################
+find_package(zlog QUIET)
+
+if(NOT zlog_FOUND) 
+    message(STATUS "zlog not found! Build from source")
+    set(BUILD_ZLOG TRUE)
+    set(ZLOG_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/zlog)
+    set(ZLOG_LIBRARIES zlog)
+endif()
+
 find_package(cJSON QUIET)
 
 if(NOT cJSON_FOUND) 
@@ -84,6 +93,7 @@ set( AGLOO_EXTERNAL_INCLUDE_DIRS
 )
 
 set( AGLOO_EXTERNAL_LIBRARIES
+    ${ZLOG_LIBRARIES}
     ${PAHO_MQTT_C_LIBRARIES}
     ${CJSON_LIBRARIES}
 )

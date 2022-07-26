@@ -17,4 +17,6 @@ Agloo is a embedded linux distributed application group framework
 - [ ] 支持树莓派的交叉编译
 - [ ] 支持 GDB + GDB Server 远程调试
 - [ ] 添加内部库（MD5、time、random、ringbuffer 等）
+- [ ] 增加线程池管理
+- [ ] 增加日志记录
 
