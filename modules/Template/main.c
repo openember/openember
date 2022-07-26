@@ -9,10 +9,17 @@
  */
 
 #include <stdio.h>
+#include "log_wrapper.h"
 
 int main(void)
 {
-    printf("hello\n");
+    printf("[Module] Template\n");
+
+    log_init("Template");
+
+    LOG_I("This is Template");
+
+    log_deinit();
 
     return 0;
 }
