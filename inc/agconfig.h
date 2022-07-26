@@ -17,5 +17,6 @@
 /* #define AG_LIBS_USING_MQTT_ASYNC */
 /* #define AG_LIBS_USING_ZEROMQ */
 
+#define LOG_FILE    "/etc/agloo/zlog.conf"
 
 #endif /* __AG_CONFIG_H__ */

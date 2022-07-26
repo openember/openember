@@ -8,8 +8,10 @@
  * 2022-07-07     luhuadong    the first version
  */
 
-#ifndef __AG_DEF_H__
-#define __AG_DEF_H__
+#ifndef __AGLOO_H__
+#define __AGLOO_H__
 
+#include "agconfig.h"
+#include "agdef.h"
 
-#endif __AG_DEF_H__
+#endif /* __AGLOO_H__ */
