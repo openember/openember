@@ -1,5 +1,6 @@
 # Agloo
-Agloo is a embedded linux distributed application group framework
+
+Agloo is a embedded linux distributed application group framework.
 
 
 
@@ -18,5 +19,6 @@ Agloo is a embedded linux distributed application group framework
 - [ ] 支持 GDB + GDB Server 远程调试
 - [ ] 添加内部库（MD5、time、random、ringbuffer 等）
 - [ ] 增加线程池管理
-- [ ] 增加日志记录
+- [x] 增加日志记录（zlog）
+- [x] 支持单元测试（CTest，未支持 GoogleTest）
 
