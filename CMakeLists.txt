@@ -58,9 +58,9 @@ endif()
 ################################################################################
 # Find packages
 ################################################################################
-find_package(zlog QUIET)
+find_package(ZLOG QUIET)
 
-if(NOT zlog_FOUND) 
+if(NOT ZLOG_FOUND) 
     message(STATUS "zlog not found! Build from source")
     set(BUILD_ZLOG TRUE)
     set(ZLOG_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/zlog)
