@@ -25,6 +25,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/AglooCMakeHelper.cmake NO_POLICY_SCOPE)
 option( DEBUG_ENABLED "Whether to enable debug mode" ON)
 option( OPTIMIZATION_DISABLED "Whether to disable the optimization of compilation. " OFF)
 option( CROSSCOMPILE_ENABLED "Whether to build for arm" OFF)
+option( TESTS_ENABLED "Whether to unit test" ON)
 option( BUILD_CJSON "Whether compile cjson" OFF)
 option( BUILD_MQTT "Whether compile mqtt" OFF)
 option( BUILD_MD5 "Whether compile md5" OFF)
@@ -63,9 +64,11 @@ find_package(ZLOG QUIET)
 if(NOT ZLOG_FOUND) 
     message(STATUS "zlog not found! Build from source")
     set(BUILD_ZLOG TRUE)
-    set(ZLOG_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/zlog)
+    set(ZLOG_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/zlog/src)
     set(ZLOG_LIBRARIES zlog)
 endif()
+message(STATUS "├── ${ZLOG_LIBRARIES}")
+message(STATUS "└── ${ZLOG_INCLUDE_DIRS}")
 
 find_package(cJSON QUIET)
 
@@ -75,6 +78,8 @@ if(NOT cJSON_FOUND)
     set(CJSON_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/cJSON)
     set(CJSON_LIBRARIES cjson)
 endif()
+message(STATUS "├── ${CJSON_LIBRARIES}")
+message(STATUS "└── ${CJSON_INCLUDE_DIRS}")
 
 find_package(PahoMqttC QUIET)
 
@@ -84,10 +89,13 @@ if(NOT PahoMqttC_FOUND)
     set(PAHO_MQTT_C_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/paho.mqtt.c/src)
     set(PAHO_MQTT_C_LIBRARIES paho-mqtt3a paho-mqtt3c)
 endif()
+message(STATUS "├── ${PAHO_MQTT_C_LIBRARIES}")
+message(STATUS "└── ${PAHO_MQTT_C_INCLUDE_DIRS}")
 
 add_subdirectory(third_party)
 
 set( AGLOO_EXTERNAL_INCLUDE_DIRS
+    ${ZLOG_INCLUDE_DIRS}
     ${PAHO_MQTT_C_INCLUDE_DIRS}
     ${CJSON_INCLUDE_DIRS}
 )
@@ -125,3 +133,11 @@ set( AGLOO_LIBRARIES
 
 add_subdirectory(modules)
 add_subdirectory(src)
+
+#========================================================
+# for unittest, call "cmake .. -DUNIT_TEST=ON"
+if(TESTS_ENABLED)
+    enable_testing()
+    add_subdirectory(test)
+endif()
+#========================================================
