@@ -10,14 +10,28 @@
     </head>
     <body>
         <div id="app">
-            {{message}}
+            <p>{{message}}</p>
+            <p v-if="seen">现在你看到我了</p>
+            <ol>
+                <li v-for="todo in todos">
+                  {{ todo.text }}
+                </li>
+            </ol>
         </div>
+
         <script src="js/vue.js" type="text/javascript" charset="utf-8"></script>
+
         <script type="text/javascript">
             var app=new Vue({
                 el:'#app',
                 data:{
-                    message:'Hello Agloo!'
+                    message:'Hello Agloo!',
+                    seen: true,
+                    todos: [
+                        { text: '学习 JavaScript' },
+                        { text: '学习 Vue' },
+                        { text: '整个牛项目 —— Agloo' }
+                    ]
                 }
             });
         </script>
