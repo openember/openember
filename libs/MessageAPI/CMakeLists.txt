@@ -1,7 +1,9 @@
 project(MessageAPI)
 
 set( MSG_WRAPPER_SRCS 
-    main.c
+    msg_wrapper.c
+    zmq_wrapper.c
+    mqtt_wrapper.c
 )
 
 AGLOO_ADD_STATIC_LIBRARY (TARGET ${PROJECT_NAME} 
