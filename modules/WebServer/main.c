@@ -10,7 +10,8 @@
 
 #include "mongoose.h"
 
-#define WEB_ROOT    "../modules/WebServer/web_root"
+//#define WEB_ROOT    "../modules/WebServer/web_root"
+#define WEB_ROOT    "../modules/WebServer/web_src/dist"
 //#define WEB_ROOT    "web_root"
 #define WEB_PORT    "0.0.0.0:8000"
 
