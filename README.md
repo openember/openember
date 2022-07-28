@@ -7,7 +7,7 @@ Agloo is a embedded linux distributed application group framework.
 ## To Do List
 
 - [x] 搭建 CMake 工程
-- [ ] 支持消息队列中间件（MQTT、ZeroMQ）
+- [x] 支持消息队列中间件（MQTT、ZeroMQ）
 - [ ] 支持数据库存储（SQLite、MySQL）
 - [ ] 支持 HTTP 服务器（Mongoose）
 - [ ] 支持状态机（FSM）

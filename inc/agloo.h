@@ -13,5 +13,6 @@
 
 #include "agconfig.h"
 #include "agdef.h"
+#include "topic.h"
 
 #endif /* __AGLOO_H__ */
