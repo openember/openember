@@ -16,6 +16,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "MQTTAsync.h"
 #include "MQTTClient.h"
 #include "msg_wrapper.h"
 
@@ -32,12 +33,39 @@
 extern "C" {
 #endif
 
-static const char *username = "asensing";
+static const char *username = "agloo";
 static const char *password = "p@ssw0rd";
 
-static void delivered(void *context, MQTTClient_deliveryToken dt)
+#ifdef AG_LIBS_USING_MQTT_ASYNC
+static void delivered(void *context, MQTTAsync_token token)
 {
-    //printf("\nMessage with token value %d delivery confirmed\n", dt);
+    //printf("\nMessage with token value %d delivery confirmed\n", token);
+}
+
+static int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message)
+{
+    msg_arrived_cb_t *user_cb = (msg_arrived_cb_t *)context;
+
+    //printf("\nMessage arrived\n");
+    //printf("     topic: %s\n", topicName);
+    //printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
+
+    user_cb(topicName, message->payload, message->payloadlen);
+
+    MQTTAsync_freeMessage(&message);
+    MQTTAsync_free(topicName);
+    return 1;
+}
+
+static void connlost(void *context, char *cause)
+{
+    printf("\nConnection lost\n");
+    printf("     cause: %s\n", cause);
+}
+#else
+static void delivered(void *context, MQTTClient_deliveryToken token)
+{
+    //printf("\nMessage with token value %d delivery confirmed\n", token);
 }
 
 static int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
@@ -60,11 +88,51 @@ static void connlost(void *context, char *cause)
     printf("\nConnection lost\n");
     printf("     cause: %s\n", cause);
 }
+#endif
 
 int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb)
 {
     int rc;
 
+#ifdef AG_LIBS_USING_MQTT_ASYNC
+    MQTTAsync_createOptions create_opts = MQTTAsync_createOptions_initializer;
+    MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
+
+    MQTTProperty property;
+    MQTTProperties props = MQTTProperties_initializer;
+
+    conn_opts.keepAliveInterval = 20;
+	conn_opts.username = username;
+	conn_opts.password = password;
+	conn_opts.MQTTVersion = MQTTVERSION_5;
+    //conn_opts.context  = (void*)mqtt_info;
+    property.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
+	property.value.integer4 = 30;
+	MQTTProperties_add(&props, &property);
+    conn_opts.connectProperties = &props;
+
+    rc = MQTTAsync_createWithOptions(handle, ADDRESS, name, MQTTCLIENT_PERSISTENCE_NONE, NULL, &create_opts);
+    if (rc != MQTTASYNC_SUCCESS) {
+        LOG_E("Failed to create client, return code %d\n", rc);
+        return -AG_ERROR;
+    }
+
+    rc = MQTTAsync_setCallbacks(*handle, (void *)cb, connlost, msgarrvd, delivered);
+    if (rc != MQTTASYNC_SUCCESS) {
+        LOG_E("Failed to set callbacks, return code %d\n", rc);
+        MQTTAsync_destroy(handle);
+        return -AG_ERROR;
+    }
+
+    rc = MQTTAsync_connect(*handle, &conn_opts);
+    if (rc != MQTTASYNC_SUCCESS) {
+        LOG_E("Failed to connect, return code %d\n", rc);
+        LOG_E("Reason: %s\n", MQTTReasonCode_toString(rc));
+        MQTTAsync_destroy(handle);
+        return -AG_ERROR;
+    }
+
+#else
     // 初始化 MQTT Client 选项
     MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
     conn_opts.keepAliveInterval = 20;
@@ -99,6 +167,7 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
         MQTTClient_destroy(handle);
         return -AG_ERROR;
     }
+#endif
 
     return AG_EOK;
 }
@@ -148,11 +217,22 @@ int msg_bus_publish_raw(msg_node_t handle, const char *topic, const void *payloa
 int msg_bus_subscribe(msg_node_t handle, const char *topic)
 {
     int rc;
+
+#ifdef AG_LIBS_USING_MQTT_ASYNC
+    MQTTAsync_responseOptions response = MQTTAsync_responseOptions_initializer;
+    rc = MQTTAsync_subscribe(handle, topic, QOS, &response);
+    if (rc != MQTTASYNC_SUCCESS) {
+        LOG_E("Failed to subscribe, return code %d\n", rc);
+        return -AG_ERROR;
+    }
+#else
     rc = MQTTClient_subscribe(handle, topic, QOS);
     if (rc != MQTTCLIENT_SUCCESS) {
         LOG_E("Failed to subscribe, return code %d\n", rc);
         return -AG_ERROR;
     }
+#endif
+
     return AG_EOK;
 }
 

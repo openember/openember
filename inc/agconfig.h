@@ -11,11 +11,15 @@
 #ifndef __AG_CONFIG_H__
 #define __AG_CONFIG_H__
 
-/* #define AG_USING_LIBC */
+#define AG_USING_LIBC
 
+/*
+ * Choose MQTT or ZeroMQ message queue
+ * If choose MQTT, there are two mode: MQTTClient and MQTTAsync 
+ */
 #define AG_LIBS_USING_MQTT
-/* #define AG_LIBS_USING_MQTT_ASYNC */
-/* #define AG_LIBS_USING_ZEROMQ */
+//#define AG_LIBS_USING_MQTT_ASYNC
+//#define AG_LIBS_USING_ZEROMQ
 
 #define LOG_FILE    "/etc/agloo/zlog.conf"
 
