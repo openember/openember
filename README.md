@@ -1,6 +1,6 @@
 # Agloo
 
-Agloo is a embedded linux distributed application group framework.
+Agloo is an embedded linux distributed application group framework.
 
 
 ## To Do List
