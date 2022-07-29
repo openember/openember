@@ -8,13 +8,12 @@
  * 2022-07-07     luhuadong    the first version
  */
 
-#ifndef __AGLOO_H__
-#define __AGLOO_H__
+#include <stdio.h>
+#include <assert.h>
 
-#include "agconfig.h"
-#include "agdef.h"
-#include "topic.h"
+void sayHello(const char *name)
+{
+    assert(name);
 
-void sayHello(const char *name);
-
-#endif /* __AGLOO_H__ */
+    printf("Hello, %s!\n", name);
+}

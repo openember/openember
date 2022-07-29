@@ -8,13 +8,13 @@
  * 2022-07-07     luhuadong    the first version
  */
 
-#ifndef __AGLOO_H__
-#define __AGLOO_H__
+#include <stdio.h>
+#include "agloo.h"
 
-#include "agconfig.h"
-#include "agdef.h"
-#include "topic.h"
+int main(void)
+{
+    //printf("hello\n");
+    sayHello("Workflow Controller");
 
-void sayHello(const char *name);
-
-#endif /* __AGLOO_H__ */
+    return 0;
+}

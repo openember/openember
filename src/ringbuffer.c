@@ -5,14 +5,10 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2022-07-07     luhuadong    the first version
+ * 2022-07-29     luhuadong    the first version
  */
 
-#include <stdio.h>
-
-int main(void)
+int ringbuffer_init(void)
 {
-    printf("hello\n");
-
     return 0;
 }
