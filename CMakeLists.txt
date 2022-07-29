@@ -132,7 +132,6 @@ set( AGLOO_LIBRARIES
 )
 
 add_subdirectory(modules)
-add_subdirectory(src)
 
 #========================================================
 # for unittest, call "cmake .. -DUNIT_TEST=ON"
