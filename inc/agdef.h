@@ -14,6 +14,12 @@
 /* include agconfig header to import configuration */
 #include "agconfig.h"
 
+#ifdef AG_GLOBALS
+#define AG_EXT
+#else
+#define AG_EXT                          extern
+#endif
+
 /* Version information */
 #define AG_VERSION                      1L              /* major version number */
 #define AG_SUBVERSION                   0L              /* minor version number */
@@ -37,14 +43,6 @@
 #define AG_EINVAL                       10              /* Invalid argument */
 #define AG_ENOFILE                      11              /* No file */
 #define AG_ENOPERM                      12              /* NO permission */
-
-/* LiDAR state definitions */
-#define AG_SYSTEM_POWEROFF              0x00                /* Power-off status */
-#define AG_SYSTEM_INIT                  0x01                /* Initialized status */
-#define AG_SYSTEM_NORMAL                0x02                /* Normal status */
-#define AG_SYSTEM_ERROR                 0x03                /* Error status */
-#define AG_SYSTEM_DEGRADE               0x04                /* Degrade status */
-#define AG_SYSTEM_SLEEP                 0x05                /* Sleep status */
 
 /* Basic data type definitions */
 #ifdef AG_USING_LIBC
@@ -96,6 +94,39 @@ typedef ag_base_t                       ag_off_t;       /* Type for offset */
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr)                 (sizeof(arr) / sizeof((arr)[0]))
 #endif
+
+/* System state definitions */
+typedef enum state {
+    AG_SYSTEM_POWEROFF = 0,  /* Power-off status */
+    AG_SYSTEM_INIT,          /* Initialized status */
+    AG_SYSTEM_NORMAL,        /* Normal status */
+    AG_SYSTEM_ERROR,         /* Error status */
+    AG_SYSTEM_DEGRADE,       /* Degrade status */
+    AG_SYSTEM_SLEEP,         /* Sleep status */
+    AG_SYSTEM_COUNT
+} state_t;
+
+/* Submodule state definitions */
+typedef enum submod_state {
+    AG_MODULE_INIT = 0,      /* Initialized status */
+    AG_MODULE_READY,         /* Ready status */
+    AG_MODULE_RUNNING,       /* Running or runnable (on run queue) */
+    AG_MODULE_STOPPED,       /* Stop status */
+    AG_MODULE_SLEEP,         /* Sleep status */
+    AG_MODULE_DEAD,          /* Dead status */
+    AG_MODULE_COUNT
+} mod_state_t;
+
+typedef enum submod_prio {
+    SUBMODULE_PRIO_1 = 1,
+    SUBMODULE_PRIO_2,
+    SUBMODULE_PRIO_3,
+    SUBMODULE_PRIO_4,
+    SUBMODULE_PRIO_5,
+    SUBMODULE_PRIO_6,
+    SUBMODULE_PRIO_7,
+    SUBMODULE_PRIO_8
+} mod_prio_t;
 
 #ifdef __cplusplus
 extern "C" {

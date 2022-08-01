@@ -14,9 +14,11 @@
 #include "agconfig.h"
 #include "agdef.h"
 #include "topic.h"
+
+#include "list.h"
+
 #include "log_wrapper.h"
 #include "msg_wrapper.h"
-
-void sayHello(const char *name);
+#include "common.h"
 
 #endif /* __AGLOO_H__ */
