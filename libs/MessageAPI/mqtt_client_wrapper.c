@@ -24,11 +24,6 @@
 #define QOS         1
 #define TIMEOUT     10000L
 
-#define LOG_I(...)               printf(__VA_ARGS__);
-#define LOG_D(...)               printf(__VA_ARGS__);
-#define LOG_W(...)               printf(__VA_ARGS__);
-#define LOG_E(...)               printf(__VA_ARGS__);
-
 #ifdef __cplusplus
 extern "C" {
 #endif
