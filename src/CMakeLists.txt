@@ -2,6 +2,7 @@ project(WorkflowController VERSION 1.0.0)
 
 set( WORKFLOW_CONTROLLER_SRCS 
     main.c
+    fsm.c
     smm.c
 )
 

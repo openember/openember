@@ -22,7 +22,10 @@
 #include "agloo.h"
 
 #define AG_GLOBALS
+#include "fsm.h"
 #include "smm.h"
+
+AG_EXT State context;
 
 /* The global list and lock */
 static struct list_head submodule_list = LIST_HEAD_INIT(submodule_list);
@@ -143,6 +146,29 @@ static int startup_modules(void)
     system("/opt/agloo/bin/Acquisition &");
 }
 
+static void wfc_msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
+{
+    if (0 == strncmp(SYS_EVENT_TOPIC, topic, strlen(topic))) {
+        event_msg_t *e = (event_msg_t *)payload;
+        printf("Payload len = %lu >> event: [%d] %s\n", payloadlen, e->event_id, e->event_data.event_str);
+
+        if (AG_EVENT_EXCEPTION == e->event_id) {
+            context.goWrong();
+        }
+        else if (AG_EVENT_RECOVERY == e->event_id) {
+            context.recovery();
+        }
+    }
+
+#if 0
+    printf("[%s] %s\n", topic, (char *)payload);
+
+    cJSON *json = cJSON_Parse(payload);
+    printf("%s\n\n", cJSON_Print(json));
+    cJSON_Delete(json);
+#endif
+}
+
 int main(int argc, char *argv[])
 {
     int rc;
@@ -185,7 +211,15 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    fsm_init();
     smm_init();
+
+    context.init();
+    context.sleep();
+    context.init();  // invalid
+    context.wakeUp();
+    context.init();
+    //context.powerOff();
     
 
     while (1)

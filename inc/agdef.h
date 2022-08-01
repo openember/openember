@@ -128,6 +128,16 @@ typedef enum submod_prio {
     SUBMODULE_PRIO_8
 } mod_prio_t;
 
+typedef enum event {
+    AG_EVENT_NONE = 0,
+    AG_EVENT_EXCEPTION,
+    AG_EVENT_RECOVERY,
+    AG_EVENT_REBOOT,
+    AG_EVENT_POWEROFF,
+    AG_EVENT_WAKEUP,
+    AG_EVENT_COUNT
+} event_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
