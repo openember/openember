@@ -9,10 +9,11 @@
  */
 
 #include <stdio.h>
+#include "agloo.h"
 
 int main(void)
 {
-    printf("hello\n");
+    sayHello("Message Dispatcher");
 
     return 0;
 }

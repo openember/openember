@@ -45,6 +45,8 @@ int main(void)
 {
     int rc;
     msg_node_t client;
+
+    sayHello("Template");
     
     log_init("Template");
 

@@ -9,9 +9,10 @@
  */
 
 #include "mongoose.h"
+#include "agloo.h"
 
-//#define WEB_ROOT    "../modules/WebServer/web_root"
-#define WEB_ROOT    "../modules/WebServer/web_src/dist"
+#define WEB_ROOT    "/opt/agloo/web_root"
+//#define WEB_ROOT    "../modules/WebServer/web_src/dist"
 //#define WEB_ROOT    "web_root"
 #define WEB_PORT    "0.0.0.0:8000"
 
@@ -39,7 +40,10 @@ static void fn(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 
 int main()
 {
-    struct mg_mgr mgr;                                
+    struct mg_mgr mgr;
+
+    sayHello("Web Server");
+
     mg_mgr_init(&mgr);
     mg_http_listen(&mgr, s_listening_address, fn, NULL);     // Create listening connection
 

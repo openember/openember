@@ -9,12 +9,25 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "agloo.h"
 
-int main(void)
+int main(int argc, char *argv[])
 {
-    //printf("hello\n");
     sayHello("Workflow Controller");
 
+    system("/opt/agloo/bin/MessageDispatcher &");
+    system("/opt/agloo/bin/MonitorAlarm &");
+    system("/opt/agloo/bin/WebServer &");
+    system("/opt/agloo/bin/OTA &");
+    system("/opt/agloo/bin/ConfigManager &");
+    system("/opt/agloo/bin/DeviceManager &");
+    system("/opt/agloo/bin/Acquisition &");
+
+    while (1)
+    {
+        sleep(1);
+    }
+    
     return 0;
 }
