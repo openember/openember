@@ -111,6 +111,7 @@ set( AGLOO_INTERNAL_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/libs/HAL
     ${CMAKE_SOURCE_DIR}/libs/Log
     ${CMAKE_SOURCE_DIR}/libs/MessageAPI
+    ${CMAKE_SOURCE_DIR}/libs/Common
 )
 
 set( AGLOO_INCLUDE_DIRS 
@@ -124,6 +125,7 @@ set( AGLOO_INTERNAL_LIBRARIES
     HAL
     Log
     MessageAPI
+    Common
 )
 
 set( AGLOO_LIBRARIES
@@ -132,6 +134,7 @@ set( AGLOO_LIBRARIES
 )
 
 add_subdirectory(modules)
+add_subdirectory(src)
 
 #========================================================
 # for unittest, call "cmake .. -DUNIT_TEST=ON"
