@@ -36,6 +36,7 @@
 #define AG_EINTR                        9               /* Interrupted system call */
 #define AG_EINVAL                       10              /* Invalid argument */
 #define AG_ENOFILE                      11              /* No file */
+#define AG_ENOPERM                      12              /* NO permission */
 
 /* LiDAR state definitions */
 #define AG_SYSTEM_POWEROFF              0x00                /* Power-off status */

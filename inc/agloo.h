@@ -14,6 +14,8 @@
 #include "agconfig.h"
 #include "agdef.h"
 #include "topic.h"
+#include "log_wrapper.h"
+#include "msg_wrapper.h"
 
 void sayHello(const char *name);
 
