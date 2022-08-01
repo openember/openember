@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <pthread.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -19,6 +20,13 @@
 #include <signal.h>
 
 #include "agloo.h"
+
+#define AG_GLOBALS
+#include "smm.h"
+
+/* The global list and lock */
+static struct list_head submodule_list = LIST_HEAD_INIT(submodule_list);
+static pthread_rwlock_t rwlock_mod = PTHREAD_RWLOCK_INITIALIZER;
 
 #define APPLICATION_NAME "Workflow Controller"
 #define DEFAULT_FILE "/var/run/agloo.pid"
@@ -176,6 +184,8 @@ int main(int argc, char *argv[])
         LOG_I("Can not create lock file");
         exit(1);
     }
+
+    smm_init();
     
 
     while (1)
