@@ -15,4 +15,7 @@
 
 void sayHello(const char *name);
 
+int ag_random(void);
+int ag_time(void);
+
 #endif /* __AG_COMMON_H__ */
