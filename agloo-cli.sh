@@ -3,7 +3,11 @@
 VERSION=1.0.0
 AUTHOR=luhuadong
 EMAIL=luhuadong@163.com
-BUILD_DIR=`pwd`/build
+
+HOME_DIR=`pwd`
+BUILD_DIR=${HOME_DIR}/build
+WEB_DIR=${HOME_DIR}/modules/WebServer/web_src
+DEPLOY_DIR=/opt/agloo
 PACKAGE=agloo-${VERSION}.zip
 CONF_DIR=/etc/agloo
 
@@ -52,7 +56,13 @@ PackageAll() {
 
 DeployAll() {
     echo "Deploy application ..."
-    CheckPermission
+
+    # update web pages
+    cd ${WEB_DIR}
+    yarn build
+
+    # Apply for root permissions
+    # CheckPermission
 
     if [ ! -d ${BUILD_DIR} ]; then
         echo "You haven't built agloo, please run again with `--build` option."
@@ -61,13 +71,23 @@ DeployAll() {
 
     cd ${BUILD_DIR}
 
-    if [ ! -d ${CONF_DIR} ]; then
-        echo "Create ${CONF_DIR} ..."
-        mkdir ${CONF_DIR}
+    # install dir
+    if [ ! -d ${DEPLOY_DIR} ]; then
+        sudo mkdir ${DEPLOY_DIR}
     fi
 
-    cp ../libs/Log/zlog.conf ${CONF_DIR}
-    chmod 777 ${CONF_DIR}/zlog.conf
+    if [ ! -d ${CONF_DIR} ]; then
+        echo "Create ${CONF_DIR} ..."
+        sudo mkdir ${CONF_DIR}
+    fi
+
+    # log file
+    sudo cp ../libs/Log/zlog.conf ${CONF_DIR}
+    sudo chmod 777 ${CONF_DIR}/zlog.conf
+
+    # web root
+    sudo cp -r ${WEB_DIR}/dist ${DEPLOY_DIR}/web_root
+    sudo cp -r ${BUILD_DIR}/bin ${DEPLOY_DIR}
 }
 
 if [ -z $1 ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
