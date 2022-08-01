@@ -9,7 +9,7 @@
  */
 
 #include "agloo.h"
-#ifdef AG_LIBS_USING_MQTT
+#if defined (AG_LIBS_USING_MQTT) && defined (AG_LIBS_USING_MQTT_ASYNC) && ! defined(AG_LIBS_USING_MQTT_CLIENT)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -294,4 +294,4 @@ int msg_bus_is_connected(msg_node_t handle)
 }
 #endif
 
-#endif /* AG_LIBS_USING_MQTT */
+#endif /* AG_LIBS_USING_MQTT_ASYNC */

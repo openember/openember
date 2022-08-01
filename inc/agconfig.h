@@ -18,7 +18,9 @@
  * If choose MQTT, there are two mode: MQTTClient and MQTTAsync 
  */
 #define AG_LIBS_USING_MQTT
+#define AG_LIBS_USING_MQTT_CLIENT
 //#define AG_LIBS_USING_MQTT_ASYNC
+//#define AG_LIBS_USING_MQTT_MOSQUITTO
 //#define AG_LIBS_USING_ZEROMQ
 
 #define LOG_FILE    "/etc/agloo/zlog.conf"
