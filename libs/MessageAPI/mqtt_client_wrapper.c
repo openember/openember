@@ -18,7 +18,7 @@
 
 #include "MQTTAsync.h"
 #include "MQTTClient.h"
-#include "msg_wrapper.h"
+#include "message.h"
 
 #define ADDRESS     "tcp://localhost:1883"
 #define QOS         1

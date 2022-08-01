@@ -1,7 +1,6 @@
 project(MessageAPI)
 
 set( MSG_WRAPPER_SRCS 
-    msg_wrapper.c
     zmq_wrapper.c
     mqtt_client_wrapper.c
     mqtt_async_wrapper.c

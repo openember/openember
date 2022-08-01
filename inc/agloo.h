@@ -18,7 +18,7 @@
 #include "list.h"
 
 #include "log_wrapper.h"
-#include "msg_wrapper.h"
+#include "message.h"
 #include "common.h"
 
 #endif /* __AGLOO_H__ */
