@@ -178,3 +178,23 @@ int fsm_init(void)
 
     return AG_EOK;
 }
+
+void fsm_deinit(void)
+{
+    sem_destroy(&stateChangedSem);
+}
+
+int fsm_sem_wait(void)
+{
+    return sem_wait(&stateChangedSem);
+}
+
+state_t fsm_get_current_state(void)
+{
+    return pCurrentState->state;
+}
+
+char *fsm_get_state_text(state_t s)
+{
+    return g_StateText[s];
+}

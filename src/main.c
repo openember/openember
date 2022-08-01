@@ -26,6 +26,7 @@
 #include "smm.h"
 
 AG_EXT State context;
+static msg_node_t client;
 
 /* The global list and lock */
 static struct list_head submodule_list = LIST_HEAD_INIT(submodule_list);
@@ -169,6 +170,26 @@ static void wfc_msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
 #endif
 }
 
+static int msg_init(void)
+{
+    int rc;
+
+    rc = msg_bus_init(&client, "Workflow", NULL, wfc_msg_arrived_cb);
+    if (rc != AG_EOK) {
+        printf("Message bus init failed.\n");
+        return -1;
+    }
+
+    rc = msg_bus_subscribe(client, SYS_EVENT_TOPIC);
+    if (rc != AG_EOK) {
+        msg_bus_deinit(client);
+        printf("Message bus subscribe failed.\n");
+        return -1;
+    }
+
+    return AG_EOK;
+}
+
 int main(int argc, char *argv[])
 {
     int rc;
@@ -212,6 +233,7 @@ int main(int argc, char *argv[])
     }
 
     fsm_init();
+    msg_init();
     smm_init();
 
     context.init();
@@ -222,10 +244,25 @@ int main(int argc, char *argv[])
     //context.powerOff();
     
 
-    while (1)
-    {
-        sleep(1);
+    int count = 100;
+    char buf[256] = {0};
+
+    state_msg_t stateMsg = {0};
+
+    while (1) {
+        memset(&stateMsg, 0, sizeof(stateMsg));
+        stateMsg.state_id = fsm_get_current_state();
+
+        char *stateText = fsm_get_state_text(stateMsg.state_id);
+        strncpy(stateMsg.state_str, stateText, strlen(stateText));
+
+        msg_bus_publish_raw(client, SYS_STATE_TOPIC, (void *)&stateMsg, sizeof(stateMsg));
+
+        fsm_sem_wait();
     }
+    
+    msg_bus_deinit(client);
+    fsm_deinit();
 
     return 0;
 }

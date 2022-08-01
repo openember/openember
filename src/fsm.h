@@ -32,6 +32,11 @@ typedef struct State
 //AG_EXT State context;
 
 int fsm_init(void);
+void fsm_deinit(void);
+
+int fsm_sem_wait(void);
+state_t fsm_get_current_state(void);
+char *fsm_get_state_text(state_t s);
 
 #ifdef __cplusplus
 }
