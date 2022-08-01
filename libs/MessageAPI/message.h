@@ -21,4 +21,7 @@
 #include "zmq_wrapper.h"
 #endif
 
+int msg_keepalive_update(msg_node_t handle, const char *name, mod_class_t class, state_t state);
+int msg_smm_register(msg_node_t handle, const char *name, mod_class_t class, const int pid);
+
 #endif /* __AG_MSG_WRAPPER_H__ */

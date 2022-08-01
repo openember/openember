@@ -128,6 +128,18 @@ typedef enum submod_prio {
     SUBMODULE_PRIO_8
 } mod_prio_t;
 
+typedef enum submod_class {
+    SUBMODULE_CLASS_MESSAGE = 0,
+    SUBMODULE_CLASS_DEVICE,
+    SUBMODULE_CLASS_CONFIG,
+    SUBMODULE_CLASS_MONITOR,
+    SUBMODULE_CLASS_WEB,
+    SUBMODULE_CLASS_OTA,
+    SUBMODULE_CLASS_MESSAGE,
+    SUBMODULE_CLASS_ACQUISITION,
+    SUBMODULE_CLASS_MAX
+} mod_class_t;
+
 typedef enum event {
     AG_EVENT_NONE = 0,
     AG_EVENT_EXCEPTION,

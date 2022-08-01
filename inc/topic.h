@@ -30,6 +30,10 @@
 #define KEEPALIVE_POST_TOPIC          "/sys/keepalive"
 #define KEEPALIVE_POST_REPLY_TOPIC    "/sys/keepalive_reply"
 
+#define MOD_REGISTER_POST_TOPIC       "/sys/module/register"
+#define MOD_REGISTER_POST_REPLY_TOPIC "/sys/module/register_reply"
+
+/* Message packet definitions */
 typedef struct state_msg
 {
     state_t state_id;
@@ -38,12 +42,29 @@ typedef struct state_msg
 
 typedef struct event_msg
 {
+    const char *name;
     event_t event_id;
     union {
         char event_str[16];
         uint8_t err_code;
     } event_data;
 } event_msg_t;
+
+typedef struct keepalive_msg
+{
+    const char *name;
+    mod_class_t class;
+    state_t state;
+    int timestamp;
+} keepalive_msg_t;
+
+typedef struct smm_register_msg
+{
+    const char *name;
+    mod_class_t class;
+    pid_t pid;
+} smm_msg_t;
+
 
 #ifdef __cplusplus
 extern "C" {
