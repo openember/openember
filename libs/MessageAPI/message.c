@@ -34,7 +34,7 @@ int msg_smm_register(msg_node_t handle, const char *name, mod_class_t class)
     msg.class = class;
     msg.pid = getpid();
 
-    msg_bus_publish_raw(handle, MOD_REGISTER_POST_TOPIC, (void *)&msg, sizeof(msg));
+    msg_bus_publish_raw(handle, MOD_REGISTER_TOPIC, (void *)&msg, sizeof(msg));
 
     return AG_EOK;
 }
@@ -62,7 +62,7 @@ int msg_keepalive_update(msg_node_t handle, const char *name, mod_class_t class,
     msg.class = class;
     msg.state = state;
 
-    msg_bus_publish_raw(handle, KEEPALIVE_POST_TOPIC, (void *)&msg, sizeof(msg));
+    msg_bus_publish_raw(handle, KEEPALIVE_TOPIC, (void *)&msg, sizeof(msg));
 
     return AG_EOK;
 }

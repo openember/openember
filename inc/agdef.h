@@ -150,6 +150,13 @@ typedef enum event {
     AG_EVENT_COUNT
 } event_t;
 
+typedef enum control {
+    AG_CONTROL_START = 0,
+    AG_CONTROL_STOP,
+    AG_CONTROL_PAUSE,
+    AG_CONTROL_COUNT
+} control_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

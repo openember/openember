@@ -30,11 +30,11 @@
 #define PROPERTY_POST_TOPIC           "/property/post"
 #define PROPERTY_POST_REPLY_TOPIC     "/property/post_reply"
 
-#define KEEPALIVE_POST_TOPIC          "/sys/keepalive"
-#define KEEPALIVE_POST_REPLY_TOPIC    "/sys/keepalive_reply"
+#define KEEPALIVE_TOPIC               "/sys/keepalive/post"
+#define KEEPALIVE_REPLY_TOPIC         "/sys/keepalive/post_reply"
 
-#define MOD_REGISTER_POST_TOPIC       "/sys/module/register"
-#define MOD_REGISTER_POST_REPLY_TOPIC "/sys/module/register_reply"
+#define MOD_REGISTER_TOPIC            "/sys/module/register"
+#define MOD_REGISTER_REPLY_TOPIC      "/sys/module/register_reply"
 
 /* Message packet definitions */
 typedef struct state_msg
@@ -52,6 +52,11 @@ typedef struct event_msg
         uint8_t err_code;
     } event_data;
 } event_msg_t;
+
+typedef struct control_msg
+{
+    control_t type;
+} control_msg_t;
 
 typedef struct keepalive_msg
 {

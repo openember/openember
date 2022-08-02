@@ -36,7 +36,7 @@ static int msg_init(void)
     if (rc != AG_EOK) cn++;
     rc = msg_bus_subscribe(client, SYS_EVENT_REPLY_TOPIC);
     if (rc != AG_EOK) cn++;
-    rc = msg_bus_subscribe(client, MOD_REGISTER_POST_REPLY_TOPIC);
+    rc = msg_bus_subscribe(client, MOD_REGISTER_REPLY_TOPIC);
     if (rc != AG_EOK) cn++;
 
     if (cn != 0) {

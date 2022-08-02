@@ -28,8 +28,8 @@
 AG_EXT State context;
 static msg_node_t client;
 
-#define APPLICATION_NAME "Workflow Controller"
-#define DEFAULT_FILE "/var/run/agloo.pid"
+#define APPLICATION_NAME     "Workflow Controller"
+#define DEFAULT_FILE         "/var/run/agloo.pid"
 
 static pid_t s_pid;
 static int lock_fd;
@@ -161,7 +161,7 @@ static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
             context.recovery();
         }
     }
-    else if (0 == strncmp(MOD_REGISTER_POST_TOPIC, topic, strlen(topic)))
+    else if (0 == strncmp(MOD_REGISTER_TOPIC, topic, strlen(topic)))
     {
         smm_msg_t *msg = (smm_msg_t *)payload;
         LOG_I("Register: %s, %d", msg->name, msg->pid);
@@ -193,7 +193,7 @@ static int msg_init(void)
     /* Subscription list */
     rc = msg_bus_subscribe(client, SYS_EVENT_TOPIC);
     if (rc != AG_EOK) cn++;
-    rc = msg_bus_subscribe(client, MOD_REGISTER_POST_TOPIC);
+    rc = msg_bus_subscribe(client, MOD_REGISTER_TOPIC);
     if (rc != AG_EOK) cn++;
 
     if (cn != 0) {
