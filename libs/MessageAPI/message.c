@@ -8,6 +8,10 @@
  * 2022-08-02     luhuadong    the first version
  */
 
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "agloo.h"
 #include "message.h"
 
@@ -18,13 +22,17 @@
  * int smm_unregister(smm_t *module);
  */
 
-int msg_smm_register(msg_node_t handle, const char *name, mod_class_t class, const int pid)
+int msg_smm_register(msg_node_t handle, const char *name, mod_class_t class)
 {
-    smm_msg_t msg = {0};
+    if (handle == NULL) {
+        LOG_E("Message client is null, please check if connected");
+        return -AG_ERROR;
+    }
 
-    msg.name = name;
+    smm_msg_t msg = {0};
+    strncpy(msg.name, name, sizeof(msg.name)-1);
     msg.class = class;
-    msg.pid = pid;
+    msg.pid = getpid();
 
     msg_bus_publish_raw(handle, MOD_REGISTER_POST_TOPIC, (void *)&msg, sizeof(msg));
 
@@ -44,8 +52,13 @@ int msg_smm_unregister(msg_node_t handle, const char *name, mod_class_t class)
 
 int msg_keepalive_update(msg_node_t handle, const char *name, mod_class_t class, state_t state)
 {
+    if (handle == NULL) {
+        LOG_E("Message client is null, please check if connected");
+        return -AG_ERROR;
+    }
+    
     keepalive_msg_t msg = {0};
-    msg.name = name;
+    strncpy(msg.name, name, sizeof(msg.name)-1);
     msg.class = class;
     msg.state = state;
 
