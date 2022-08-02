@@ -10,6 +10,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "agloo.h"
@@ -19,6 +20,9 @@
 #include "cJSON.h"
 
 //#define TEMPLATE_RAW_MSG
+#define MODULE_NAME            "Template"
+
+static msg_node_t client;
 
 #ifdef TEMPLATE_RAW_MSG
 typedef struct test_msg {
@@ -27,7 +31,7 @@ typedef struct test_msg {
 } test_msg_t;
 #endif
 
-static void temp_msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
+static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
 {
 #ifdef TEMPLATE_RAW_MSG
     test_msg_t *test_msg = (test_msg_t *)payload;
@@ -41,29 +45,52 @@ static void temp_msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
 #endif
 }
 
-int main(void)
+static int msg_init(void)
 {
-    int rc;
-    msg_node_t client;
+    int rc = 0, cn = 0;
 
-    sayHello("Template");
-    
-    log_init("Template");
-
-    LOG_I("[Module] Template");
-    LOG_I("Version: %lu.%lu.%lu", AG_VERSION, AG_SUBVERSION, AG_REVISION);
-
-    rc = msg_bus_init(&client, "Template", NULL, temp_msg_arrived_cb);
+    rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb);
     if (rc != AG_EOK) {
-        LOG_I("Message bus init failed.");
+        printf("Message bus init failed.\n");
         return -1;
     }
 
+    /* Subscription list */
     rc = msg_bus_subscribe(client, TEST_TOPIC);
-    if (rc != AG_EOK) {
+    if (rc != AG_EOK) cn++;
+    rc = msg_bus_subscribe(client, SYS_EVENT_REPLY_TOPIC);
+    if (rc != AG_EOK) cn++;
+    rc = msg_bus_subscribe(client, MOD_REGISTER_POST_REPLY_TOPIC);
+    if (rc != AG_EOK) cn++;
+
+    if (cn != 0) {
         msg_bus_deinit(client);
-        LOG_I("Message bus subscribe failed.");
-        return -1;
+        printf("Message bus subscribe failed.\n");
+        return -AG_ERROR;
+    }
+
+    return AG_EOK;
+}
+
+int main(void)
+{
+    int rc;
+
+    sayHello(MODULE_NAME);
+    
+    log_init(MODULE_NAME);
+    LOG_I("Version: %lu.%lu.%lu", AG_VERSION, AG_SUBVERSION, AG_REVISION);
+
+    rc = msg_init();
+    if (rc != AG_EOK) {
+        LOG_E("Message channel init failed.");
+        exit(1);
+    }
+
+    rc = msg_smm_register(client, MODULE_NAME, SUBMODULE_CLASS_TEST);
+    if (rc != AG_EOK) {
+        LOG_E("Module register failed.");
+        exit(1);
     }
 
     int count = 10;
