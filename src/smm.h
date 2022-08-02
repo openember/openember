@@ -35,7 +35,7 @@ AG_EXT char *class_label[SUBMODULE_CLASS_MAX];
 
 typedef struct submodule_manager
 {
-    const char *name;         /* Submodule name */
+    char name[AG_NAME_MAX];   /* Submodule name */
     mod_class_t class;        /* Submodule class */
     pid_t pid;                /* Submodule process id */
     mod_prio_t priority;      /* Submodule priority */
@@ -45,10 +45,12 @@ typedef struct submodule_manager
 } smm_t;
 
 /* Register and unregister submodules */
-int smm_register(smm_t *module, const char *name, const int pid, void *user_data);
+smm_t *smm_register(const char *name, const mod_class_t class, const int pid, void *user_data);
 int smm_unregister(smm_t *module);
 
 int smm_init(void);
+int smm_stop_all_modules(void);
+int smm_kill_all_modules(void);
 
 #ifdef __cplusplus
 }

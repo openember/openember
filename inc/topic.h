@@ -11,6 +11,9 @@
 #ifndef __AG_TOPIC_H__
 #define __AG_TOPIC_H__
 
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "agdef.h"
 
 #define TEST_TOPIC                    "/test"
@@ -42,7 +45,7 @@ typedef struct state_msg
 
 typedef struct event_msg
 {
-    const char *name;
+    char name[AG_NAME_MAX];
     event_t event_id;
     union {
         char event_str[16];
@@ -52,7 +55,7 @@ typedef struct event_msg
 
 typedef struct keepalive_msg
 {
-    const char *name;
+    char name[AG_NAME_MAX];
     mod_class_t class;
     state_t state;
     int timestamp;
@@ -60,7 +63,7 @@ typedef struct keepalive_msg
 
 typedef struct smm_register_msg
 {
-    const char *name;
+    char name[AG_NAME_MAX];
     mod_class_t class;
     pid_t pid;
 } smm_msg_t;

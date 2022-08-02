@@ -8,7 +8,10 @@
  * 2022-08-01     luhuadong    the first version
  */
 
+#include <stdlib.h>
+#include <string.h>
 #include <pthread.h>
+#include <signal.h>
 #include <assert.h>
 
 #include "agloo.h"
@@ -31,15 +34,22 @@ struct list_head *get_submodule_list(void)
     return &submodule_list;
 }
 
-int smm_register(smm_t *module, const char *name, const int pid, void *user_data)
+//int smm_register(smm_t *module, const char *name, const int pid, void *user_data)
+smm_t *smm_register(const char *name, const mod_class_t class, const int pid, void *user_data)
 {
-    assert(module);
     assert(name);
 
-    module->name = name;
-    module->pid = pid;
+    smm_t *module = calloc(1, sizeof(smm_t));
+    if (module == NULL) {
+        return NULL;
+    }
 
-    INIT_LIST_HEAD(&module->list);
+    strncpy(module->name, name, sizeof(module->name)-1);
+    module->class = class;
+    module->pid = pid;
+    module->priority = SUBMODULE_PRIO_1;
+    module->user_data = NULL;
+    INIT_LIST_HEAD(&(module->list));
 
     /* lock */
     pthread_rwlock_wrlock(&rwlock_mod);
@@ -53,7 +63,7 @@ int smm_register(smm_t *module, const char *name, const int pid, void *user_data
 
     module->status = AG_MODULE_INIT;
 
-    return AG_EOK;
+    return module;
 }
 
 int smm_unregister(smm_t *module)
@@ -72,6 +82,29 @@ int smm_unregister(smm_t *module)
 int smm_init(void)
 {
     printf("Submodule init\n");
+    return AG_EOK;
+}
+
+int smm_kill_all_modules(void)
+{
+    // 遍历 submodule_list
+    smm_t *module = NULL;
+    LOG_D("Kill all modules");
+
+    pthread_rwlock_rdlock(&rwlock_mod);
+
+    list_for_each_entry(module, &submodule_list, list)
+    {
+        LOG_D("!_ %s: %d", module->name, module->pid);
+        kill(module->pid, SIGKILL);
+    }
+
+    pthread_rwlock_unlock(&rwlock_mod);
+    return AG_EOK;
+}
+
+int smm_stop_all_modules(void)
+{
     return AG_EOK;
 }
 

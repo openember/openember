@@ -11,6 +11,8 @@
 #ifndef __AG_CONFIG_H__
 #define __AG_CONFIG_H__
 
+
+#define AG_NAME_MAX         16
 #define AG_USING_LIBC
 
 /*

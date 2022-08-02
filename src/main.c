@@ -28,10 +28,6 @@
 AG_EXT State context;
 static msg_node_t client;
 
-/* The global list and lock */
-static struct list_head submodule_list = LIST_HEAD_INIT(submodule_list);
-static pthread_rwlock_t rwlock_mod = PTHREAD_RWLOCK_INITIALIZER;
-
 #define APPLICATION_NAME "Workflow Controller"
 #define DEFAULT_FILE "/var/run/agloo.pid"
 
@@ -46,11 +42,14 @@ static void sigroutine(int signal)
         printf("Get a signal -- SIGHUP\n"); // 1
         break;
     case 2:
-        printf("Get a signal -- SIGINT\n"); // 2
+        printf("Get a signal -- SIGINT\n"); // 2: 强制关闭（直接 kill 进程）
+        smm_kill_all_modules();
         exit(0);
         break;
     case 3:
-        printf("Get a signal -- SIGQUIT\n"); // 3: Stop Apps
+        printf("Get a signal -- SIGQUIT\n"); // 3: 正常关闭（通过消息关闭）
+        smm_stop_all_modules();
+        exit(0);
         break;
     }
     return;
@@ -145,9 +144,11 @@ static int startup_modules(void)
     system("/opt/agloo/bin/ConfigManager &");
     system("/opt/agloo/bin/DeviceManager &");
     system("/opt/agloo/bin/Acquisition &");
+
+    return AG_EOK;
 }
 
-static void wfc_msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
+static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
 {
     if (0 == strncmp(SYS_EVENT_TOPIC, topic, strlen(topic))) {
         event_msg_t *e = (event_msg_t *)payload;
@@ -160,7 +161,16 @@ static void wfc_msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
             context.recovery();
         }
     }
+    else if (0 == strncmp(MOD_REGISTER_POST_TOPIC, topic, strlen(topic)))
+    {
+        smm_msg_t *msg = (smm_msg_t *)payload;
+        LOG_I("Register: %s, %d", msg->name, msg->pid);
 
+        if (NULL == smm_register(msg->name, msg->class, msg->pid, NULL)) {
+            LOG_E("Module %s register failed.", msg->name);
+        }
+    }
+    
 #if 0
     printf("[%s] %s\n", topic, (char *)payload);
 
@@ -172,19 +182,24 @@ static void wfc_msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
 
 static int msg_init(void)
 {
-    int rc;
+    int rc = 0, cn = 0;
 
-    rc = msg_bus_init(&client, "Workflow", NULL, wfc_msg_arrived_cb);
+    rc = msg_bus_init(&client, "Workflow", NULL, _msg_arrived_cb);
     if (rc != AG_EOK) {
         printf("Message bus init failed.\n");
         return -1;
     }
 
+    /* Subscription list */
     rc = msg_bus_subscribe(client, SYS_EVENT_TOPIC);
-    if (rc != AG_EOK) {
+    if (rc != AG_EOK) cn++;
+    rc = msg_bus_subscribe(client, MOD_REGISTER_POST_TOPIC);
+    if (rc != AG_EOK) cn++;
+
+    if (cn != 0) {
         msg_bus_deinit(client);
         printf("Message bus subscribe failed.\n");
-        return -1;
+        return -AG_ERROR;
     }
 
     return AG_EOK;
@@ -237,6 +252,9 @@ int main(int argc, char *argv[])
     smm_init();
 
     context.init();
+
+    startup_modules();
+
     context.sleep();
     context.init();  // invalid
     context.wakeUp();
