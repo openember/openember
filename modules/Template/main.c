@@ -9,10 +9,13 @@
  * 2022-07-28     luhuadong    add message pub & sub
  */
 
+#define MODULE_NAME            "Template"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
+#define LOG_TAG                MODULE_NAME
 #include "agloo.h"
 #include "log_wrapper.h"
 #include "message.h"
@@ -20,7 +23,6 @@
 #include "cJSON.h"
 
 //#define TEMPLATE_RAW_MSG
-#define MODULE_NAME            "Template"
 
 static msg_node_t client;
 
@@ -37,7 +39,7 @@ static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
     test_msg_t *test_msg = (test_msg_t *)payload;
     printf("Payload len = %lu >> id: %d, msg: %s\n", payloadlen, test_msg->id, test_msg->msg);
 #else
-    printf("[%s] %s\n", topic, (char *)payload);
+    LOG_D("[%s] %s", topic, (char *)payload);
 
     cJSON *json = cJSON_Parse(payload);
     printf("%s\n\n", cJSON_Print(json));
@@ -51,7 +53,7 @@ static int msg_init(void)
 
     rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb);
     if (rc != AG_EOK) {
-        printf("Message bus init failed.\n");
+        LOG_E("Message bus init failed.\n");
         return -1;
     }
 
@@ -65,7 +67,7 @@ static int msg_init(void)
 
     if (cn != 0) {
         msg_bus_deinit(client);
-        printf("Message bus subscribe failed.\n");
+        LOG_E("Message bus subscribe failed.\n");
         return -AG_ERROR;
     }
 
@@ -79,6 +81,12 @@ int main(void)
     sayHello(MODULE_NAME);
     
     log_init(MODULE_NAME);
+    
+    LOG_D("Hello Agloo!");
+    LOG_I("Hello Agloo!");
+    LOG_W("Hello Agloo!");
+    LOG_E("Hello Agloo!");
+
     LOG_I("Version: %lu.%lu.%lu", AG_VERSION, AG_SUBVERSION, AG_REVISION);
 
     rc = msg_init();
@@ -93,7 +101,7 @@ int main(void)
         exit(1);
     }
 
-    int count = 10;
+    int count = 3;
     
 #ifdef TEMPLATE_RAW_MSG
     test_msg_t test_msg = {0};
