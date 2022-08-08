@@ -1,6 +1,7 @@
 set(FOLDER_NAME "modules")
 
 add_subdirectory(Template)
+add_subdirectory(Alogd)
 add_subdirectory(DeviceManager)
 add_subdirectory(MessageDispatcher)
 add_subdirectory(ConfigManager)
