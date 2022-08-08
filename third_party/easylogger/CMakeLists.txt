@@ -6,8 +6,8 @@ set( EASYLOGGER_SRCS
     src/elog_buf.c 
     src/elog_utils.c 
     port/elog_port.c
-    #plugins/file/elog_file_port.c 
-    #plugins/file/elog_file.c 
+    plugins/file/elog_file_port.c 
+    plugins/file/elog_file.c 
     #plugins/flash/elog_flash_port.c 
     #plugins/flash/elog_flash.c 
 )
