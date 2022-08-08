@@ -27,19 +27,21 @@ RemoveExpiredFiles() {
     if [ -d ${BUILD_DIR} ]; then
         echo "Delete build/* ..."
         rm -r ${BUILD_DIR}/*
+    else
+        mkdir ${BUILD_DIR}
     fi
 }
 
 BuildProject() {
     cd ${BUILD_DIR}
     cmake ..
-    make
+    make -j8
 }
 
 BuildTest() {
     cd ${BUILD_DIR}
     cmake ..
-    make
+    make -j8
     make test
 }
 
