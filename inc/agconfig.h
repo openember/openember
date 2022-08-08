@@ -25,7 +25,14 @@
 //#define AG_LIBS_USING_MQTT_MOSQUITTO
 //#define AG_LIBS_USING_ZEROMQ
 
-#define AG_LIBS_USING_ZLOG
+/* Log definitions */
+#define AG_LIBS_USING_LOG
+
+//#define AG_LIBS_USING_ZLOG
+#ifdef AG_LIBS_USING_ZLOG
 #define LOG_FILE    "/etc/agloo/zlog.conf"
+#endif
+
+#define AG_LIBS_USING_EASYLOGGER
 
 #endif /* __AG_CONFIG_H__ */

@@ -72,6 +72,17 @@ endif()
 message(STATUS "├── ${ZLOG_LIBRARIES}")
 message(STATUS "└── ${ZLOG_INCLUDE_DIRS}")
 
+find_package(EasyLogger QUIET)
+
+if(NOT EasyLogger_FOUND) 
+    message(STATUS "EasyLogger not found! Build from source")
+    set(BUILD_EASYLOGGER TRUE)
+    set(EASYLOGGER_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/easylogger/inc)
+    set(EASYLOGGER_LIBRARIES easylogger)
+endif()
+message(STATUS "├── ${EASYLOGGER_LIBRARIES}")
+message(STATUS "└── ${EASYLOGGER_INCLUDE_DIRS}")
+
 find_package(cJSON QUIET)
 
 if(NOT cJSON_FOUND) 
@@ -98,12 +109,14 @@ add_subdirectory(third_party)
 
 set( AGLOO_EXTERNAL_INCLUDE_DIRS
     ${ZLOG_INCLUDE_DIRS}
+    ${EASYLOGGER_INCLUDE_DIRS}
     ${PAHO_MQTT_C_INCLUDE_DIRS}
     ${CJSON_INCLUDE_DIRS}
 )
 
 set( AGLOO_EXTERNAL_LIBRARIES
     ${ZLOG_LIBRARIES}
+    ${EASYLOGGER_LIBRARIES}
     ${PAHO_MQTT_C_LIBRARIES}
     ${CJSON_LIBRARIES}
 )
