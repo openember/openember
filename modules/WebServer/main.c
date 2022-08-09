@@ -9,9 +9,10 @@
  */
 
 #include "mongoose.h"
-#include "agloo.h"
 
-#define MODULE_NAME            "Web Server"
+#define MODULE_NAME            "WebServer"
+#define LOG_TAG                MODULE_NAME
+#include "agloo.h"
 
 static msg_node_t client;
 

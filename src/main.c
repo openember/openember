@@ -41,16 +41,18 @@ static void sigroutine(int signal)
     switch (signal)
     {
     case 1:
-        printf("Get a signal -- SIGHUP\n"); // 1
+        LOG_I("Get a signal -- SIGHUP"); // 1
         break;
     case 2:
-        printf("Get a signal -- SIGINT\n"); // 2: 强制关闭（直接 kill 进程）
+        LOG_I("Get a signal -- SIGINT"); // 2: 强制关闭（直接 kill 进程, Ctrl-C）
         smm_kill_all_modules();
+        LOG_I("Exit!");
         exit(0);
         break;
     case 3:
-        printf("Get a signal -- SIGQUIT\n"); // 3: 正常关闭（通过消息关闭）
+        LOG_I("Get a signal -- SIGQUIT"); // 3: 正常关闭（通过消息关闭）
         smm_stop_all_modules();
+        LOG_I("Exit!");
         exit(0);
         break;
     }
@@ -232,7 +234,7 @@ int main(int argc, char *argv[])
             LOG_D("Send SIGQUIT signal to %d", s_pid);
             kill(s_pid, SIGQUIT);
 
-            /* send stop signal */
+            LOG_D("Exit!");
             exit(1);
         }
     }

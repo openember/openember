@@ -10,9 +10,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "agloo.h"
 
-#define MODULE_NAME            "Monitor Alarm"
+#define MODULE_NAME            "Monitor"
+#define LOG_TAG                MODULE_NAME
+#include "agloo.h"
 
 static msg_node_t client;
 

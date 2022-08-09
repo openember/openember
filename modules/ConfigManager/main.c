@@ -10,9 +10,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "agloo.h"
 
-#define MODULE_NAME            "Config Manager"
+#define MODULE_NAME            "ConfigMng"
+#define LOG_TAG                MODULE_NAME
+#include "agloo.h"
 
 static msg_node_t client;
 

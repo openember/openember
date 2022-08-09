@@ -9,16 +9,13 @@
  * 2022-07-28     luhuadong    add message pub & sub
  */
 
-#define MODULE_NAME            "Template"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
+#define MODULE_NAME            "Template"
 #define LOG_TAG                MODULE_NAME
 #include "agloo.h"
-#include "log_wrapper.h"
-#include "message.h"
 
 #include "cJSON.h"
 

@@ -10,9 +10,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "agloo.h"
 
-#define MODULE_NAME            "Message Dispatcher"
+#define MODULE_NAME            "Message"
+#define LOG_TAG                MODULE_NAME
+#include "agloo.h"
 
 static msg_node_t client;
 
