@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-#include "agloo.h"
+#include "agconfig.h"
 
 #ifdef AG_LIBS_USING_ZLOG
 #include "zlog.h"
@@ -44,10 +44,10 @@ void log_deinit(void);
 
 #else
 
-#define LOG_I(...)               printf(__VA_ARGS__);
-#define LOG_D(...)               printf(__VA_ARGS__);
-#define LOG_W(...)               printf(__VA_ARGS__);
-#define LOG_E(...)               printf(__VA_ARGS__);
+#define LOG_I(...)            printf(__VA_ARGS__);
+#define LOG_D(...)            printf(__VA_ARGS__);
+#define LOG_W(...)            printf(__VA_ARGS__);
+#define LOG_E(...)            printf(__VA_ARGS__);
 #endif
 
 #ifdef __cplusplus
