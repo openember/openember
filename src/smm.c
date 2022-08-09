@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <assert.h>
 
+#define LOG_TAG                "Workflow"
 #include "agloo.h"
 
 #define AG_GLOBALS
@@ -81,7 +82,7 @@ int smm_unregister(smm_t *module)
 
 int smm_init(void)
 {
-    printf("Submodule init\n");
+    LOG_D("Submodule init");
     return AG_EOK;
 }
 

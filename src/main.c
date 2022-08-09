@@ -19,6 +19,8 @@
 #include <fcntl.h>
 #include <signal.h>
 
+#define APPLICATION_NAME     "Workflow"
+#define LOG_TAG              APPLICATION_NAME
 #include "agloo.h"
 
 #define AG_GLOBALS
@@ -28,7 +30,7 @@
 AG_EXT State context;
 static msg_node_t client;
 
-#define APPLICATION_NAME     "Workflow Controller"
+
 #define DEFAULT_FILE         "/var/run/agloo.pid"
 
 static pid_t s_pid;
@@ -184,9 +186,9 @@ static int msg_init(void)
 {
     int rc = 0, cn = 0;
 
-    rc = msg_bus_init(&client, "Workflow", NULL, _msg_arrived_cb);
+    rc = msg_bus_init(&client, APPLICATION_NAME, NULL, _msg_arrived_cb);
     if (rc != AG_EOK) {
-        printf("Message bus init failed.\n");
+        LOG_E("Message bus init failed.\n");
         return -1;
     }
 
@@ -198,7 +200,7 @@ static int msg_init(void)
 
     if (cn != 0) {
         msg_bus_deinit(client);
-        printf("Message bus subscribe failed.\n");
+        LOG_E("Message bus subscribe failed.\n");
         return -AG_ERROR;
     }
 
@@ -209,13 +211,7 @@ int main(int argc, char *argv[])
 {
     int rc;
 
-    log_init("Workflow");
     sayHello(APPLICATION_NAME);
-
-    printf("process id is %d\n", getpid());
-    signal(SIGHUP, sigroutine);
-    signal(SIGINT, sigroutine);
-    signal(SIGQUIT, sigroutine);
 
     if (argc > 1)
     {
@@ -225,7 +221,7 @@ int main(int argc, char *argv[])
 
             rc = create_lock_file(DEFAULT_FILE);
             if (rc == AG_EOK) {
-                LOG_I("Lock file was not locked up");
+                LOG_E("Lock file was not locked up");
                 destroy_lock_file(lock_fd);
                 exit(1);
             }
@@ -233,7 +229,7 @@ int main(int argc, char *argv[])
             /* Send SIGQUIT signal */
             s_pid = get_instance_pid(DEFAULT_FILE);
 
-            LOG_I("Send SIGQUIT signal to %d", s_pid);
+            LOG_D("Send SIGQUIT signal to %d", s_pid);
             kill(s_pid, SIGQUIT);
 
             /* send stop signal */
@@ -241,9 +237,17 @@ int main(int argc, char *argv[])
         }
     }
 
+    log_init(APPLICATION_NAME);
+    LOG_I("Start agloo app, version: %lu.%lu.%lu", AG_VERSION, AG_SUBVERSION, AG_REVISION);
+    LOG_I("Process id is %d", getpid());
+
+    signal(SIGHUP, sigroutine);
+    signal(SIGINT, sigroutine);
+    signal(SIGQUIT, sigroutine);
+
     rc = create_lock_file(DEFAULT_FILE);
     if (rc != AG_EOK) {
-        LOG_I("Can not create lock file");
+        LOG_E("Can not create lock file");
         exit(1);
     }
 

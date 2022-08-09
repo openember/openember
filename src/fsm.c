@@ -14,6 +14,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 
+#define LOG_TAG                "Workflow"
 #include "agloo.h"
 #include "fsm.h"
 
