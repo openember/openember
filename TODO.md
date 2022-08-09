@@ -17,5 +17,7 @@
 - [ ] 添加内部库（MD5、time、random、ringbuffer 等）
 - [ ] 增加线程池管理
 - [x] 增加日志记录（zlog）
+- [x] 移植 EasyLogger 日志库
+- [ ] 增加一个 alogd 日志守护进程
 - [x] 支持单元测试（CTest，未支持 GoogleTest）
 
