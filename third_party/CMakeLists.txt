@@ -19,3 +19,5 @@ endif()
 if (BUILD_MQTT)
     add_subdirectory(paho.mqtt.c)
 endif()
+
+add_subdirectory(sqlite)
