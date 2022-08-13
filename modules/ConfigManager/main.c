@@ -10,10 +10,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <dlfcn.h>
 
 #define MODULE_NAME            "ConfigMng"
 #define LOG_TAG                MODULE_NAME
 #include "agloo.h"
+#include "sqlite3.h"
+
+sqlite3 *db;
+sqlite3_stmt *stmt=0;
 
 static msg_node_t client;
 
@@ -49,6 +54,75 @@ static int msg_init(void)
     return AG_EOK;
 }
 
+
+static void Create(int rc,sqlite3 *db,char *sql,sqlite3_stmt *stmt)
+{
+	//判断是否已经存在表了
+	rc=sqlite3_prepare_v2(db,sql,strlen(sql),&stmt,0);
+	if (rc)
+	{
+		fprintf(stderr,"对象转换失败:%s\n",sqlite3_errmsg(db));
+		return;
+	}
+	//执行stmt(执行SQL语句)
+	sqlite3_step(stmt);
+	//释放stmt资源
+	sqlite3_finalize(stmt);
+}
+ 
+static void Insert(int rc,char *sql,sqlite3 *db,sqlite3_stmt *stmt,char name[])
+{
+	sprintf(sql,"INSERT INTO MyTable VALUES(NULL,'%s');",name);
+	rc=sqlite3_prepare_v2(db,sql,strlen(sql),&stmt,0);
+	if (rc)
+	{
+		fprintf(stderr,"对象转换失败:%s\n",sqlite3_errmsg(db));
+		return;
+	}
+	sqlite3_step(stmt);
+	sqlite3_finalize(stmt);
+}
+
+int database_init()
+{
+    char sql[]=	"CREATE TABLE IF NOT EXISTS MyTable(ID integer NOT NULL primary "
+		"key autoincrement,Name nvarchar(32));";
+    
+    int rc=sqlite3_open("MyDB.db",&db);
+	if (rc)
+	{
+		sqlite3_close(db);
+		return -1;
+	}
+	else
+		Create(rc,db,sql,stmt);
+	
+	//向数据里边插入些数据,用来测试
+	Insert(rc,sql,db,stmt,"张三");
+	Insert(rc,sql,db,stmt,"李四");
+	Insert(rc,sql,db,stmt,"王五");
+	Insert(rc,sql,db,stmt,"赵六");
+	
+	sprintf(sql,"SELECT * FROM MyTable;");
+	//[2]将SQL语句转换成stmt对象
+	sqlite3_prepare_v2(db,sql,strlen(sql),&stmt,0);
+	int id;
+	unsigned char *name;
+	//[3]循环执行stmt对象,读取数据库里边的数据
+	while(sqlite3_step(stmt)==SQLITE_ROW)
+	{
+		//[4]绑定变量
+		id=sqlite3_column_int(stmt,0);
+		name=(unsigned char *)sqlite3_column_text(stmt,1);
+		LOG_I("id: %d, name: %s", id, name);
+	}
+	//[5]释放资源
+	sqlite3_finalize(stmt);
+	//[6]关闭数据库
+	sqlite3_close(db);
+	return 0;
+}
+
 int main(void)
 {
     int rc;
@@ -69,6 +143,8 @@ int main(void)
         LOG_E("Module register failed.");
         exit(1);
     }
+
+    database_init();
 
     return 0;
 }
