@@ -132,6 +132,7 @@ set( AGLOO_INTERNAL_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/libs/Log
     ${CMAKE_SOURCE_DIR}/libs/MessageAPI
     ${CMAKE_SOURCE_DIR}/libs/Common
+    ${CMAKE_SOURCE_DIR}/libs/Algorithm
 )
 
 set( AGLOO_INCLUDE_DIRS 
@@ -146,6 +147,7 @@ set( AGLOO_INTERNAL_LIBRARIES
     Log
     MessageAPI
     Common
+    Algorithm
 )
 
 set( AGLOO_LIBRARIES
