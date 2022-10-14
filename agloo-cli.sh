@@ -36,6 +36,8 @@ BuildProject() {
     cd ${BUILD_DIR}
     cmake ..
     make -j8
+
+    cp -r ../modules/WebServer/web_root ${BUILD_DIR}/bin/
 }
 
 BuildTest() {
@@ -56,7 +58,7 @@ PackageAll() {
     echo "See -> ${PACKAGE}"
 }
 
-DeployAll() {
+DeployHost() {
     echo "Deploy application ..."
 
     # update web pages
@@ -90,6 +92,17 @@ DeployAll() {
     # web root
     sudo cp -r ${WEB_DIR}/dist ${DEPLOY_DIR}/web_root
     sudo cp -r ${BUILD_DIR}/bin ${DEPLOY_DIR}
+}
+
+DeployTarget() {
+    echo "Deploy application ..."
+
+    if [ ! -d ${BUILD_DIR} ]; then
+        echo "You haven't built project, please run again with `--build` option."
+        return -1
+    fi
+
+    scp -r ${BUILD_DIR}/bin/ reTerminal:/tmp/
 }
 
 if [ -z $1 ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
@@ -131,7 +144,7 @@ elif [ "$1" == "-s" ] || [ "$1" == "--server" ]; then
 elif [ "$1" == "-d" ] || [ "$1" == "--deploy" ]; then
     #RemoveExpiredFiles
     #BuildProject
-    DeployAll
+    DeployHost
 elif [ "$1" == "-c" ] || [ "$1" == "--clean" ]; then
     RemoveExpiredFiles
 elif [ "$1" == "-a" ] || [ "$1" == "--all" ]; then
