@@ -21,4 +21,7 @@
 #include "message.h"
 #include "common.h"
 
+#define INIT_EXPORT(fn)  void fn (void) __attribute__ ((constructor));
+#define EXIT_EXPORT(fn)  void fn (void) __attribute__ ((destructor));
+
 #endif /* __AGLOO_H__ */
