@@ -59,3 +59,35 @@ int foo(int arg1, int arg2)
 
 统一使用 4 空格缩进。
 
+
+### 头文件引用
+
+规则：
+
+1. `#include` 和头文件之间有且只有一个空格
+2. 系统提供的头文件用尖括号 `<>` 包含，表示外部来源
+3. 工程内部的头文件用双引号 `""` 包含，表示内部来源
+
+以下写法符合要求：
+
+```c
+#include <stdio.h>
+#include <iostream>
+#include "myself.h"
+```
+
+以下写法不符合要求：
+
+```c
+#include<stdio.h>
+#include  <iostream>
+#include "stdio.h"
+#include <myself.h>
+```
+
+### 宏定义
+
+
+```c
+#define ON 1
+```
