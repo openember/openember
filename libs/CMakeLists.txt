@@ -1,7 +1,9 @@
 set(FOLDER_NAME "libs")
 
-add_subdirectory(HAL)
 add_subdirectory(Log)
+add_subdirectory(HAL)
 add_subdirectory(MessageAPI)
 add_subdirectory(Common)
 add_subdirectory(Algorithm)
+add_subdirectory(libcsv)
+add_subdirectory(ppool)
