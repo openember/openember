@@ -11,9 +11,44 @@
 #include "ppool.h"
 #include "ppool_errno.h"
 
-//线程池执行任务函数
-void ppool_run(pool_t *pool);
+/**
+ * 线程池执行任务函数
+ *
+ * @param pool_max_num the max number of pool
+ *
+ * @return The handle of pool while success, 
+ *         NULL while failure.
+ */
+static void ppool_run(pool_t *pool)
+{
+    pool_node *task;
 
+    while(1)
+    {
+        while (pthread_mutex_lock(&pool->ppool_lock) != 0);
+
+        while (pool->head->len <= 0) {
+            pthread_cond_wait(&pool->ppool_cond, &pool->ppool_lock);
+        }
+        task = ppool_queue_get_task(pool->head);
+
+        while (pthread_mutex_unlock(&pool->ppool_lock) != 0);
+
+        if (task == NULL) continue;
+        task->task(task->arg);
+
+        free(task);
+    }
+}
+
+/**
+ * This function will init pthread pool
+ *
+ * @param pool_max_num the max number of pool
+ *
+ * @return The handle of pool while success, 
+ *         NULL while failure.
+ */
 pool_t *ppool_init(int pool_max_num)
 {
     pool_t *pool;
@@ -82,6 +117,15 @@ pool_t *ppool_init(int pool_max_num)
     return pool;
 }
 
+/**
+ * This function will add a task into pthread pool
+ *
+ * @param pool the pthread pool handle
+ * @param task the task
+ *
+ * @return PTRUE while success, 
+ *         PFALSE while failure.
+ */
 pbool ppool_add(pool_t *pool,pool_task *task)
 {
     pool_node *node;
@@ -101,6 +145,13 @@ pbool ppool_add(pool_t *pool,pool_task *task)
     return PTRUE;
 }
 
+/**
+ * This function will destroy pthread pool
+ *
+ * @param pool the pthread pool handle
+ *
+ * @return None
+ */
 void ppool_destroy(pool_t *pool)
 {
     int i;
@@ -117,26 +168,4 @@ void ppool_destroy(pool_t *pool)
     pthread_cond_destroy(&pool->ppool_cond);
 
     free(pool);
-}
-
-void ppool_run(pool_t *pool)
-{
-    pool_node *task;
-
-    while(1)
-    {
-        while (pthread_mutex_lock(&pool->ppool_lock) != 0);
-
-        while (pool->head->len <= 0) {
-            pthread_cond_wait(&pool->ppool_cond, &pool->ppool_lock);
-        }
-        task = ppool_queue_get_task(pool->head);
-
-        while (pthread_mutex_unlock(&pool->ppool_lock) != 0);
-
-        if (task == NULL) continue;
-        task->task(task->arg);
-
-        free(task);
-    }
 }
