@@ -7,21 +7,25 @@
  * Date           Author       Notes
  * 2022-07-07     luhuadong    the first version
  * 2022-07-28     luhuadong    add message pub & sub
+ * 2022-11-08     luhuadong    add multi-thread for message parse
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #define MODULE_NAME            "Template"
 #define LOG_TAG                MODULE_NAME
 #include "agloo.h"
+#include "ppool.h"
 
 #include "cJSON.h"
 
 //#define TEMPLATE_RAW_MSG
 
 static msg_node_t client;
+static pool_t *ppool;
 
 #ifdef TEMPLATE_RAW_MSG
 typedef struct test_msg {
@@ -29,6 +33,19 @@ typedef struct test_msg {
     char *msg;
 } test_msg_t;
 #endif
+
+static void thread_entry(void *args)
+{
+    if (!args) {
+        return AG_EINVAL;
+    }
+
+    cJSON *json = cJSON_Parse(args);
+    printf("%s\n", cJSON_Print(json));
+
+    cJSON_Delete(json);
+    free(args);
+}
 
 static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
 {
@@ -38,9 +55,12 @@ static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
 #else
     LOG_D("[%s] %s", topic, (char *)payload);
 
-    cJSON *json = cJSON_Parse(payload);
-    printf("%s\n\n", cJSON_Print(json));
-    cJSON_Delete(json);
+    pool_task ptask;
+    ptask.priority = 0;
+    ptask.arg = strdup(payload);
+    ptask.task = thread_entry;
+
+    ppool_add(ppool, &ptask);
 #endif
 }
 
@@ -54,6 +74,8 @@ static int msg_init(void)
         return -1;
     }
 
+    ppool = ppool_init(5); /* create 5 thread */
+
     /* Subscription list */
     rc = msg_bus_subscribe(client, TEST_TOPIC);
     if (rc != AG_EOK) cn++;
@@ -63,6 +85,7 @@ static int msg_init(void)
     if (rc != AG_EOK) cn++;
 
     if (cn != 0) {
+        ppool_destroy(ppool);
         msg_bus_deinit(client);
         LOG_E("Message bus subscribe failed.\n");
         return -AG_ERROR;

@@ -130,6 +130,7 @@ set( AGLOO_INTERNAL_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/inc
     ${CMAKE_SOURCE_DIR}/libs/HAL
     ${CMAKE_SOURCE_DIR}/libs/Log
+    ${CMAKE_SOURCE_DIR}/libs/ppool
     ${CMAKE_SOURCE_DIR}/libs/MessageAPI
     ${CMAKE_SOURCE_DIR}/libs/Common
     ${CMAKE_SOURCE_DIR}/libs/Algorithm
@@ -145,6 +146,7 @@ add_subdirectory(libs)
 set( AGLOO_INTERNAL_LIBRARIES 
     HAL
     Log
+    ppool
     MessageAPI
     Common
     Algorithm

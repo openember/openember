@@ -15,7 +15,7 @@
 - [ ] 支持树莓派的交叉编译
 - [ ] 支持 GDB + GDB Server 远程调试
 - [ ] 添加内部库（MD5、time、random、ringbuffer 等）
-- [ ] 增加线程池管理
+- [x] 增加线程池管理
 - [ ] 增加内存管理
 - [x] 增加日志记录（zlog）
 - [x] 移植 EasyLogger 日志库
