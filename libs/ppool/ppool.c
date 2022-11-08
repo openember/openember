@@ -5,7 +5,8 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2022-11-02     briskgreen   the first version
+ * 2015-06-30     briskgreen   the first version
+ * 2022-11-02     luhuadong    optimize code style
  */
 
 #include "ppool.h"
@@ -123,16 +124,16 @@ pool_t *ppool_init(int pool_max_num)
  * @param pool the pthread pool handle
  * @param task the task
  *
- * @return PTRUE while success, 
- *         PFALSE while failure.
+ * @return AG_TRUE while success, 
+ *         AG_FALSE while failure.
  */
-pbool ppool_add(pool_t *pool,pool_task *task)
+ag_bool_t ppool_add(pool_t *pool,pool_task *task)
 {
     pool_node *node;
 
     node = ppool_queue_new(task->task, task->arg, task->priority);
     if (!node) {
-        return PFALSE;
+        return AG_FALSE;
     }
 
     while (pthread_mutex_lock(&pool->ppool_lock) != 0);
@@ -142,7 +143,7 @@ pbool ppool_add(pool_t *pool,pool_task *task)
     while (pthread_cond_broadcast(&pool->ppool_cond) != 0);
     while (pthread_mutex_unlock(&pool->ppool_lock) != 0);
 
-    return PTRUE;
+    return AG_TRUE;
 }
 
 /**

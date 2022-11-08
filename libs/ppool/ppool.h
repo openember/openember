@@ -5,7 +5,8 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2022-11-02     briskgreen   the first version
+ * 2015-06-30     briskgreen   the first version
+ * 2022-11-02     luhuadong    optimize code style
  */
 
 #ifndef _PPOOL_H
@@ -13,11 +14,7 @@
 
 #include <pthread.h>
 #include "ppool_queue.h"
-
-typedef char pbool;
-
-#define PTRUE 1
-#define PFALSE 0
+#include "agloo.h"
 
 pthread_mutex_t PPOOL_LOCK;
 
@@ -45,7 +42,7 @@ typedef struct {
 pool_t *ppool_init(int pool_max_num);
 
 //向线程池中添加一个任务
-pbool ppool_add(pool_t *pool,pool_task *task);
+ag_bool_t ppool_add(pool_t *pool,pool_task *task);
 
 //销毁一个线程池
 void ppool_destroy(pool_t *pool);

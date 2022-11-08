@@ -5,7 +5,8 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2022-11-02     briskgreen   the first version
+ * 2015-06-30     briskgreen   the first version
+ * 2022-11-02     luhuadong    optimize code style
  */
 
 #ifndef _PPOOL_QUEUE_H
