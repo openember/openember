@@ -44,7 +44,10 @@ int msg_bus_connect(msg_node_t handle);
 int msg_bus_disconnect(msg_node_t handle);
 int msg_bus_is_connected(msg_node_t handle);
 
-int msg_bus_recv(msg_node_t handle, char** topicName, int* topicLen, void** payload, int* payloadLen);
+#ifdef AG_LIBS_USING_MQTT_ASYNC
+int msg_bus_send(msg_node_t handle, const char *topic, const char *payload);
+#endif
+int msg_bus_recv(msg_node_t handle, char** topicName, int* topicLen, void** payload, time_t timeout);
 
 
 #ifdef __cplusplus

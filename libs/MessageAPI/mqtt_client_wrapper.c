@@ -177,6 +177,35 @@ int msg_bus_set_callback(msg_node_t handle, msg_arrived_cb_t *cb)
     return AG_EOK;
 }
 
+/**
+ * This function performs a synchronous receive of incoming messages.
+ *
+ * @param handle    A valid client handle from a successful call to msg_bus_init().
+ * @param topicName The address of a pointer to a topic.
+ * @param topicLen  The length of the topic.
+ * @param payload   The address of a pointer to the received message (auto allocate), Set to NULL if the timeout expires.
+ * @param timeout   The length of time to wait for a message in milliseconds.
+ *
+ * @return AG_EOK if a message is received,
+ *         -AG_ERROR if there was a problem trying to receive a message.
+ */
+int msg_bus_recv(msg_node_t handle, char** topicName, int* topicLen, void** payload, time_t timeout)
+{
+    int rc;
+
+    rc = MQTTClient_receive(handle, topicName, topicLen, payload, timeout);
+    if (rc != MQTTCLIENT_SUCCESS || rc != MQTTCLIENT_TOPICNAME_TRUNCATED) {
+        LOG_E("Failed to receive, return code %d\n", rc);
+        return -AG_ERROR;
+    }
+    else if (rc == MQTTCLIENT_SUCCESS && payload == NULL) {
+        LOG_E("Timeout to receive, return code %d\n", rc);
+        return -AG_ETIMEOUT;
+    }
+
+    return AG_EOK;
+}
+
 int msg_bus_connect(msg_node_t handle)
 {
     int rc;
