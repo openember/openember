@@ -6,6 +6,7 @@
  * Change Logs:
  * Date           Author       Notes
  * 2022-07-07     luhuadong    the first version
+ * 2022-11-08     luhuadong    add msg_bus_recv & msg_bus_free
  */
 
 #ifndef __AG_MQTT_WRAPPER_H__
@@ -47,8 +48,9 @@ int msg_bus_is_connected(msg_node_t handle);
 #ifdef AG_LIBS_USING_MQTT_ASYNC
 int msg_bus_send(msg_node_t handle, const char *topic, const char *payload);
 #endif
-int msg_bus_recv(msg_node_t handle, char** topicName, int* topicLen, void** payload, time_t timeout);
+int msg_bus_recv(msg_node_t handle, char** topicName, void** payload, int* payloadLen, time_t timeout);
 
+int msg_bus_free(void *topic, void *payload);
 
 #ifdef __cplusplus
 }

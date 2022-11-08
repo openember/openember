@@ -6,8 +6,10 @@
  * Change Logs:
  * Date           Author       Notes
  * 2022-07-07     luhuadong    the first version
+ * 2022-11-08     luhuadong    add msg_bus_recv & msg_bus_free
  */
 
+#define LOG_TAG "MSG"
 #include "agloo.h"
 #if defined (AG_LIBS_USING_MQTT) && defined (AG_LIBS_USING_MQTT_CLIENT) && ! defined(AG_LIBS_USING_MQTT_ASYNC)
 
@@ -77,21 +79,23 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
 
     rc = MQTTClient_create(handle, address, name, MQTTCLIENT_PERSISTENCE_NONE, NULL);
     if (rc != MQTTCLIENT_SUCCESS) {
-        LOG_E("Failed to create client, return code %d\n", rc);
+        LOG_E("Failed to create client, return code %d", rc);
         return -AG_ERROR;
     }
 
-    rc = MQTTClient_setCallbacks(*handle, (void *)cb, connlost, msgarrvd, delivered);
-    if (rc != MQTTCLIENT_SUCCESS) {
-        LOG_E("Failed to set callbacks, return code %d\n", rc);
-        MQTTClient_destroy(handle);
-        return -AG_ERROR;
+    if (cb) {
+        rc = MQTTClient_setCallbacks(*handle, (void *)cb, connlost, msgarrvd, delivered);
+        if (rc != MQTTCLIENT_SUCCESS) {
+            LOG_E("Failed to set callbacks, return code %d", rc);
+            MQTTClient_destroy(handle);
+            return -AG_ERROR;
+        }
     }
 
     //使用MQTTClient_connect将client连接到服务器，使用指定的连接选项。成功则返回MQTTCLIENT_SUCCESS
     rc = MQTTClient_connect(*handle, &conn_opts);
     if (rc != MQTTCLIENT_SUCCESS) {
-        LOG_E("Failed to connect, return code %d\n", rc);
+        LOG_E("Failed to connect, return code %d", rc);
         MQTTClient_destroy(handle);
         return -AG_ERROR;
     }
@@ -119,7 +123,7 @@ int msg_bus_publish(msg_node_t handle, const char *topic, const char *payload)
     MQTTClient_publishMessage(handle, topic, &pubmsg, &token);
     rc = MQTTClient_waitForCompletion(handle, token, TIMEOUT);
     if (rc != MQTTCLIENT_SUCCESS) {
-        LOG_E("Failed to publish, return code %d\n", rc);
+        LOG_E("Failed to publish, return code %d", rc);
         return -AG_ERROR;
     }
 
@@ -134,7 +138,7 @@ int msg_bus_publish_raw(msg_node_t handle, const char *topic, const void *payloa
     MQTTClient_publish(handle, topic, payloadlen, payload, QOS, 0, &token);
     rc = MQTTClient_waitForCompletion(handle, token, TIMEOUT);
     if (rc != MQTTCLIENT_SUCCESS) {
-        LOG_E("Failed to publish, return code %d\n", rc);
+        LOG_E("Failed to publish, return code %d", rc);
         return -AG_ERROR;
     }
 
@@ -147,7 +151,7 @@ int msg_bus_subscribe(msg_node_t handle, const char *topic)
 
     rc = MQTTClient_subscribe(handle, topic, QOS);
     if (rc != MQTTCLIENT_SUCCESS) {
-        LOG_E("Failed to subscribe, return code %d\n", rc);
+        LOG_E("Failed to subscribe, return code %d", rc);
         return -AG_ERROR;
     }
 
@@ -159,7 +163,7 @@ int msg_bus_unsubscribe(msg_node_t handle, const char *topic)
     int rc;
     rc = MQTTClient_unsubscribe(handle, topic);
     if (rc != MQTTCLIENT_SUCCESS) {
-        LOG_E("Failed to unsubscribe, return code %d\n", rc);
+        LOG_E("Failed to unsubscribe, return code %d", rc);
         return -AG_ERROR;
     }
     return AG_EOK;
@@ -171,7 +175,7 @@ int msg_bus_set_callback(msg_node_t handle, msg_arrived_cb_t *cb)
 
     rc = MQTTClient_setCallbacks(handle, (void *)cb, connlost, msgarrvd, delivered);
     if (rc != MQTTCLIENT_SUCCESS) {
-        LOG_E("Failed to set callbacks, return code %d\n", rc);
+        LOG_E("Failed to set callbacks, return code %d", rc);
         return -AG_ERROR;
     }
     return AG_EOK;
@@ -189,19 +193,23 @@ int msg_bus_set_callback(msg_node_t handle, msg_arrived_cb_t *cb)
  * @return AG_EOK if a message is received,
  *         -AG_ERROR if there was a problem trying to receive a message.
  */
-int msg_bus_recv(msg_node_t handle, char** topicName, int* topicLen, void** payload, time_t timeout)
+int msg_bus_recv(msg_node_t handle, char** topicName, void** payload, int* payloadLen, time_t timeout)
 {
-    int rc;
+    int rc, topicLen;
+    MQTTClient_message *m = NULL;
 
-    rc = MQTTClient_receive(handle, topicName, topicLen, payload, timeout);
-    if (rc != MQTTCLIENT_SUCCESS || rc != MQTTCLIENT_TOPICNAME_TRUNCATED) {
-        LOG_E("Failed to receive, return code %d\n", rc);
+    rc = MQTTClient_receive(handle, topicName, &topicLen, &m, timeout);
+    if (rc != MQTTCLIENT_SUCCESS && rc != MQTTCLIENT_TOPICNAME_TRUNCATED) {
+        LOG_E("Failed to receive, return code %d", rc);
         return -AG_ERROR;
     }
-    else if (rc == MQTTCLIENT_SUCCESS && payload == NULL) {
-        LOG_E("Timeout to receive, return code %d\n", rc);
+    else if (rc == MQTTCLIENT_SUCCESS && m == NULL) {
+        LOG_D("Timeout to receive, return code %d", rc);
         return -AG_ETIMEOUT;
     }
+
+    *payload = m->payload;
+    *payloadLen = m->payloadlen;
 
     return AG_EOK;
 }
@@ -219,7 +227,7 @@ int msg_bus_connect(msg_node_t handle)
 
     rc = MQTTClient_connect(handle, &conn_opts);
     if (rc != MQTTCLIENT_SUCCESS) {
-        LOG_E("Failed to connect, return code %d\n", rc);
+        LOG_E("Failed to connect, return code %d", rc);
         return -AG_ERROR;
     }
     return AG_EOK;
@@ -235,6 +243,23 @@ int msg_bus_is_connected(msg_node_t handle)
 {
     if (MQTTClient_isConnected(handle)) return AG_TRUE;
     else return AG_FALSE;
+}
+
+#define container_of(ptr, type, member) (                  \
+    {                                                      \
+        const typeof(((type *)0)->member) *__mptr = (ptr); \
+        (type *)((char *)__mptr - offsetof(type, member)); \
+    })
+
+int msg_bus_free(void *topic, void *msg)
+{
+    if (topic) MQTTClient_free(topic);
+
+    MQTTClient_message *m = NULL;
+
+    m = container_of(&m->payload, MQTTClient_message, payload);
+    
+    if (m) MQTTClient_freeMessage(&m);
 }
 
 #ifdef __cplusplus

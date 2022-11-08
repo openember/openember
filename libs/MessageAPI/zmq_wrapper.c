@@ -8,6 +8,7 @@
  * 2022-07-07     luhuadong    the first version
  */
 
+#define LOG_TAG "MSG"
 #include "agloo.h"
 #ifdef AG_LIBS_USING_ZEROMQ
 
