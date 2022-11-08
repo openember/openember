@@ -8,6 +8,7 @@
  * 2022-07-07     luhuadong    the first version
  * 2022-07-28     luhuadong    add message pub & sub
  * 2022-11-08     luhuadong    add multi-thread for message parse
+ * 2022-11-08     luhuadong    support synchronous mode
  */
 
 #include <stdio.h>
@@ -27,6 +28,9 @@
 static msg_node_t client;
 static pool_t *ppool;
 
+/* Options */
+static ag_bool_t sync_mode = AG_FALSE; /* AG_TRUE or AG_FALSE */
+
 #ifdef TEMPLATE_RAW_MSG
 typedef struct test_msg {
     int id;
@@ -37,7 +41,8 @@ typedef struct test_msg {
 static void thread_entry(void *args)
 {
     if (!args) {
-        return AG_EINVAL;
+        LOG_E("Invalid arguments for thread routine");
+        return ;
     }
 
     cJSON *json = cJSON_Parse(args);
@@ -68,7 +73,12 @@ static int msg_init(void)
 {
     int rc = 0, cn = 0;
 
-    rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb);
+    if (sync_mode) {
+        rc = msg_bus_init(&client, MODULE_NAME, NULL, NULL);
+    }
+    else {
+        rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb);
+    }
     if (rc != AG_EOK) {
         LOG_E("Message bus init failed.\n");
         return -1;
@@ -130,13 +140,28 @@ int main(void)
 #endif
 
     while (count--) {
+
 #ifdef TEMPLATE_RAW_MSG
-    test_msg.id = count;
-    test_msg.msg = "Hello, Agloo";
-    msg_bus_publish_raw(client, TEST_TOPIC, &test_msg, sizeof(test_msg));
+        test_msg.id = count;
+        test_msg.msg = "Hello, Agloo";
+        msg_bus_publish_raw(client, TEST_TOPIC, &test_msg, sizeof(test_msg));
 #else
         snprintf(buf, sizeof(buf), "{\"id\":\"%d\",\"msg\":\"Hello, Agloo\"}", count);
         msg_bus_publish(client, TEST_TOPIC, buf);
+
+        if (sync_mode) { /* wait message */
+            
+            char *topic = NULL;
+            int payloadlen = 0;
+            void *payload = NULL;
+
+            msg_bus_recv(client, &topic, &payload, &payloadlen, 3000);
+
+            if (topic && payload) {
+                LOG_I("Recv: [%s] %s", topic, (char *)payload);
+                msg_bus_free(topic, payload);
+            }
+        }
 #endif
         sleep(1);
     }
