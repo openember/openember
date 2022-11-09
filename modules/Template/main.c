@@ -38,7 +38,7 @@ typedef struct test_msg {
 } test_msg_t;
 #endif
 
-static void thread_entry(void *args)
+static void task_entry(void *args)
 {
     if (!args) {
         LOG_E("Invalid arguments for thread routine");
@@ -60,10 +60,11 @@ static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
 #else
     LOG_D("[%s] %s", topic, (char *)payload);
 
-    pool_task ptask;
-    ptask.priority = 0;
-    ptask.arg = strdup(payload);
-    ptask.task = thread_entry;
+    pool_task ptask = {
+        .entry     = task_entry,
+        .parameter = strdup(payload),
+        .priority  = 0,
+    };
 
     ppool_add(ppool, &ptask);
 #endif

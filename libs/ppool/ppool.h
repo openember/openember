@@ -13,8 +13,9 @@
 #define _PPOOL_H
 
 #include <pthread.h>
-#include "ppool_queue.h"
+
 #include "agloo.h"
+#include "ppool_queue.h"
 
 pthread_mutex_t PPOOL_LOCK;
 
@@ -22,29 +23,23 @@ pthread_mutex_t PPOOL_LOCK;
 #define ppool_leave() pthread_mutex_unlock(&PPOOL_LOCK)
 
 typedef struct {
-    int pool_max_num; //线程池最大线程数量
-    int rel_num;      //线程池中实例线程数
-    pool_w *head;     //线程头
-    pthread_t *id;    //线程id
+    int pool_max_num;  /* 线程池最大线程数量 */
+    int rel_num;       /* 线程池中实例线程数 */
+    pool_queue *queue; /* 任务队列头指针 */
+    pthread_t  *id;    /* 线程 ID 号 */
 
     pthread_mutex_t ppool_lock;
     pthread_cond_t  ppool_cond;
 } pool_t;
 
-//任务数据结构
 typedef struct {
-    int priority;    //优先级
-    ppool_work task; //任务
-    void *arg;       //参数
-}pool_task;
+    void (*entry)(void *parameter); /* 任务 */
+    void  *parameter;               /* 参数 */
+    int    priority;                /* 优先级 */
+} pool_task;
 
-//初始化一个线程池
-pool_t *ppool_init(int pool_max_num);
-
-//向线程池中添加一个任务
-ag_bool_t ppool_add(pool_t *pool,pool_task *task);
-
-//销毁一个线程池
-void ppool_destroy(pool_t *pool);
+pool_t   *ppool_init(int pool_max_num);
+ag_bool_t ppool_add(pool_t *pool, pool_task *task);
+void      ppool_destroy(pool_t *pool);
 
 #endif

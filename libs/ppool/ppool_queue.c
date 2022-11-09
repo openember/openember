@@ -12,14 +12,43 @@
 #include "ppool_queue.h"
 #include "ppool_errno.h"
 
-int ppool_queue_get_insert_pos(pool_node *head, int priority);
-//查询插入的位置
-
-pool_w *ppool_queue_init(void)
+/**
+ * This function query the insert position of pool queue 
+ * 查询插入的位置
+ *
+ * @param head     the header pointer of pool
+ * @param priority the priority which you want to query
+ * 
+ * @return The position number where to insert the node if success,
+ *         return -1 if failure.
+ */
+static int ppool_queue_get_insert_pos(pool_node *head, int priority)
 {
-    pool_w *head;
+    int pos;
 
-    head = malloc(sizeof(pool_w));
+    if (head == NULL) {
+        return -1;
+    }
+
+    for (pos=0; head && priority >= head->priority; ++pos) {
+        head = head->next;
+    }
+
+    return pos;
+}
+
+/**
+ * This function will init pthread pool queue
+ * 初始化一个任务列表
+ *
+ * @return The handle of pool queue if success,
+ *         return NULL if failure.
+ */
+pool_queue *ppool_queue_init(void)
+{
+    pool_queue *head;
+
+    head = malloc(sizeof(pool_queue));
     if (!head) {
         ppool_errno = PE_QUEUE_NO_MEM;
         return NULL;
@@ -31,7 +60,18 @@ pool_w *ppool_queue_init(void)
     return head;
 }
 
-pool_node *ppool_queue_new(ppool_work task, void *arg, int priority)
+/**
+ * This function will create a new pool node
+ * 查询插入的位置
+ *
+ * @param task      the task function entry
+ * @param parameter the parameter pass to task function
+ * @param priority  the priority of this task
+ * 
+ * @return The handle of a new node if success,
+ *         return NULL if failure.
+ */
+pool_node *ppool_queue_new(void (*entry)(void *parameter), void *parameter, int priority)
 {
     pool_node *node;
 
@@ -46,31 +86,40 @@ pool_node *ppool_queue_new(ppool_work task, void *arg, int priority)
         return NULL;
     }
 
-    node->task = task;
-    node->arg  = arg;
-    node->priority = priority;
+    node->entry = entry;
+    node->parameter = parameter;
+    node->priority  = priority;
     node->next = NULL;
 
     return node;
 }
 
-void ppool_queue_add(pool_w *head, pool_node *node)
+/**
+ * This function will add a node into the pool queue
+ * 添加一个任务到任务队列
+ *
+ * @param queue the header pointer of pool
+ * @param node  the node that will insert
+ * 
+ * @return None
+ */
+void ppool_queue_add(pool_queue *queue, pool_node *node)
 {
     int pos;
     int i;
-    pool_node *h = head->head;
+    pool_node *h = queue->head;
 
     pos = ppool_queue_get_insert_pos(h, node->priority);
 
     if (pos == -1) {
-        head->head = node;
-        ++head->len;
+        queue->head = node;
+        queue->len += 1;
         return;
     }
     else if (pos == 0) {
-        node->next = h;
-        head->head = node;
-        ++head->len;
+        node->next  = h;
+        queue->head = node;
+        queue->len += 1;
         return;
     }
 
@@ -78,29 +127,46 @@ void ppool_queue_add(pool_w *head, pool_node *node)
         h = h->next;
     }
 
-    node->next = h->next;
-    h->next = node;
-    ++head->len;
+    node->next  = h->next;
+    h->next     = node;
+    queue->len += 1;
 }
 
-pool_node *ppool_queue_get_task(pool_w *head)
+/**
+ * This function get a task which has highest priority from the pool queue 
+ * 从任务队列中获取一个任务
+ *
+ * @param queue the header pointer of pool
+ * 
+ * @return The handle of task node if success,
+ *         return NULL if failure.
+ */
+pool_node *ppool_queue_get_task(pool_queue *queue)
 {
     pool_node *task;
 
-    if (head->head == NULL) {
+    if (queue->head == NULL) {
         return NULL;
     }
 
-    task = head->head;
-    head->head = head->head->next;
-    --head->len;
+    task = queue->head;
+    queue->head = queue->head->next;
+    queue->len -= 1;
 
     return task;
 }
 
-void ppool_queue_cleanup(pool_w *head)
+/**
+ * This function will clean up the pool queue
+ * 清空任务队列
+ *
+ * @param queue the header pointer of pool
+ * 
+ * @return None
+ */
+void ppool_queue_cleanup(pool_queue *queue)
 {
-    pool_node *h = head->head;
+    pool_node *h = queue->head;
     pool_node *temp;
 
     while (h) {
@@ -110,13 +176,21 @@ void ppool_queue_cleanup(pool_w *head)
         free(temp);
     }
 
-    head->len = 0;
-    head->head = NULL;
+    queue->len  = 0;
+    queue->head = NULL;
 }
 
-void ppool_queue_destroy(pool_w *head)
+/**
+ * This function will destroy the pool queue 
+ * 销毁任务队列
+ *
+ * @param queue the header pointer of pool
+ * 
+ * @return None
+ */
+void ppool_queue_destroy(pool_queue *queue)
 {
-    pool_node *h = head->head;
+    pool_node *h = queue->head;
     pool_node *temp;
 
     while (h) {
@@ -126,20 +200,5 @@ void ppool_queue_destroy(pool_w *head)
         free(temp);
     }
 
-    free(head);
-}
-
-int ppool_queue_get_insert_pos(pool_node *head, int priority)
-{
-    int pos;
-
-    if (head == NULL) {
-        return -1;
-    }
-
-    for (pos=0; head && priority >= head->priority; ++pos) {
-        head = head->next;
-    }
-
-    return pos;
+    free(queue);
 }

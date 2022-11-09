@@ -28,15 +28,15 @@ static void ppool_run(pool_t *pool)
     {
         while (pthread_mutex_lock(&pool->ppool_lock) != 0);
 
-        while (pool->head->len <= 0) {
+        while (pool->queue->len <= 0) {
             pthread_cond_wait(&pool->ppool_cond, &pool->ppool_lock);
         }
-        task = ppool_queue_get_task(pool->head);
+        task = ppool_queue_get_task(pool->queue);
 
         while (pthread_mutex_unlock(&pool->ppool_lock) != 0);
 
         if (task == NULL) continue;
-        task->task(task->arg);
+        task->entry(task->parameter);
 
         free(task);
     }
@@ -44,6 +44,7 @@ static void ppool_run(pool_t *pool)
 
 /**
  * This function will init pthread pool
+ * 初始化一个线程池
  *
  * @param pool_max_num the max number of pool
  *
@@ -52,8 +53,8 @@ static void ppool_run(pool_t *pool)
  */
 pool_t *ppool_init(int pool_max_num)
 {
-    pool_t *pool;
-    pool_w *head;
+    pool_t     *pool;
+    pool_queue *queue;
     int i;
 
     pool = malloc(sizeof(pool_t));
@@ -63,19 +64,19 @@ pool_t *ppool_init(int pool_max_num)
     }
 
     //创建任务队列
-    head = ppool_queue_init();
-    if (!head) {
+    queue = ppool_queue_init();
+    if (!queue) {
         free(pool);
         return NULL;
     }
 
     pool->pool_max_num = pool_max_num;
     pool->rel_num = 0;
-    pool->head = head;
+    pool->queue = queue;
     pool->id = malloc(sizeof(pthread_t) * pool_max_num);
     if (!pool->id) {
         ppool_errno = PE_THREAD_NO_MEM;
-        free(head);
+        free(queue);
         free(pool);
         return NULL;
     }
@@ -83,7 +84,7 @@ pool_t *ppool_init(int pool_max_num)
     if (pthread_mutex_init(&pool->ppool_lock, NULL) != 0) {
         ppool_errno = PE_THREAD_MUTEX_ERROR;
         free(pool->id);
-        free(head);
+        free(queue);
         free(pool);
         return NULL;
     }
@@ -91,7 +92,7 @@ pool_t *ppool_init(int pool_max_num)
     if (pthread_mutex_init(&PPOOL_LOCK, NULL) != 0) {
         ppool_errno = PE_THREAD_MUTEX_ERROR;
         free(pool->id);
-        free(head);
+        free(queue);
         pthread_mutex_destroy(&pool->ppool_lock);
         free(pool);
     }
@@ -99,13 +100,13 @@ pool_t *ppool_init(int pool_max_num)
     if (pthread_cond_init(&pool->ppool_cond, NULL) != 0) {
         ppool_errno = PE_THREAD_COND_ERROR;
         free(pool->id);
-        free(head);
+        free(queue);
         pthread_mutex_destroy(&pool->ppool_lock);
         free(pool);
         return NULL;
     }
 
-    //创建任务
+    /* Create threads */
     for (i=0; i < pool_max_num; ++i) {
 
         if (pthread_create(&pool->id[i], NULL, (void *)ppool_run, pool) == 0) {
@@ -120,6 +121,7 @@ pool_t *ppool_init(int pool_max_num)
 
 /**
  * This function will add a task into pthread pool
+ * 向线程池中添加一个任务
  *
  * @param pool the pthread pool handle
  * @param task the task
@@ -127,18 +129,18 @@ pool_t *ppool_init(int pool_max_num)
  * @return AG_TRUE while success, 
  *         AG_FALSE while failure.
  */
-ag_bool_t ppool_add(pool_t *pool,pool_task *task)
+ag_bool_t ppool_add(pool_t *pool, pool_task *task)
 {
     pool_node *node;
 
-    node = ppool_queue_new(task->task, task->arg, task->priority);
+    node = ppool_queue_new(task->entry, task->parameter, task->priority);
     if (!node) {
         return AG_FALSE;
     }
 
     while (pthread_mutex_lock(&pool->ppool_lock) != 0);
 
-    ppool_queue_add(pool->head, node);
+    ppool_queue_add(pool->queue, node);
 
     while (pthread_cond_broadcast(&pool->ppool_cond) != 0);
     while (pthread_mutex_unlock(&pool->ppool_lock) != 0);
@@ -148,6 +150,7 @@ ag_bool_t ppool_add(pool_t *pool,pool_task *task)
 
 /**
  * This function will destroy pthread pool
+ * 销毁一个线程池
  *
  * @param pool the pthread pool handle
  *
@@ -157,7 +160,7 @@ void ppool_destroy(pool_t *pool)
 {
     int i;
 
-    ppool_queue_destroy(pool->head);
+    ppool_queue_destroy(pool->queue);
 
     for (i=0; i < pool->pool_max_num; ++i) {
         pthread_cancel(pool->id[i]);
