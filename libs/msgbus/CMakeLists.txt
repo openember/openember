@@ -1,4 +1,4 @@
-project(MessageAPI)
+project(msgbus)
 
 set( MSG_WRAPPER_SRCS 
     message.c
