@@ -9,6 +9,8 @@
  * 2022-11-02     luhuadong    optimize code style
  */
 
+#include <sys/prctl.h>
+
 #include "ppool.h"
 #include "ppool_errno.h"
 
@@ -23,6 +25,8 @@
 static void ppool_run(pool_t *pool)
 {
     pool_node *task;
+
+    prctl(PR_SET_NAME, "threadpool");
 
     while(1)
     {
