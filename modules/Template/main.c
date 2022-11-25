@@ -22,6 +22,7 @@
 #include "ppool.h"
 
 #include "cJSON.h"
+#include "yaml.h"
 
 //#define TEMPLATE_RAW_MSG
 
@@ -105,6 +106,25 @@ static int msg_init(void)
     return AG_EOK;
 }
 
+void yaml_test(void)
+{
+    int major = -1;
+    int minor = -1;
+    int patch = -1;
+    char buf[64];
+
+    yaml_get_version(&major, &minor, &patch);
+    sprintf(buf, "%d.%d.%d", major, minor, patch);
+    assert(strcmp(buf, yaml_get_version_string()) == 0);
+    
+    LOG_I("libyaml version %s", buf);
+
+    /* Print structure sizes. */
+    printf("sizeof(token) = %ld\n", (long)sizeof(yaml_token_t));
+    printf("sizeof(event) = %ld\n", (long)sizeof(yaml_event_t));
+    printf("sizeof(parser) = %ld\n", (long)sizeof(yaml_parser_t));
+}
+
 int main(void)
 {
     int rc;
@@ -119,6 +139,8 @@ int main(void)
     LOG_E("Hello Agloo!");
 
     LOG_I("Version: %lu.%lu.%lu", AG_VERSION, AG_SUBVERSION, AG_REVISION);
+
+    yaml_test();
 
     rc = msg_init();
     if (rc != AG_EOK) {

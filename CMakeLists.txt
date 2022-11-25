@@ -134,6 +134,8 @@ set( AGLOO_INTERNAL_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/libs/msgbus
     ${CMAKE_SOURCE_DIR}/libs/Common
     ${CMAKE_SOURCE_DIR}/libs/Algorithm
+    ${CMAKE_SOURCE_DIR}/libs/libcsv
+    ${CMAKE_SOURCE_DIR}/libs/libyaml
 )
 
 set( AGLOO_INCLUDE_DIRS 
@@ -150,6 +152,8 @@ set( AGLOO_INTERNAL_LIBRARIES
     msgbus
     Common
     Algorithm
+    csv
+    yaml
 )
 
 set( AGLOO_LIBRARIES
