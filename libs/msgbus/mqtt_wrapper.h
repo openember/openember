@@ -50,7 +50,7 @@ int msg_bus_send(msg_node_t handle, const char *topic, const char *payload);
 #endif
 int msg_bus_recv(msg_node_t handle, char** topicName, void** payload, int* payloadLen, time_t timeout);
 
-int msg_bus_free(void *topic, void *payload);
+void msg_bus_free(void *topic, void *payload);
 
 #ifdef __cplusplus
 }

@@ -251,7 +251,7 @@ int msg_bus_is_connected(msg_node_t handle)
         (type *)((char *)__mptr - offsetof(type, member)); \
     })
 
-int msg_bus_free(void *topic, void *msg)
+void msg_bus_free(void *topic, void *msg)
 {
     if (topic) MQTTClient_free(topic);
 
