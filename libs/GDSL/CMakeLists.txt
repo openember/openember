@@ -1,23 +1,6 @@
 project(gdsl)
 
-set( LIB_GDSL_SRCS 
-    src/gdsl_2darray.c
-    src/_gdsl_bintree.c
-    src/_gdsl_bstree.c
-    src/gdsl_bstree.c
-    src/gdsl.c
-    src/gdsl_hash.c
-    src/gdsl_heap.c
-    src/gdsl_interval_heap.c
-    src/_gdsl_list.c
-    src/gdsl_list.c
-    src/_gdsl_node.c
-    src/gdsl_perm.c
-    src/gdsl_queue.c
-    src/gdsl_rbtree.c
-    src/gdsl_sort.c
-    src/gdsl_stack.c
-)
+file(GLOB_RECURSE LIB_GDSL_SRCS src/*.c)
 
 AGLOO_ADD_STATIC_LIBRARY (TARGET ${PROJECT_NAME} 
     SRCS     ${LIB_GDSL_SRCS}
