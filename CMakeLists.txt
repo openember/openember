@@ -136,6 +136,7 @@ set( AGLOO_EXTERNAL_LIBRARIES
 set( AGLOO_INTERNAL_INCLUDE_DIRS 
     ${CMAKE_SOURCE_DIR}/inc
     ${CMAKE_SOURCE_DIR}/libs/HAL
+    ${CMAKE_SOURCE_DIR}/libs/GSDL/src
     ${CMAKE_SOURCE_DIR}/libs/Log
     ${CMAKE_SOURCE_DIR}/libs/ppool
     ${CMAKE_SOURCE_DIR}/libs/msgbus
@@ -150,10 +151,9 @@ set( AGLOO_INCLUDE_DIRS
     ${AGLOO_INTERNAL_INCLUDE_DIRS}
 )
 
-add_subdirectory(libs)
-
 set( AGLOO_INTERNAL_LIBRARIES 
     HAL
+    gdsl
     Log
     ppool
     msgbus
@@ -168,6 +168,7 @@ set( AGLOO_LIBRARIES
     ${AGLOO_INTERNAL_LIBRARIES}
 )
 
+add_subdirectory(libs)
 add_subdirectory(modules)
 add_subdirectory(src)
 
