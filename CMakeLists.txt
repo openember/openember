@@ -27,6 +27,7 @@ option( OPTIMIZATION_DISABLED "Whether to disable the optimization of compilatio
 option( CROSSCOMPILE_ENABLED "Whether to build for ARM" OFF)
 option( OPENMP_ENABLED "Whether to enable omp feature" OFF)
 option( TESTS_ENABLED "Whether to unit test" ON)
+option( EXAMPLES_ENABLED "Whether compile examples" ON)
 option( BUILD_CJSON "Whether compile cJSON" OFF)
 option( BUILD_MQTT "Whether compile MQTT" OFF)
 option( BUILD_MD5 "Whether compile md5" OFF)
