@@ -558,3 +558,32 @@ int set_netdev_status(const char *ifname, const link_status_t status)
     close(sockfd);
     return AG_EOK;
 }
+
+/**
+ * This function will get local ip info (address & port) by socket fd.
+ *
+ * @param sockfd the socket file descriptor
+ * @param ip     the ip address obtained, buffer len must greater than INET_ADDRSTRLEN.
+ * @param port   the port obtained,.
+ *
+ * @return AG_EOK while success, 
+ *         -AG_ERROR while failure.
+ */
+int get_local_ip_by_socket(const int sockfd, char *ip, int *port)
+{
+    struct sockaddr local_addr;
+    socklen_t len = sizeof(struct sockaddr);
+
+    if (0 != getsockname(sockfd, &local_addr, &len)) {
+        return -AG_ERROR;
+    }
+
+    struct sockaddr_in *sin = (struct sockaddr_in *)(&local_addr);
+    char addr_buffer[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(sin->sin_addr), addr_buffer, INET_ADDRSTRLEN);
+    strncpy(ip, addr_buffer, INET_ADDRSTRLEN);
+
+    *port = sin->sin_port;
+
+    return AG_EOK;
+}

@@ -48,6 +48,8 @@ int set_local_dns(const char *ifname, const char* dns_addr);
 int get_ip_attr(const char *ifname, netdev_attr_t *attr);
 int set_ip_attr(const char *ifname, const netdev_attr_t *attr);
 
+int get_local_ip_by_socket(const int sockfd, char *ip, int *port);
+
 typedef enum {
     LINK_UP = 0,
     LINK_DOWN
