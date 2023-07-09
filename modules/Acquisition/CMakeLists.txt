@@ -1,7 +1,7 @@
-project(Acquisition VERSION 1.0.0)
+project(Acquisition VERSION 1.0.0 LANGUAGES CXX)
 
 set( ACQUISITION_MODULE_SRCS 
-    main.c
+    main.cpp
 )
 
 AGLOO_ADD_EXECUTABLE(TARGET ${PROJECT_NAME} 

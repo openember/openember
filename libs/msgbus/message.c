@@ -22,7 +22,7 @@
  * int smm_unregister(smm_t *module);
  */
 
-int msg_smm_register(msg_node_t handle, const char *name, mod_class_t class)
+int msg_smm_register(msg_node_t handle, const char *name, mod_class_t cls)
 {
     if (handle == NULL) {
         LOG_E("Message client is null, please check if connected");
@@ -31,7 +31,7 @@ int msg_smm_register(msg_node_t handle, const char *name, mod_class_t class)
 
     smm_msg_t msg = {0};
     strncpy(msg.name, name, sizeof(msg.name)-1);
-    msg.class = class;
+    msg.cls = cls;
     msg.pid = getpid();
 
     msg_bus_publish_raw(handle, MOD_REGISTER_TOPIC, (void *)&msg, sizeof(msg));
@@ -50,7 +50,7 @@ int msg_smm_unregister(msg_node_t handle, const char *name, mod_class_t class)
  * 定时发布心跳包
  */
 
-int msg_keepalive_update(msg_node_t handle, const char *name, mod_class_t class, state_t state)
+int msg_keepalive_update(msg_node_t handle, const char *name, mod_class_t cls, state_t state)
 {
     if (handle == NULL) {
         LOG_E("Message client is null, please check if connected");
@@ -59,7 +59,7 @@ int msg_keepalive_update(msg_node_t handle, const char *name, mod_class_t class,
     
     keepalive_msg_t msg = {0};
     strncpy(msg.name, name, sizeof(msg.name)-1);
-    msg.class = class;
+    msg.cls = cls;
     msg.state = state;
 
     msg_bus_publish_raw(handle, KEEPALIVE_TOPIC, (void *)&msg, sizeof(msg));

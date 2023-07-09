@@ -17,6 +17,10 @@
 #include "agloo.h"
 #include "ppool_queue.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 pthread_mutex_t PPOOL_LOCK;
 
 #define ppool_entry() pthread_mutex_lock(&PPOOL_LOCK)
@@ -41,5 +45,9 @@ typedef struct {
 pool_t   *ppool_init(int pool_max_num);
 ag_bool_t ppool_add(pool_t *pool, pool_task *task);
 void      ppool_destroy(pool_t *pool);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -14,6 +14,10 @@
 /* include agconfig header to import configuration */
 #include "agconfig.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef AG_GLOBALS
 #define AG_EXT
 #else
@@ -136,7 +140,7 @@ typedef enum submod_class {
     SUBMODULE_CLASS_WEB,
     SUBMODULE_CLASS_OTA,
     SUBMODULE_CLASS_ACQUISITION,
-    SUBMODULE_CLASS_TEST,
+    SUBmod_class_tEST,
     SUBMODULE_CLASS_MAX
 } mod_class_t;
 
@@ -156,10 +160,6 @@ typedef enum control {
     AG_CONTROL_PAUSE,
     AG_CONTROL_COUNT
 } control_t;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #ifdef __cplusplus
 }

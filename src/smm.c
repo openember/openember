@@ -36,7 +36,7 @@ struct list_head *get_submodule_list(void)
 }
 
 //int smm_register(smm_t *module, const char *name, const int pid, void *user_data)
-smm_t *smm_register(const char *name, const mod_class_t class, const int pid, void *user_data)
+smm_t *smm_register(const char *name, const mod_class_t cls, const int pid, void *user_data)
 {
     assert(name);
 
@@ -46,7 +46,7 @@ smm_t *smm_register(const char *name, const mod_class_t class, const int pid, vo
     }
 
     strncpy(module->name, name, sizeof(module->name)-1);
-    module->class = class;
+    module->cls = cls;
     module->pid = pid;
     module->priority = SUBMODULE_PRIO_1;
     module->user_data = NULL;

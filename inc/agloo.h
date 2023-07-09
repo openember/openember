@@ -21,7 +21,15 @@
 #include "message.h"
 #include "common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define INIT_EXPORT(fn)  void fn (void) __attribute__ ((constructor));
 #define EXIT_EXPORT(fn)  void fn (void) __attribute__ ((destructor));
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __AGLOO_H__ */

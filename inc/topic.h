@@ -16,6 +16,10 @@
 
 #include "agdef.h"
 
+// #ifdef __cplusplus
+// extern "C" {
+// #endif
+
 #define TEST_TOPIC                    "/test"
 
 #define SYS_STATE_TOPIC               "/sys/state/post"
@@ -61,7 +65,7 @@ typedef struct control_msg
 typedef struct keepalive_msg
 {
     char name[AG_NAME_MAX];
-    mod_class_t class;
+    mod_class_t cls;
     state_t state;
     int timestamp;
 } keepalive_msg_t;
@@ -69,17 +73,12 @@ typedef struct keepalive_msg
 typedef struct smm_register_msg
 {
     char name[AG_NAME_MAX];
-    mod_class_t class;
+    mod_class_t cls;
     pid_t pid;
 } smm_msg_t;
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+// #ifdef __cplusplus
+// }
+// #endif
 
 #endif /* __AG_TOPIC_H__ */

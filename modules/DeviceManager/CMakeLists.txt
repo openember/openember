@@ -1,7 +1,7 @@
-project(DeviceManager VERSION 1.0.0)
+project(DeviceManager VERSION 1.0.0 LANGUAGES CXX)
 
 set( DEVICE_MODULE_SRCS 
-    main.c
+    main.cpp
 )
 
 AGLOO_ADD_EXECUTABLE(TARGET ${PROJECT_NAME} 

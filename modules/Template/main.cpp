@@ -46,7 +46,7 @@ static void task_entry(void *args)
         return ;
     }
 
-    cJSON *json = cJSON_Parse(args);
+    cJSON *json = cJSON_Parse((char *)args);
     printf("%s\n", cJSON_Print(json));
 
     cJSON_Delete(json);
@@ -63,7 +63,7 @@ static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
 
     pool_task ptask = {
         .entry     = task_entry,
-        .parameter = strdup(payload),
+        .parameter = strdup((char *)payload),
         .priority  = 0,
     };
 
@@ -148,7 +148,7 @@ int main(void)
         exit(1);
     }
 
-    rc = msg_smm_register(client, MODULE_NAME, SUBMODULE_CLASS_TEST);
+    rc = msg_smm_register(client, MODULE_NAME, SUBmod_class_tEST);
     if (rc != AG_EOK) {
         LOG_E("Module register failed.");
         exit(1);

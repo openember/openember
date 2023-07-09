@@ -170,7 +170,7 @@ static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
         smm_msg_t *msg = (smm_msg_t *)payload;
         LOG_I("Register: %s, %d", msg->name, msg->pid);
 
-        if (NULL == smm_register(msg->name, msg->class, msg->pid, NULL)) {
+        if (NULL == smm_register(msg->name, msg->cls, msg->pid, NULL)) {
             LOG_E("Module %s register failed.", msg->name);
         }
     }
@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
     int count = 100;
     char buf[256] = {0};
 
-    state_msg_t stateMsg = {0};
+    state_msg_t stateMsg;
 
     while (1) {
         memset(&stateMsg, 0, sizeof(stateMsg));

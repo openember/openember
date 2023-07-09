@@ -1,7 +1,7 @@
-project(WorkflowController VERSION 1.0.0)
+project(WorkflowController VERSION 1.0.0 LANGUAGES CXX)
 
 set( WORKFLOW_CONTROLLER_SRCS 
-    main.c
+    main.cpp
     fsm.c
     smm.c
 )

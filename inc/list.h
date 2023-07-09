@@ -13,6 +13,10 @@
 
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //通过结构体成员指针获取结构体指针位置
 #define container_of(ptr, type, member) (                  \
     {                                                      \
@@ -125,5 +129,9 @@ static inline void list_del(struct list_head *entry)
 //取第一个元素
 #define list_first_entry(ptr, type, member) \
     list_entry((ptr)->next, type, member)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __AG_LIST_H__ */
