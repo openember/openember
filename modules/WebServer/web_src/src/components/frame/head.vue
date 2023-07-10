@@ -1,7 +1,7 @@
 <template>
     <div>
         <b-navbar toggleable="md" type="dark" variant="dark" fixed="top">
-            <b-navbar-brand href="#">Agloo</b-navbar-brand>
+            <b-navbar-brand href="#">OpenEmber</b-navbar-brand>
 
             <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
 

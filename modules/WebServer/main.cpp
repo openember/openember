@@ -16,7 +16,7 @@
 
 static msg_node_t client;
 
-#define WEB_ROOT    "/opt/agloo/web_root"
+#define WEB_ROOT    "/opt/openember/web_root"
 //#define WEB_ROOT    "../modules/WebServer/web_src/dist"
 //#define WEB_ROOT    "web_root"
 #define WEB_PORT    "0.0.0.0:8000"

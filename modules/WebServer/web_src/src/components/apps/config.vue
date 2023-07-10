@@ -6,7 +6,7 @@
           <b-card-img :src="img" alt="Image" class="rounded-0"></b-card-img>
         </b-col>
         <b-col md="3">
-          <b-card-body title="Agloo">
+          <b-card-body title="OpenEmber">
             <b-card-text>
               <br /><br />
               一个嵌入式软件框架<br /><br />
