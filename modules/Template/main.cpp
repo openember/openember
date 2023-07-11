@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2020, DreamGrow Team
+ * Copyright (c) 2022-2023, OpenEmber Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -133,10 +133,10 @@ int main(void)
     
     log_init(MODULE_NAME);
     
-    LOG_D("Hello Agloo!");
-    LOG_I("Hello Agloo!");
-    LOG_W("Hello Agloo!");
-    LOG_E("Hello Agloo!");
+    LOG_D("Hello OpenEmber!");
+    LOG_I("Hello OpenEmber!");
+    LOG_W("Hello OpenEmber!");
+    LOG_E("Hello OpenEmber!");
 
     LOG_I("Version: %lu.%lu.%lu", AG_VERSION, AG_SUBVERSION, AG_REVISION);
 
@@ -166,10 +166,10 @@ int main(void)
 
 #ifdef TEMPLATE_RAW_MSG
         test_msg.id = count;
-        test_msg.msg = "Hello, Agloo";
+        test_msg.msg = "Hello, OpenEmber";
         msg_bus_publish_raw(client, TEST_TOPIC, &test_msg, sizeof(test_msg));
 #else
-        snprintf(buf, sizeof(buf), "{\"id\":\"%d\",\"msg\":\"Hello, Agloo\"}", count);
+        snprintf(buf, sizeof(buf), "{\"id\":\"%d\",\"msg\":\"Hello, OpenEmber\"}", count);
         msg_bus_publish(client, TEST_TOPIC, buf);
 
         if (sync_mode) { /* wait message */

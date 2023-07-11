@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2022, DreamGrow Team
+ * Copyright (c) 2022-2023, OpenEmber Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *

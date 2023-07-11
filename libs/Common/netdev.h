@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022, DreamGrow Team
+ * Copyright (c) 2022-2023, OpenEmber Team
  *
  * Change Logs:
  * Date           Author       Notes
