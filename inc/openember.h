@@ -8,8 +8,8 @@
  * 2022-07-07     luhuadong    the first version
  */
 
-#ifndef __AGLOO_H__
-#define __AGLOO_H__
+#ifndef __OPENEMBER_H__
+#define __OPENEMBER_H__
 
 #include "agconfig.h"
 #include "agdef.h"
@@ -32,4 +32,4 @@ extern "C" {
 }
 #endif
 
-#endif /* __AGLOO_H__ */
+#endif /* __OPENEMBER_H__ */

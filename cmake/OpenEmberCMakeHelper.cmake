@@ -1,15 +1,15 @@
 
-macro(AGLOO_SET_VERSION PROJECT_NAME VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
+macro(OPENEMBER_SET_VERSION PROJECT_NAME VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
 # Set CPACK version and project name
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set(CPACK_PACKAGE_VERSION_MAJOR ${VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${VERSION_PATCH})
 set(VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
-set(AGLOO_VERSION ${VERSION} )
-endmacro(AGLOO_SET_VERSION)
+set(OPENEMBER_VERSION ${VERSION} )
+endmacro(OPENEMBER_SET_VERSION)
 
-macro(AGLOO_ADD_SOURCE_DIR SRC_DIR SRC_VAR)
+macro(OPENEMBER_ADD_SOURCE_DIR SRC_DIR SRC_VAR)
 # Create the list of expressions to be used in the search.
 set(GLOB_EXPRESSIONS "")
 foreach(ARG ${ARGN})
@@ -25,9 +25,9 @@ source_group(${GROUP_NAME} FILES ${${SRC_VAR}})
 unset(GLOB_EXPRESSIONS)
 unset(ARG)
 unset(GROUP_NAME)
-endmacro(AGLOO_ADD_SOURCE_DIR)
+endmacro(OPENEMBER_ADD_SOURCE_DIR)
 
-macro(AGLOO_ADD_SOURCES)
+macro(OPENEMBER_ADD_SOURCES)
 set(SOURCE_FILES "")
 foreach(SOURCE_FILE ${ARGN})
     if(SOURCE_FILE MATCHES "^/.*")
@@ -38,10 +38,10 @@ foreach(SOURCE_FILE ${ARGN})
     endif()
 endforeach()
 set(PROJECT_SOURCES ${PROJECT_SOURCES} ${SOURCE_FILES} PARENT_SCOPE)
-endmacro(AGLOO_ADD_SOURCES)
+endmacro(OPENEMBER_ADD_SOURCES)
 
 # https://stackoverflow.com/questions/23327687/how-to-write-a-cmake-function-with-more-than-one-parameter-groups
-macro(AGLOO_ADD_EXECUTABLE )
+macro(OPENEMBER_ADD_EXECUTABLE )
 cmake_parse_arguments(
     PARSED_ARGS # prefix of output variables
     "" # list of names of the boolean arguments (only defined ones will be true)
@@ -54,8 +54,8 @@ if(NOT PARSED_ARGS_TARGET)
     message(FATAL_ERROR "You must provide a target")
 endif()
 set ( TARGET_NAME ${PARSED_ARGS_TARGET})
-#aux_source_directory("${CMAKE_HOME_DIRECTORY}/src" AGLOO_SRCS)
-#add_executable(${TARGET_NAME} ${PARSED_ARGS_SRCS} ${AGLOO_SRCS})
+#aux_source_directory("${CMAKE_HOME_DIRECTORY}/src" OPENEMBER_SRCS)
+#add_executable(${TARGET_NAME} ${PARSED_ARGS_SRCS} ${OPENEMBER_SRCS})
 add_executable(${TARGET_NAME} ${PARSED_ARGS_SRCS})
 if(PARSED_ARGS_DESTINATION)
 set_target_properties(${TARGET_NAME}
@@ -75,9 +75,9 @@ install(TARGETS ${TARGET_NAME}
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
 )
-endmacro(AGLOO_ADD_EXECUTABLE)
+endmacro(OPENEMBER_ADD_EXECUTABLE)
 
-macro(AGLOO_ADD_LIBRARY )
+macro(OPENEMBER_ADD_LIBRARY )
 cmake_parse_arguments(
     PARSED_ARGS # prefix of output variables
     "" # list of names of the boolean arguments (only defined ones will be true)
@@ -109,9 +109,9 @@ install(TARGETS ${TARGET_NAME} EXPORT ${TARGET_NAME}-target
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
 )
-endmacro(AGLOO_ADD_LIBRARY)
+endmacro(OPENEMBER_ADD_LIBRARY)
 
-macro(AGLOO_ADD_STATIC_LIBRARY )
+macro(OPENEMBER_ADD_STATIC_LIBRARY )
 cmake_parse_arguments(
     PARSED_ARGS # prefix of output variables
     "" # list of names of the boolean arguments (only defined ones will be true)
@@ -143,9 +143,9 @@ install(TARGETS ${TARGET_NAME} EXPORT ${TARGET_NAME}-target
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
 )
-endmacro(AGLOO_ADD_STATIC_LIBRARY)
+endmacro(OPENEMBER_ADD_STATIC_LIBRARY)
 
-macro(AGLOO_ADD_TEST)
+macro(OPENEMBER_ADD_TEST)
 if(TESTS_ENABLED)
     cmake_parse_arguments(
       PARSED_ARGS # prefix of output variables
@@ -156,8 +156,8 @@ if(TESTS_ENABLED)
     )
 
     set ( TARGET_NAME ${PARSED_ARGS_TARGET})
-    #aux_source_directory("${CMAKE_HOME_DIRECTORY}/src" AGLOO_SRCS)
-    #add_executable(${TARGET_NAME} ${PARSED_ARGS_SRCS} ${AGLOO_SRCS})
+    #aux_source_directory("${CMAKE_HOME_DIRECTORY}/src" OPENEMBER_SRCS)
+    #add_executable(${TARGET_NAME} ${PARSED_ARGS_SRCS} ${OPENEMBER_SRCS})
     add_executable(${TARGET_NAME} ${PARSED_ARGS_SRCS})
     if(PARSED_ARGS_LIBS)
       target_link_libraries(${TARGET_NAME} ${PARSED_ARGS_LIBS} ${GTEST_LIBRARIES})
@@ -175,4 +175,4 @@ if(TESTS_ENABLED)
         install(TARGETS ${TARGET_NAME} DESTINATION bin/)
     endif()
 endif()
-endmacro(AGLOO_ADD_TEST)
+endmacro(OPENEMBER_ADD_TEST)

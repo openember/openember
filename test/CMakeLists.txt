@@ -6,10 +6,10 @@ foreach(TEST_SRC ${TEST_SRCS})
 
     message(STATUS "${TEST_NAME} ${TEST_SRC}")
 
-    AGLOO_ADD_TEST(TARGET   ${TEST_NAME} 
+    OPENEMBER_ADD_TEST(TARGET   ${TEST_NAME} 
                    SRCS     ${TEST_SRC} 
-                   LIBS     ${AGLOO_LIBRARIES} 
-                   INCLUDES ${AGLOO_INCLUDE_DIRS} 
+                   LIBS     ${OPENEMBER_LIBRARIES} 
+                   INCLUDES ${OPENEMBER_INCLUDE_DIRS} 
     )
 
 endforeach(TEST_SRC)
