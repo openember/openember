@@ -111,43 +111,43 @@ if [ -z $1 ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
     echo "Usage: $0 [options]"
     echo ""
     echo "OPTIONS"
-    echo "  -b, --build        Build executable file from sources."
-    echo "  -t, --test         Build and run all test cases."
-    echo "  -p, --package      Package executable files in a tar ball."
-    echo "  -s, --server       Build executable file and run a local web server."
-    echo "  -d, --deploy       Deploy openember apps in host/target."
-    echo "  -c, --clean        Delete all build files."
-    echo "  -a, --all          Rebuild and pack all executable files"
-    echo "  -h, --help         Display this help and exit"
-    echo "  -v, --version      Output version information and exit"
+    echo "  -b, build        Build executable file from sources."
+    echo "  -t, test         Build and run all test cases."
+    echo "  -p, package      Package executable files in a tar ball."
+    echo "  -s, server       Build executable file and run a local web server."
+    echo "  -d, deploy       Deploy openember apps in host/target."
+    echo "  -c, clean        Delete all build files."
+    echo "  -a, all          Rebuild and pack all executable files"
+    echo "  -h, help         Display this help and exit"
+    echo "  -v, version      Output version information and exit"
     echo ""
     exit 0
-elif [ "$1" == "-v" ] || [ "$1" == "--version" ]; then
+elif [ "$1" == "-v" ] || [ "$1" == "version" ]; then
     echo "Script Version: ${VERSION}"
     echo "Author: ${AUTHOR}"
     echo "E-mail: ${EMAIL}"
     exit 0
-elif [ "$1" == "-b" ] || [ "$1" == "--build" ]; then
+elif [ "$1" == "-b" ] || [ "$1" == "build" ]; then
     RemoveExpiredFiles
     BuildProject
-elif [ "$1" == "-t" ] || [ "$1" == "--test" ]; then
+elif [ "$1" == "-t" ] || [ "$1" == "test" ]; then
     #RemoveExpiredFiles
     BuildTest
-elif [ "$1" == "-p" ] || [ "$1" == "--package" ]; then
+elif [ "$1" == "-p" ] || [ "$1" == "package" ]; then
     #RemoveExpiredFiles
     #BuildProject
     PackageAll
-elif [ "$1" == "-s" ] || [ "$1" == "--server" ]; then
+elif [ "$1" == "-s" ] || [ "$1" == "server" ]; then
     #RemoveExpiredFiles
     #BuildProject
     RunServer
-elif [ "$1" == "-d" ] || [ "$1" == "--deploy" ]; then
+elif [ "$1" == "-d" ] || [ "$1" == "deploy" ]; then
     #RemoveExpiredFiles
     #BuildProject
     DeployHost
-elif [ "$1" == "-c" ] || [ "$1" == "--clean" ]; then
+elif [ "$1" == "-c" ] || [ "$1" == "clean" ]; then
     RemoveExpiredFiles
-elif [ "$1" == "-a" ] || [ "$1" == "--all" ]; then
+elif [ "$1" == "-a" ] || [ "$1" == "all" ]; then
     RemoveExpiredFiles
     BuildProject
     BuildTest
