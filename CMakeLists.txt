@@ -17,7 +17,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 # Include helper macros and commands, and allow the included file to override
 # the CMake policies in this file
-include(${CMAKE_SOURCE_DIR}/cmake/AglooCMakeHelper.cmake NO_POLICY_SCOPE)
+include(${CMAKE_SOURCE_DIR}/cmake/OpenEmberCMakeHelper.cmake NO_POLICY_SCOPE)
 
 ################################################################################
 # Options

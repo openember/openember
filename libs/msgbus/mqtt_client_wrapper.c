@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-static const char *username = "agloo";
+static const char *username = "openember";
 static const char *password = "p@ssw0rd";
 
 static void delivered(void *context, MQTTClient_deliveryToken token)

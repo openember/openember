@@ -30,7 +30,7 @@
 
 //#define AG_LIBS_USING_ZLOG
 #ifdef AG_LIBS_USING_ZLOG
-#define LOG_FILE    "/etc/agloo/zlog.conf"
+#define LOG_FILE    "/etc/openember/zlog.conf"
 #endif
 
 #define AG_LIBS_USING_EASYLOGGER

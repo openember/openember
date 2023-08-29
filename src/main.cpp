@@ -31,7 +31,7 @@ AG_EXT State context;
 static msg_node_t client;
 
 
-#define DEFAULT_FILE         "/var/run/agloo.pid"
+#define DEFAULT_FILE         "/var/run/openember.pid"
 
 static pid_t s_pid;
 static int lock_fd;
@@ -141,13 +141,13 @@ static int startup_modules(void)
      * (2) exec
      * (3) fork
      */
-    system("/opt/agloo/bin/MessageDispatcher &");
-    system("/opt/agloo/bin/MonitorAlarm &");
-    system("/opt/agloo/bin/WebServer &");
-    system("/opt/agloo/bin/OTA &");
-    system("/opt/agloo/bin/ConfigManager &");
-    system("/opt/agloo/bin/DeviceManager &");
-    system("/opt/agloo/bin/Acquisition &");
+    system("/opt/openember/bin/MessageDispatcher &");
+    system("/opt/openember/bin/MonitorAlarm &");
+    system("/opt/openember/bin/WebServer &");
+    system("/opt/openember/bin/OTA &");
+    system("/opt/openember/bin/ConfigManager &");
+    system("/opt/openember/bin/DeviceManager &");
+    system("/opt/openember/bin/Acquisition &");
 
     return AG_EOK;
 }
@@ -240,7 +240,7 @@ int main(int argc, char *argv[])
     }
 
     log_init(APPLICATION_NAME);
-    LOG_I("Start agloo app, version: %lu.%lu.%lu", AG_VERSION, AG_SUBVERSION, AG_REVISION);
+    LOG_I("Start openember app, version: %lu.%lu.%lu", AG_VERSION, AG_SUBVERSION, AG_REVISION);
     LOG_I("Process id is %d", getpid());
 
     signal(SIGHUP, sigroutine);

@@ -7,9 +7,9 @@ EMAIL=luhuadong@163.com
 HOME_DIR=`pwd`
 BUILD_DIR=${HOME_DIR}/build
 WEB_DIR=${HOME_DIR}/modules/WebServer/web_src
-DEPLOY_DIR=/opt/agloo
-PACKAGE=agloo-${VERSION}.zip
-CONF_DIR=/etc/agloo
+DEPLOY_DIR=/opt/openember
+PACKAGE=openember-${VERSION}.zip
+CONF_DIR=/etc/openember
 
 CheckPermission() {
     echo "Check user permission ..."
@@ -69,7 +69,7 @@ DeployHost() {
     # CheckPermission
 
     if [ ! -d ${BUILD_DIR} ]; then
-        echo "You haven't built agloo, please run again with `--build` option."
+        echo "You haven't built openember, please run again with `--build` option."
         return -1
     fi
 
@@ -106,7 +106,7 @@ DeployTarget() {
 }
 
 if [ -z $1 ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
-    echo "Agloo CLI tool v${VERSION}, ${EMAIL}"
+    echo "OpenEmber CLI tool v${VERSION}, ${EMAIL}"
     echo ""
     echo "Usage: $0 [options]"
     echo ""
@@ -115,7 +115,7 @@ if [ -z $1 ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
     echo "  -t, --test         Build and run all test cases."
     echo "  -p, --package      Package executable files in a tar ball."
     echo "  -s, --server       Build executable file and run a local web server."
-    echo "  -d, --deploy       Deploy agloo apps in host/target."
+    echo "  -d, --deploy       Deploy openember apps in host/target."
     echo "  -c, --clean        Delete all build files."
     echo "  -a, --all          Rebuild and pack all executable files"
     echo "  -h, --help         Display this help and exit"
