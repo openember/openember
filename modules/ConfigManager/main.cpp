@@ -15,7 +15,7 @@
 
 #define MODULE_NAME            "ConfigMng"
 #define LOG_TAG                MODULE_NAME
-#include "agloo.h"
+#include "openember.h"
 #include "sqlite3.h"
 
 sqlite3 *db;

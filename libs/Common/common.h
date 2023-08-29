@@ -11,7 +11,7 @@
 #ifndef __AG_COMMON_H__
 #define __AG_COMMON_H__
 
-#include "agloo.h"
+#include "openember.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -11,7 +11,7 @@
 #ifndef __FINITE_STATE_MACHINE_H__
 #define __FINITE_STATE_MACHINE_H__
 
-#include "agloo.h"
+#include "openember.h"
 
 #ifdef __cplusplus
 extern "C" {

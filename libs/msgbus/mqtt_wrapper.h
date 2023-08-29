@@ -12,7 +12,7 @@
 #ifndef __AG_MQTT_WRAPPER_H__
 #define __AG_MQTT_WRAPPER_H__
 
-#include "agloo.h"
+#include "openember.h"
 
 #ifdef AG_LIBS_USING_MQTT
 

@@ -14,7 +14,7 @@
 
 #include <pthread.h>
 
-#include "agloo.h"
+#include "openember.h"
 #include "ppool_queue.h"
 
 #ifdef __cplusplus

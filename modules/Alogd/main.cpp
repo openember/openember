@@ -14,7 +14,7 @@
 
 #define MODULE_NAME            "alogd"
 #define LOG_TAG                MODULE_NAME
-#include "agloo.h"
+#include "openember.h"
 
 
 int main(void)

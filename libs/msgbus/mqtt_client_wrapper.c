@@ -10,7 +10,7 @@
  */
 
 #define LOG_TAG "MSG"
-#include "agloo.h"
+#include "openember.h"
 #if defined (AG_LIBS_USING_MQTT) && defined (AG_LIBS_USING_MQTT_CLIENT) && ! defined(AG_LIBS_USING_MQTT_ASYNC)
 
 #include <stdio.h>

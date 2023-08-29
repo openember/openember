@@ -13,7 +13,7 @@
 
 #include <sys/types.h>
 #include <unistd.h>
-#include "agloo.h"
+#include "openember.h"
 
 #ifdef __cplusplus
 extern "C" {

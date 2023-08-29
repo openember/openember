@@ -9,7 +9,7 @@
  */
 
 #define LOG_TAG "MSG"
-#include "agloo.h"
+#include "openember.h"
 #ifdef AG_LIBS_USING_ZEROMQ
 
 #include <stdio.h>

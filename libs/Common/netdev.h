@@ -12,7 +12,7 @@
 #include <signal.h>
 #include <pthread.h>
 
-#include "agloo.h"
+#include "openember.h"
 
 #ifdef __cplusplus
 extern "C" {

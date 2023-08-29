@@ -11,7 +11,7 @@
 #ifndef __AG_ZMQ_WRAPPER_H__
 #define __AG_ZMQ_WRAPPER_H__
 
-#include "agloo.h"
+#include "openember.h"
 
 #ifdef AG_LIBS_USING_ZEROMQ
 

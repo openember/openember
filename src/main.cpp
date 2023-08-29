@@ -21,7 +21,7 @@
 
 #define APPLICATION_NAME     "Workflow"
 #define LOG_TAG              APPLICATION_NAME
-#include "agloo.h"
+#include "openember.h"
 
 #define AG_GLOBALS
 #include "fsm.h"

@@ -15,7 +15,7 @@
 #include <assert.h>
 
 #define LOG_TAG                "Workflow"
-#include "agloo.h"
+#include "openember.h"
 
 #define AG_GLOBALS
 #include "smm.h"
