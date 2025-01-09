@@ -10,7 +10,7 @@ OpenEmber 项目默认实现了 Linux 系统监控功能，可通过 Web 查看�
 
 ## 框架结构
 
-
+![](./docs/images/Architecture_diagram.png)
 
 ## 模块功能
 
