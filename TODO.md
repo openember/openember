@@ -27,4 +27,5 @@
 - [ ] 完美兼容 C/C++ 混合编程
 - [ ] 支持调用 Lua 代码
 - [ ] 支持调用 Python 代码
+- [ ] OpenEmber 作为 ROS 的下层（ROS 通过 OpenEmber 的通信模块拿数据、控制硬件）
 
