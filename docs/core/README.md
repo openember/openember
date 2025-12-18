@@ -25,6 +25,8 @@ OpenEmber Core 不负责：
 - 指定操作系统或硬件平台
 - 提供完整实现代码
 
+
+
 ## 2. 基本概念
 
 ### 2.1 系统（System）
@@ -37,6 +39,8 @@ OpenEmber 系统是由一组 **模块（Module）** 组成的运行时集合，�
 - 模块生命周期管理
 - 模块间通信能力
 - 配置、状态与错误的可观测性
+
+
 
 ## 3. 模块模型（Module Model）
 
@@ -81,6 +85,8 @@ UNINITIALIZED
 - 不允许从 STARTED 回到 INITIALIZED
 - 初始化失败必须进入 STOPPED 或错误状态
 
+
+
 ## 4. 通信模型（Communication Model）
 
 ### 4.1 消息（Message）
@@ -109,6 +115,8 @@ OpenEmber Core 只规定最小语义保证：
 
 实现可以提供 **更强语义**，但不得弱于上述约束。
 
+
+
 ## 5. 配置模型（Configuration Model）
 
 ### 5.1 配置原则
@@ -121,6 +129,8 @@ OpenEmber Core 只规定最小语义保证：
 
 - 配置应在模块 INITIALIZED 前可用
 - 运行时配置变更是否支持由实现决定
+
+
 
 ## 6. 错误模型（Error Model）
 
@@ -135,6 +145,8 @@ OpenEmber Core 只规定最小语义保证：
 
 - 错误不得被无声吞掉
 - 错误必须至少通过日志或状态接口暴露
+
+
 
 ## 7. 状态与可观测性（Observability）
 
@@ -152,12 +164,16 @@ OpenEmber Core 只规定最小语义保证：
 - 模块是否存活
 - 模块是否处于 STARTED 状态
 
+
+
 ## 8. 并发与线程模型假设
 
 OpenEmber Core 不强制并发模型，但要求：
 
 - 模块实现必须是 **线程安全或明确声明非线程安全**
 - 不得在 Core 级别假设全局单线程
+
+
 
 ## 9. 兼容性与演进
 
@@ -170,10 +186,14 @@ OpenEmber Core 不强制并发模型，但要求：
 
 不同实现（如 OpenEmber / OpenEmber‑Plus）在 Core 定义的行为上必须保持一致。
 
+
+
 ## 10. 参考实现
 
 - **OpenEmber**：OpenEmber Core 的标准 C 实现
 - **OpenEmber‑Plus**：遵循同一 Core 的 C++ 增强实现
+
+
 
 ## 11. 结语
 
@@ -182,3 +202,7 @@ OpenEmber Core 的存在，是为了确保：
 > 不同语言、不同实现、不同团队， 仍然可以构建出**语义一致、行为可预期**的 OpenEmber 系统。
 
 规范先于实现，约定先于自由。
+
+------
+
+*End of OpenEmber State Machine Specification (Draft v0.1)*
