@@ -21,6 +21,10 @@
 #include "zmq_wrapper.h"
 #endif
 
+#ifdef AG_LIBS_USING_NNG
+#include "nng_wrapper.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -4,9 +4,7 @@ if (BUILD_ZLOG)
     add_subdirectory(zlog)
 endif()
 
-if (BUILD_EASYLOGGER)
-    add_subdirectory(easylogger)
-endif()
+# EasyLogger 已废弃（目前 OpenEmber 统一使用 zlog）
 
 if (BUILD_CJSON)
     add_subdirectory(cJSON)

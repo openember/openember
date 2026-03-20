@@ -12,8 +12,8 @@ OpenEmber (规范层)
 |   └── transport-abstraction.md
 |
 ├── modules/
-|   ├── core-c/       # C 实现（使用 LCM / NNG 等）
-|   └── core-cpp/     # C++ 实现（使用 iceoryx / Zenoh 等）
+|   ├── core-c-adapter/       # C ABI 适配层（用于纯 C 接入模板）
+|   └── core-cpp/             # C++ 主线实现
 ├── tools/            # 脚手架 & 工具（可选的 IDL / 代码生成工具）
 └── examples/
 ```
@@ -29,20 +29,21 @@ OpenEmber (规范层)
 ### 示例：CMake 顶层设计
 
 ```cmake
-option(EMBER_ENABLE_C   "Enable C runtime" ON)
-option(EMBER_ENABLE_CPP "Enable C++ runtime" OFF)
+option(OPENEMBER_ENABLE_CPP        "Enable C++ runtime" ON)
+option(OPENEMBER_ENABLE_C_ADAPTER "Enable C ABI adapter" OFF)
 
-option(EMBER_MISRA_MODE "Enable MISRA-C constraints" OFF)
+option(OPENEMBER_MISRA_MODE "Enable MISRA-C constraints" OFF)
 ```
 
 用户选择：
 
 ```bash
-# 纯 C + MISRA
-cmake -DEMBER_ENABLE_C=ON \
-      -DEMBER_ENABLE_CPP=OFF \
-      -DEMBER_MISRA_MODE=ON ..
+# C 接入模板 + MISRA
+cmake -DOPENEMBER_ENABLE_CPP=OFF \
+      -DOPENEMBER_ENABLE_C_ADAPTER=ON \
+      -DOPENEMBER_MISRA_MODE=ON ..
 
 # 现代 C++
-cmake -DEMBER_ENABLE_CPP=ON ..
+cmake -DOPENEMBER_ENABLE_CPP=ON \
+      -DOPENEMBER_ENABLE_C_ADAPTER=OFF ..
 ```

@@ -19,6 +19,9 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 # the CMake policies in this file
 include(${CMAKE_SOURCE_DIR}/cmake/OpenEmberCMakeHelper.cmake NO_POLICY_SCOPE)
 
+# Third-party dependency policy (FetchContent / Vendor / System)
+include(${CMAKE_SOURCE_DIR}/cmake/Dependencies.cmake)
+
 ################################################################################
 # Options
 ################################################################################
@@ -32,7 +35,51 @@ option( BUILD_CJSON "Whether compile cJSON" OFF)
 option( BUILD_MQTT "Whether compile MQTT" OFF)
 option( BUILD_MD5 "Whether compile md5" OFF)
 option( BUILD_ZLOG "Whether compile zlog" OFF)
-option( BUILD_EASYLOGGER "Whether compile EasyLogger" ON)
+option( BUILD_EASYLOGGER "Whether compile EasyLogger (obsolete, currently disabled)" OFF)
+option( BUILD_PUBSUB_ZMQ "Build ember_pubsub pub/sub skeleton + two-node examples" ON)
+
+option( BUILD_PUBSUB_NNG "Build ember_pubsub pub/sub skeleton with NNG transport" OFF)
+option( BUILD_PUBSUB_LCM "Build ember_pubsub pub/sub skeleton with LCM transport" OFF)
+
+option( OPENEMBER_MSGBUS_USE_NNG "Use NNG backend for internal msgbus" ON)
+
+# Transport backend selection（默认保持与旧逻辑一致：BUILD_PUBSUB_ZMQ=ON 则优先 zmq）
+set(OPENEMBER_PUBSUB_BACKEND "udp")
+if(BUILD_PUBSUB_NNG)
+    set(OPENEMBER_PUBSUB_BACKEND "nng")
+elseif(BUILD_PUBSUB_ZMQ)
+    set(OPENEMBER_PUBSUB_BACKEND "zmq")
+elseif(BUILD_PUBSUB_LCM)
+    set(OPENEMBER_PUBSUB_BACKEND "lcm")
+endif()
+message(STATUS "ember_pubsub: transport backend = ${OPENEMBER_PUBSUB_BACKEND}")
+
+# Keep old behavior: in SYSTEM mode, if chosen transport isn't available,
+# fall back to built-in UDP instead of failing the build.
+if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
+    if(OPENEMBER_PUBSUB_BACKEND STREQUAL "zmq")
+        find_path(_zmq_inc NAMES zmq.h)
+        find_library(_zmq_lib NAMES zmq)
+        if(NOT _zmq_inc OR NOT _zmq_lib)
+            set(OPENEMBER_PUBSUB_BACKEND "udp")
+            message(STATUS "ember_pubsub: libzmq not found, using built-in UDP transport")
+        endif()
+    elseif(OPENEMBER_PUBSUB_BACKEND STREQUAL "nng")
+        find_path(_nng_inc NAMES nng/nng.h)
+        find_library(_nng_lib NAMES nng)
+        if(NOT _nng_inc OR NOT _nng_lib)
+            set(OPENEMBER_PUBSUB_BACKEND "udp")
+            message(STATUS "ember_pubsub: nng not found, using built-in UDP transport")
+        endif()
+    elseif(OPENEMBER_PUBSUB_BACKEND STREQUAL "lcm")
+        find_path(_lcm_inc NAMES lcm/lcm.h)
+        find_library(_lcm_lib NAMES lcm-static lcm)
+        if(NOT _lcm_inc OR NOT _lcm_lib)
+            set(OPENEMBER_PUBSUB_BACKEND "udp")
+            message(STATUS "ember_pubsub: lcm not found, using built-in UDP transport")
+        endif()
+    endif()
+endif()
 
 if (DEBUG_ENABLED)
     set(CMAKE_BUILD_TYPE "Debug")
@@ -67,51 +114,48 @@ if (OPENMP_ENABLED)
 endif()
 
 ################################################################################
-# Find packages
+# Resolve third-party dependencies
 ################################################################################
-find_package(ZLOG QUIET)
 
-if(NOT ZLOG_FOUND) 
-    message(STATUS "zlog not found! Build from source")
-    set(BUILD_ZLOG TRUE)
-    set(ZLOG_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/zlog/src)
-    set(ZLOG_LIBRARIES zlog)
+# zlog / cJSON: use OPENEMBER_THIRD_PARTY_MODE (FetchContent / Vendor / System)
+openember_third_party_resolve_zlog()
+message(STATUS "├── zlog: ${ZLOG_LIBRARIES}")
+message(STATUS "└── zlog include: ${ZLOG_INCLUDE_DIRS}")
+
+openember_third_party_resolve_cjson()
+message(STATUS "├── cJSON: ${CJSON_LIBRARIES}")
+message(STATUS "└── cJSON include: ${CJSON_INCLUDE_DIRS}")
+
+# EasyLogger 已删除：仅保留 CMake 选项占位，强制关闭。
+set(EASYLOGGER_INCLUDE_DIRS "")
+set(EASYLOGGER_LIBRARIES "")
+if(BUILD_EASYLOGGER)
+    message(WARNING "EasyLogger 已被删除（third_party/easylogger 不再存在），将保持禁用。")
 endif()
-message(STATUS "├── ${ZLOG_LIBRARIES}")
-message(STATUS "└── ${ZLOG_INCLUDE_DIRS}")
 
-find_package(EasyLogger QUIET)
-
-if(NOT EasyLogger_FOUND) 
-    message(STATUS "EasyLogger not found! Build from source")
-    set(BUILD_EASYLOGGER TRUE)
-    set(EASYLOGGER_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/easylogger/inc)
-    set(EASYLOGGER_LIBRARIES easylogger)
-endif()
-message(STATUS "├── ${EASYLOGGER_LIBRARIES}")
-message(STATUS "└── ${EASYLOGGER_INCLUDE_DIRS}")
-
-find_package(cJSON QUIET)
-
-if(NOT cJSON_FOUND) 
-    message(STATUS "cJSON not found! Build from source")
-    set(BUILD_CJSON TRUE)
-    set(CJSON_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/cJSON)
-    set(CJSON_LIBRARIES cjson)
-endif()
-message(STATUS "├── ${CJSON_LIBRARIES}")
-message(STATUS "└── ${CJSON_INCLUDE_DIRS}")
-
-find_package(PahoMqttC QUIET)
-
-if(NOT PahoMqttC_FOUND) 
-    message(STATUS "PahoMqttC not found! Build from source")
-    set(BUILD_MQTT TRUE)
-    set(PAHO_MQTT_C_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/paho.mqtt.c/src)
-    set(PAHO_MQTT_C_LIBRARIES paho-mqtt3a paho-mqtt3c)
-endif()
+openember_third_party_resolve_paho_mqtt_c()
 message(STATUS "├── ${PAHO_MQTT_C_LIBRARIES}")
 message(STATUS "└── ${PAHO_MQTT_C_INCLUDE_DIRS}")
+
+if(OPENEMBER_PUBSUB_BACKEND STREQUAL "zmq")
+    openember_transport_resolve_libzmq()
+    message(STATUS "├── libzmq: ${OPENEMBER_LIBZMQ_LIBRARIES}")
+    message(STATUS "└── libzmq include: ${OPENEMBER_LIBZMQ_INCLUDE_DIRS}")
+elseif(OPENEMBER_PUBSUB_BACKEND STREQUAL "nng")
+    openember_transport_resolve_nng()
+    message(STATUS "├── nng: ${OPENEMBER_NNG_LIBRARIES}")
+    message(STATUS "└── nng include: ${OPENEMBER_NNG_INCLUDE_DIRS}")
+elseif(OPENEMBER_PUBSUB_BACKEND STREQUAL "lcm")
+    openember_transport_resolve_lcm()
+    message(STATUS "├── lcm: ${OPENEMBER_LCM_LIBRARIES}")
+    message(STATUS "└── lcm include: ${OPENEMBER_LCM_INCLUDE_DIRS}")
+endif()
+
+if(OPENEMBER_MSGBUS_USE_NNG AND NOT OPENEMBER_PUBSUB_BACKEND STREQUAL "nng")
+    openember_transport_resolve_nng()
+    message(STATUS "├── nng (msgbus): ${OPENEMBER_NNG_LIBRARIES}")
+    message(STATUS "└── nng (msgbus) include: ${OPENEMBER_NNG_INCLUDE_DIRS}")
+endif()
 
 set(SQLITE_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/sqlite)
 set(SQLITE_LIBRARIES sqlite3)
@@ -133,6 +177,11 @@ set( OPENEMBER_EXTERNAL_LIBRARIES
     ${CJSON_LIBRARIES}
     ${SQLITE_LIBRARIES} dl
 )
+
+if(OPENEMBER_MSGBUS_USE_NNG)
+    list(APPEND OPENEMBER_EXTERNAL_INCLUDE_DIRS ${OPENEMBER_NNG_INCLUDE_DIRS})
+    list(APPEND OPENEMBER_EXTERNAL_LIBRARIES ${OPENEMBER_NNG_LIBRARIES})
+endif()
 
 set( OPENEMBER_INTERNAL_INCLUDE_DIRS 
     ${CMAKE_SOURCE_DIR}/inc
@@ -172,6 +221,10 @@ set( OPENEMBER_LIBRARIES
 add_subdirectory(libs)
 add_subdirectory(modules)
 add_subdirectory(src)
+
+if(BUILD_PUBSUB_ZMQ OR BUILD_PUBSUB_NNG OR BUILD_PUBSUB_LCM OR OPENEMBER_MSGBUS_USE_NNG)
+    add_subdirectory(examples)
+endif()
 
 #========================================================
 # for unittest, call "cmake .. -DUNIT_TEST=ON"

@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <cassert>
 
 #define MODULE_NAME            "Template"
 #define LOG_TAG                MODULE_NAME

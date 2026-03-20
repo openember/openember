@@ -6,6 +6,7 @@ set( MSG_WRAPPER_SRCS
     mqtt_client_wrapper.c
     mqtt_async_wrapper.c
     mosquitto_wrapper.c
+    nng_wrapper.c
 )
 
 OPENEMBER_ADD_STATIC_LIBRARY (TARGET ${PROJECT_NAME} 

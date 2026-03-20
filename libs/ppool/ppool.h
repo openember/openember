@@ -21,7 +21,8 @@
 extern "C" {
 #endif
 
-pthread_mutex_t PPOOL_LOCK;
+/* 全局互斥锁：只声明，不在头文件里定义，避免多翻译单元重复定义 */
+extern pthread_mutex_t PPOOL_LOCK;
 
 #define ppool_entry() pthread_mutex_lock(&PPOOL_LOCK)
 #define ppool_leave() pthread_mutex_unlock(&PPOOL_LOCK)

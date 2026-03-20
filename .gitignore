@@ -59,3 +59,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# 本地解压查看用（zip 可保留在 download/）
+download/_extracted/
+
+# 本地下载的第三方压缩包（不建议提交）
+download/*.zip

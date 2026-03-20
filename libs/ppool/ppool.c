@@ -14,6 +14,9 @@
 #include "ppool.h"
 #include "ppool_errno.h"
 
+/* 唯一定义：由 ppool.c 提供 */
+pthread_mutex_t PPOOL_LOCK;
+
 /**
  * 线程池执行任务函数
  *
