@@ -29,8 +29,8 @@ static void _on_signal(int sig)
 
 int main(int argc, char *argv[])
 {
-    const char *in_url = (argc > 1) ? argv[1] : "tcp://127.0.0.1:5561";
-    const char *out_url = (argc > 2) ? argv[2] : "tcp://127.0.0.1:5560";
+    const char *in_url = (argc > 1) ? argv[1] : "ipc:///tmp/openember-msgbus-in.ipc";
+    const char *out_url = (argc > 2) ? argv[2] : "ipc:///tmp/openember-msgbus-out.ipc";
 
     signal(SIGINT, _on_signal);
     signal(SIGTERM, _on_signal);
@@ -89,9 +89,39 @@ int main(int argc, char *argv[])
         // Remove stale ipc socket file (avoid EADDRINUSE on restart).
         (void)unlink(out_url + 6);
     }
-    rv = nng_listen(pub_sock, out_url, NULL, 0);
-    if (rv != 0) {
+    // On TCP, we cannot unlink the address. If a previous forwarder is still
+    // running (port in use), retry for a short window so rebuild+restart
+    // becomes deterministic.
+    const int max_listen_tries = 30;
+    int listen_try = 0;
+    while (g_running) {
+        rv = nng_listen(pub_sock, out_url, NULL, 0);
+        if (rv == 0) {
+            break;
+        }
+
+        if (rv == NNG_EADDRINUSE && listen_try < max_listen_tries) {
+            fprintf(stderr,
+                    "msgbus_nng_forwarder: out_url in use, retry listen (%d/%d) rc=%d url=%s\n",
+                    listen_try + 1, max_listen_tries, rv, out_url);
+            nng_socket_close(pub_sock);
+            rv = nng_pub0_open(&pub_sock);
+            if (rv != 0) {
+                fprintf(stderr, "nng_pub0_open failed after retry: %d\n", rv);
+                nng_socket_close(sub_sock);
+                return 1;
+            }
+            listen_try++;
+            sleep(1);
+            continue;
+        }
+
         fprintf(stderr, "nng_listen(pub) failed: %d url=%s\n", rv, out_url);
+        nng_socket_close(sub_sock);
+        nng_socket_close(pub_sock);
+        return 1;
+    }
+    if (!g_running) {
         nng_socket_close(sub_sock);
         nng_socket_close(pub_sock);
         return 1;

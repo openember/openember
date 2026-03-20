@@ -96,9 +96,9 @@ cmake --build . --target pubsub_publisher pubsub_subscriber -j$(nproc)
 当前 `libs/msgbus` 默认使用 NNG（`-DOPENEMBER_MSGBUS_USE_NNG=ON`，默认值为 ON），其工作方式依赖一个 NNG forwarder 用于跨进程转发消息帧。
 
 - forwarder 程序：`build/bin/msgbus_nng_forwarder`
-- 默认端口：
-  - IN 端点（modules PUB listen -> forwarder SUB dial）：`tcp://127.0.0.1:5561`
-  - OUT 端点（forwarder PUB listen -> modules SUB dial）：`tcp://127.0.0.1:5560`
+- 默认端点：
+  - IN 端点（modules PUB listen -> forwarder SUB dial）：`ipc:///tmp/openember-msgbus-in.ipc`
+  - OUT 端点（forwarder PUB listen -> modules SUB dial）：`ipc:///tmp/openember-msgbus-out.ipc`
 - 启动方式（先启动 forwarder，再启动模块）：
 ```bash
 ./msgbus_nng_forwarder

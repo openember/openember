@@ -6,11 +6,13 @@
  * - Module subscribes by dialing OUT_URL using SUB (forwarder PUB listens)
  *
  * IN_URL and OUT_URL default to:
- *   OUT: tcp://127.0.0.1:5560
- *   IN : tcp://127.0.0.1:5561
+ *   OUT: ipc:///tmp/openember-msgbus-out.ipc
+ *   IN : ipc:///tmp/openember-msgbus-in.ipc
  *
- * When address is provided to msg_bus_init(), it is treated as OUT_URL,
- * and IN_URL is derived as (port + 1).
+ * When address is provided to msg_bus_init(), it is treated as OUT_URL.
+ * - For tcp://... OUT_URL, IN_URL is derived as (port + 1).
+ * - For non-tcp schemes (e.g. ipc://...), IN_URL falls back to
+ *   NNG_MSGBUS_DEFAULT_IN.
  */
 
 #define LOG_TAG "MSG"
@@ -64,10 +66,10 @@ static void msgbus_nng_release(void)
 }
 
 #ifndef NNG_MSGBUS_DEFAULT_OUT
-#define NNG_MSGBUS_DEFAULT_OUT "tcp://127.0.0.1:5560"
+#define NNG_MSGBUS_DEFAULT_OUT "ipc:///tmp/openember-msgbus-out.ipc"
 #endif
 #ifndef NNG_MSGBUS_DEFAULT_IN
-#define NNG_MSGBUS_DEFAULT_IN "tcp://127.0.0.1:5561"
+#define NNG_MSGBUS_DEFAULT_IN "ipc:///tmp/openember-msgbus-in.ipc"
 #endif
 
 typedef struct msgbus_nng {
