@@ -53,26 +53,26 @@ static int msg_init(void)
     int rc = 0, cn = 0;
 
     rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb);
-    if (rc != AG_EOK) {
+    if (rc != EMBER_EOK) {
         printf("Message bus init failed.\n");
         return -1;
     }
 
     /* Subscription list */
     rc = msg_bus_subscribe(client, TEST_TOPIC);
-    if (rc != AG_EOK) cn++;
+    if (rc != EMBER_EOK) cn++;
     rc = msg_bus_subscribe(client, SYS_EVENT_REPLY_TOPIC);
-    if (rc != AG_EOK) cn++;
+    if (rc != EMBER_EOK) cn++;
     rc = msg_bus_subscribe(client, MOD_REGISTER_REPLY_TOPIC);
-    if (rc != AG_EOK) cn++;
+    if (rc != EMBER_EOK) cn++;
 
     if (cn != 0) {
         msg_bus_deinit(client);
         printf("Message bus subscribe failed.\n");
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int main()
@@ -83,16 +83,16 @@ int main()
     sayHello(MODULE_NAME);
     
     log_init(MODULE_NAME);
-    LOG_I("Version: %lu.%lu.%lu", AG_VERSION, AG_SUBVERSION, AG_REVISION);
+    LOG_I("Version: %lu.%lu.%lu", EMBER_VERSION, EMBER_SUBVERSION, EMBER_REVISION);
 
     rc = msg_init();
-    if (rc != AG_EOK) {
+    if (rc != EMBER_EOK) {
         LOG_E("Message channel init failed.");
         exit(1);
     }
 
     rc = msg_smm_register(client, MODULE_NAME, SUBMODULE_CLASS_WEB);
-    if (rc != AG_EOK) {
+    if (rc != EMBER_EOK) {
         LOG_E("Module register failed.");
         exit(1);
     }

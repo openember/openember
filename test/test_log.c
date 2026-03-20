@@ -22,5 +22,5 @@ int main(void)
 
     log_deinit();
 
-    return AG_EOK;
+    return EMBER_EOK;
 }

@@ -8,8 +8,8 @@
  * 2022-08-01     luhuadong    the first version
  */
 
-#ifndef __AG_LIST_H__
-#define __AG_LIST_H__
+#ifndef __EMBER_LIST_H__
+#define __EMBER_LIST_H__
 
 #include <stddef.h>
 
@@ -134,4 +134,4 @@ static inline void list_del(struct list_head *entry)
 }
 #endif
 
-#endif /* __AG_LIST_H__ */
+#endif /* __EMBER_LIST_H__ */

@@ -22,7 +22,7 @@ int main(void)
     int rc;
     
     log_init(MODULE_NAME);
-    LOG_I("Version: %lu.%lu.%lu", AG_VERSION, AG_SUBVERSION, AG_REVISION);
+    LOG_I("Version: %lu.%lu.%lu", EMBER_VERSION, EMBER_SUBVERSION, EMBER_REVISION);
 
     daemon(0, 0);
 

@@ -7,12 +7,12 @@
  * SUB subscription matches prefix against the raw message buffer,
  * therefore topic bytes must be placed at the beginning of the message.
  */
-#ifndef __AG_NNG_WRAPPER_H__
-#define __AG_NNG_WRAPPER_H__
+#ifndef __EMBER_NNG_WRAPPER_H__
+#define __EMBER_NNG_WRAPPER_H__
 
 #include "openember.h"
 
-#ifdef AG_LIBS_USING_NNG
+#ifdef EMBER_LIBS_USING_NNG
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,7 +39,7 @@ void msg_bus_free(void *topic, void *payload);
 }
 #endif
 
-#endif /* AG_LIBS_USING_NNG */
+#endif /* EMBER_LIBS_USING_NNG */
 
-#endif /* __AG_NNG_WRAPPER_H__ */
+#endif /* __EMBER_NNG_WRAPPER_H__ */
 

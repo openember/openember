@@ -10,7 +10,7 @@
 
 #define LOG_TAG "MSG"
 #include "openember.h"
-#if defined (AG_LIBS_USING_MQTT) && defined (AG_LIBS_USING_MQTT_MOSQUITTO)
+#if defined (EMBER_LIBS_USING_MQTT) && defined (EMBER_LIBS_USING_MQTT_MOSQUITTO)
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,4 +20,4 @@ extern "C" {
 }
 #endif
 
-#endif /* AG_LIBS_USING_MQTT_MOSQUITTO */
+#endif /* EMBER_LIBS_USING_MQTT_MOSQUITTO */

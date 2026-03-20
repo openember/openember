@@ -8,13 +8,13 @@
  * 2022-07-28     luhuadong    the first version
  */
 
-#ifndef __AG_TOPIC_H__
-#define __AG_TOPIC_H__
+#ifndef __EMBER_TOPIC_H__
+#define __EMBER_TOPIC_H__
 
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "agdef.h"
+#include "ember_def.h"
 
 // #ifdef __cplusplus
 // extern "C" {
@@ -49,7 +49,7 @@ typedef struct state_msg
 
 typedef struct event_msg
 {
-    char name[AG_NAME_MAX];
+    char name[EMBER_NAME_MAX];
     event_t event_id;
     union {
         char event_str[16];
@@ -64,7 +64,7 @@ typedef struct control_msg
 
 typedef struct keepalive_msg
 {
-    char name[AG_NAME_MAX];
+    char name[EMBER_NAME_MAX];
     mod_class_t cls;
     state_t state;
     int timestamp;
@@ -72,7 +72,7 @@ typedef struct keepalive_msg
 
 typedef struct smm_register_msg
 {
-    char name[AG_NAME_MAX];
+    char name[EMBER_NAME_MAX];
     mod_class_t cls;
     pid_t pid;
 } smm_msg_t;
@@ -81,4 +81,4 @@ typedef struct smm_register_msg
 // }
 // #endif
 
-#endif /* __AG_TOPIC_H__ */
+#endif /* __EMBER_TOPIC_H__ */

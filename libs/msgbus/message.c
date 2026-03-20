@@ -26,7 +26,7 @@ int msg_smm_register(msg_node_t handle, const char *name, mod_class_t cls)
 {
     if (handle == NULL) {
         LOG_E("Message client is null, please check if connected");
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     smm_msg_t msg = {0};
@@ -36,13 +36,13 @@ int msg_smm_register(msg_node_t handle, const char *name, mod_class_t cls)
 
     msg_bus_publish_raw(handle, MOD_REGISTER_TOPIC, (void *)&msg, sizeof(msg));
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 #if 0
 int msg_smm_unregister(msg_node_t handle, const char *name, mod_class_t class)
 {
-    return AG_EOK;
+    return EMBER_EOK;
 }
 #endif
 
@@ -54,7 +54,7 @@ int msg_keepalive_update(msg_node_t handle, const char *name, mod_class_t cls, s
 {
     if (handle == NULL) {
         LOG_E("Message client is null, please check if connected");
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
     
     keepalive_msg_t msg = {0};
@@ -64,5 +64,5 @@ int msg_keepalive_update(msg_node_t handle, const char *name, mod_class_t cls, s
 
     msg_bus_publish_raw(handle, KEEPALIVE_TOPIC, (void *)&msg, sizeof(msg));
 
-    return AG_EOK;
+    return EMBER_EOK;
 }

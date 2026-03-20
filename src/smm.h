@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-AG_EXT char *class_label[SUBMODULE_CLASS_MAX];
+EMBER_EXT char *class_label[SUBMODULE_CLASS_MAX];
 
 /*
  * 组织形式：链表 or 数组？
@@ -35,7 +35,7 @@ AG_EXT char *class_label[SUBMODULE_CLASS_MAX];
 
 typedef struct submodule_manager
 {
-    char name[AG_NAME_MAX];   /* Submodule name */
+    char name[EMBER_NAME_MAX];   /* Submodule name */
     mod_class_t cls;          /* Submodule class */
     pid_t pid;                /* Submodule process id */
     mod_prio_t priority;      /* Submodule priority */

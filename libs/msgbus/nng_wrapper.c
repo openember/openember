@@ -16,7 +16,7 @@
 #define LOG_TAG "MSG"
 #include "openember.h"
 
-#ifdef AG_LIBS_USING_NNG
+#ifdef EMBER_LIBS_USING_NNG
 
 #include <errno.h>
 #include <stdio.h>
@@ -338,7 +338,7 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
     }
 
     *handle = (msg_node_t)ps;
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_deinit(msg_node_t handle)
@@ -360,7 +360,7 @@ int msg_bus_deinit(msg_node_t handle)
     nng_socket_close(ps->sub_sock);
     free(ps);
     msgbus_nng_release();
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_publish(msg_node_t handle, const char *topic, const char *payload)
@@ -391,7 +391,7 @@ int msg_bus_publish_raw(msg_node_t handle, const char *topic, const void *payloa
         return -rv;
     }
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_subscribe(msg_node_t handle, const char *topic)
@@ -402,7 +402,7 @@ int msg_bus_subscribe(msg_node_t handle, const char *topic)
     msgbus_nng_t *ps = (msgbus_nng_t *)handle;
     size_t len = strlen(topic);
     int rv = nng_sub0_socket_subscribe(ps->sub_sock, topic, len);
-    return (rv == 0) ? AG_EOK : -rv;
+    return (rv == 0) ? EMBER_EOK : -rv;
 }
 
 int msg_bus_unsubscribe(msg_node_t handle, const char *topic)
@@ -413,7 +413,7 @@ int msg_bus_unsubscribe(msg_node_t handle, const char *topic)
     msgbus_nng_t *ps = (msgbus_nng_t *)handle;
     size_t len = strlen(topic);
     int rv = nng_sub0_socket_unsubscribe(ps->sub_sock, topic, len);
-    return (rv == 0) ? AG_EOK : -rv;
+    return (rv == 0) ? EMBER_EOK : -rv;
 }
 
 int msg_bus_recv(msg_node_t handle, char **topicName, void **payload, int *payloadLen, time_t timeout)
@@ -425,7 +425,7 @@ int msg_bus_recv(msg_node_t handle, char **topicName, void **payload, int *paylo
     msgbus_nng_t *ps = (msgbus_nng_t *)handle;
     if (ps->cb) {
         // Async mode is active; sync recv isn't supported.
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     int rv = nng_socket_set_ms(ps->sub_sock, NNG_OPT_RECVTIMEO, (nng_duration)timeout);
@@ -435,9 +435,9 @@ int msg_bus_recv(msg_node_t handle, char **topicName, void **payload, int *paylo
     rv = nng_recvmsg(ps->sub_sock, &msg, 0);
     if (rv != 0) {
         if (rv == NNG_ETIMEDOUT) {
-            return -AG_ETIMEOUT;
+            return -EMBER_ETIMEOUT;
         }
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     size_t msg_len = nng_msg_len(msg);
@@ -450,7 +450,7 @@ int msg_bus_recv(msg_node_t handle, char **topicName, void **payload, int *paylo
     rv = split_topic_payload(body, msg_len, &topic_copy, &payload_copy, &payload_len);
     if (rv != 0) {
         nng_msg_free(msg);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     *topicName = topic_copy;
@@ -458,7 +458,7 @@ int msg_bus_recv(msg_node_t handle, char **topicName, void **payload, int *paylo
     *payloadLen = (payload_len > 0u) ? (int)payload_len : 0;
 
     nng_msg_free(msg);
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 void msg_bus_free(void *topic, void *payload)
@@ -471,5 +471,5 @@ void msg_bus_free(void *topic, void *payload)
     }
 }
 
-#endif /* AG_LIBS_USING_NNG */
+#endif /* EMBER_LIBS_USING_NNG */
 

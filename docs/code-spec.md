@@ -40,8 +40,8 @@ int a = 0; /* This is a comment line */
  * @param arg1 the first parameter
  * @param arg2 the second parameter
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int foo(int arg1, int arg2)
 {

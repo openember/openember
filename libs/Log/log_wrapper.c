@@ -10,11 +10,11 @@
 
 #include "openember.h"
 
-#ifdef AG_LIBS_USING_ZLOG
+#ifdef EMBER_LIBS_USING_ZLOG
 #include "zlog.h"
 #endif
 
-#ifdef AG_LIBS_USING_EASYLOGGER
+#ifdef EMBER_LIBS_USING_EASYLOGGER
 #include "elog.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,15 +25,15 @@ int log_init(const char *name)
 {
     int rc;
 
-#if defined(AG_LIBS_USING_ZLOG)
+#if defined(EMBER_LIBS_USING_ZLOG)
 
     rc = dzlog_init(LOG_FILE, name);
     if (rc) {
         printf("init failed, please check file %s.\n", LOG_FILE);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
-#elif defined(AG_LIBS_USING_EASYLOGGER)
+#elif defined(EMBER_LIBS_USING_EASYLOGGER)
     /* close printf buffer */
     setbuf(stdout, NULL);
     /* initialize EasyLogger */
@@ -52,14 +52,14 @@ int log_init(const char *name)
     elog_start();
 
 #endif
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 void log_deinit(void)
 {
-#if defined(AG_LIBS_USING_ZLOG)
+#if defined(EMBER_LIBS_USING_ZLOG)
     zlog_fini();
-#elif defined(AG_LIBS_USING_EASYLOGGER)
+#elif defined(EMBER_LIBS_USING_EASYLOGGER)
     elog_stop();
 #endif
 }

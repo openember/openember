@@ -29,7 +29,7 @@ typedef struct State
     void (*powerOff)();
 } State;
 
-//AG_EXT State context;
+//EMBER_EXT State context;
 
 int fsm_init(void);
 void fsm_deinit(void);

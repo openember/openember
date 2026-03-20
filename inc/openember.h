@@ -11,8 +11,8 @@
 #ifndef __OPENEMBER_H__
 #define __OPENEMBER_H__
 
-#include "agconfig.h"
-#include "agdef.h"
+#include "ember_config.h"
+#include "ember_def.h"
 #include "topic.h"
 
 #include "list.h"

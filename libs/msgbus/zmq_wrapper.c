@@ -10,7 +10,7 @@
 
 #define LOG_TAG "MSG"
 #include "openember.h"
-#ifdef AG_LIBS_USING_ZEROMQ
+#ifdef EMBER_LIBS_USING_ZEROMQ
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,26 +24,26 @@ extern "C" {
 
 int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb)
 {
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_deinit(msg_node_t handle)
 {
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_publish(msg_node_t handle, const char *topic, const char *payload)
 {
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_subscribe(msg_node_t handle, const char *topic)
 {
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* AG_LIBS_USING_ZEROMQ */
+#endif /* EMBER_LIBS_USING_ZEROMQ */

@@ -8,8 +8,8 @@
  * 2022-09-26     luhuadong    the first version
  */
 
-#ifndef __AG_ALGORITHM_H__
-#define __AG_ALGORITHM_H__
+#ifndef __EMBER_ALGORITHM_H__
+#define __EMBER_ALGORITHM_H__
 
 
-#endif /* __AG_ALGORITHM_H__ */
+#endif /* __EMBER_ALGORITHM_H__ */

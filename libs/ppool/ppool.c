@@ -133,16 +133,16 @@ pool_t *ppool_init(int pool_max_num)
  * @param pool the pthread pool handle
  * @param task the task
  *
- * @return AG_TRUE while success, 
- *         AG_FALSE while failure.
+ * @return EMBER_TRUE while success, 
+ *         EMBER_FALSE while failure.
  */
-ag_bool_t ppool_add(pool_t *pool, pool_task *task)
+ember_bool_t ppool_add(pool_t *pool, pool_task *task)
 {
     pool_node *node;
 
     node = ppool_queue_new(task->entry, task->parameter, task->priority);
     if (!node) {
-        return AG_FALSE;
+        return EMBER_FALSE;
     }
 
     while (pthread_mutex_lock(&pool->ppool_lock) != 0);
@@ -152,7 +152,7 @@ ag_bool_t ppool_add(pool_t *pool, pool_task *task)
     while (pthread_cond_broadcast(&pool->ppool_cond) != 0);
     while (pthread_mutex_unlock(&pool->ppool_lock) != 0);
 
-    return AG_TRUE;
+    return EMBER_TRUE;
 }
 
 /**

@@ -42,8 +42,8 @@ static netdev_attr_t netdev_attr[NETDEV_MAX] = {
  * @param ifname the device name of netdev
  * @param mac    the MAC address buffer
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int get_local_mac(const char *ifname, char *mac)
 {
@@ -53,7 +53,7 @@ int get_local_mac(const char *ifname, char *mac)
     bzero(&ifr, sizeof(struct ifreq));
     if( (sd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         LOG_E("get %s mac address socket creat error", ifname);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
     
     strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);
@@ -61,7 +61,7 @@ int get_local_mac(const char *ifname, char *mac)
     if(ioctl(sd, SIOCGIFHWADDR, &ifr) < 0) {
         LOG_E("get %s mac address error", ifname);
         close(sd);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
  
     snprintf(mac, MAC_SIZE, "%02x:%02x:%02x:%02x:%02x:%02x",
@@ -73,7 +73,7 @@ int get_local_mac(const char *ifname, char *mac)
         (unsigned char)ifr.ifr_hwaddr.sa_data[5]);
  
     close(sd);
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -82,8 +82,8 @@ int get_local_mac(const char *ifname, char *mac)
  * @param ifname the device name of netdev
  * @param mac    the MAC address you want to set
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int set_local_mac(const char *ifname, const char *mac)
 {
@@ -92,11 +92,11 @@ int set_local_mac(const char *ifname, const char *mac)
     int values[6];
     
     if((0 != getuid()) && (0 != geteuid())) {
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     if((sd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     strcpy(ifr.ifr_name, ifname);
@@ -105,7 +105,7 @@ int set_local_mac(const char *ifname, const char *mac)
     ret = sscanf(mac, "%x:%x:%x:%x:%x:%x%*c", &values[0], &values[1], &values[2], &values[3], &values[4], &values[5]);
     if(6 > ret) {
         LOG_E("invalid mac address");
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     /* convert and save to ifr_hwaddr */
@@ -121,11 +121,11 @@ int set_local_mac(const char *ifname, const char *mac)
     if(ioctl(sd, SIOCSIFHWADDR, &ifr) < 0) {
         LOG_E("get %s mac address error", ifname);
         close(sd);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
     
     close(sd);
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -134,8 +134,8 @@ int set_local_mac(const char *ifname, const char *mac)
  * @param ifname the device name of netdev
  * @param mac    the IP address buffer
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int get_local_ip(const char *ifname, char *ip)
 {
@@ -146,7 +146,7 @@ int get_local_ip(const char *ifname, char *ip)
     sd = socket(AF_INET, SOCK_DGRAM, 0);
     if (-1 == sd) {
         LOG_E("socket error: %s", strerror(errno));
-        return -AG_ERROR;		
+        return -EMBER_ERROR;		
     }
 
     //bzero(ifr.ifr_name, sizeof(ifr.ifr_name));
@@ -158,14 +158,14 @@ int get_local_ip(const char *ifname, char *ip)
     if (ioctl(sd, SIOCGIFADDR, &ifr) < 0) {
         LOG_E("ioctl error: %s", strerror(errno));
         close(sd);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     memcpy(&sin, &ifr.ifr_addr, sizeof(sin));
     snprintf(ip, IP_SIZE, "%s", inet_ntoa(sin.sin_addr));
 
     close(sd);
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -174,8 +174,8 @@ int get_local_ip(const char *ifname, char *ip)
  * @param ifname the device name of netdev
  * @param mac    the IP address you want to set
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int set_local_ip(const char *ifname, const char *ip)
 {
@@ -186,7 +186,7 @@ int set_local_ip(const char *ifname, const char *ip)
     sd = socket(AF_INET, SOCK_DGRAM, 0);
     if (-1 == sd) {
         LOG_E("socket error: %s", strerror(errno));
-        return -AG_ERROR;		
+        return -EMBER_ERROR;		
     }
 
     sin = (struct sockaddr_in *)&ifr.ifr_addr;
@@ -200,11 +200,11 @@ int set_local_ip(const char *ifname, const char *ip)
     if (ioctl(sd, SIOCSIFADDR, &ifr) < 0) {
         LOG_E("ioctl error: %s", strerror(errno));
         close(sd);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     close(sd);
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -213,8 +213,8 @@ int set_local_ip(const char *ifname, const char *ip)
  * @param ifname the device name of netdev
  * @param mac    the netmask address buffer
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int get_local_netmask(const char *ifname, char *netmask_addr)
 {
@@ -224,7 +224,7 @@ int get_local_netmask(const char *ifname, char *netmask_addr)
     sd = socket(AF_INET, SOCK_STREAM, 0);  
     if (sd == -1) {  
         LOG_E("socket error: %s", strerror(errno));
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     memset(&ifr, 0, sizeof(ifr));
@@ -233,12 +233,12 @@ int get_local_netmask(const char *ifname, char *netmask_addr)
     if ((ioctl(sd, SIOCGIFNETMASK, &ifr)) < 0 ) {
         LOG_E("netmask ioctl error");
         close(sd);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
     
     strncpy(netmask_addr, inet_ntoa(((struct sockaddr_in*)&ifr.ifr_netmask)->sin_addr), IP_SIZE);
     close(sd);
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -247,8 +247,8 @@ int get_local_netmask(const char *ifname, char *netmask_addr)
  * @param ifname the device name of netdev
  * @param mac    the netmask address you want to set
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int set_local_netmask(const char *ifname, const char *netmask_addr)
 {
@@ -259,7 +259,7 @@ int set_local_netmask(const char *ifname, const char *netmask_addr)
     sd = socket(AF_INET, SOCK_STREAM, 0);
     if (sd == -1) {
         LOG_E("socket error: %s", strerror(errno));
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     memset(&ifr, 0, sizeof(ifr));
@@ -272,11 +272,11 @@ int set_local_netmask(const char *ifname, const char *netmask_addr)
     if (ioctl(sd, SIOCSIFNETMASK, &ifr) < 0) {
         LOG_E("sock_netmask ioctl error");
         close(sd);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     close(sd);
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -285,8 +285,8 @@ int set_local_netmask(const char *ifname, const char *netmask_addr)
  * @param ifname the device name of netdev
  * @param mac    the gateway address buffer
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int get_local_gateway(const char* ifname, char *gateway) 
 {
@@ -298,11 +298,11 @@ int get_local_gateway(const char* ifname, char *gateway)
     sprintf(cmd,"route -n | grep %s  | grep 'UG[ \t]' | awk '{print $2}'", ifname);
     FILE* fp = popen(cmd, "r");
     if (fp == NULL) {
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     if (NULL == fgets(line, sizeof(line), fp)) {
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
     pclose(fp);
 
@@ -311,7 +311,7 @@ int get_local_gateway(const char* ifname, char *gateway)
     }
     
     strcpy(gateway, line);
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -320,8 +320,8 @@ int get_local_gateway(const char* ifname, char *gateway)
  * @param ifname the device name of netdev
  * @param mac    the gateway address you want to set
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int set_local_gateway(const char *ifname, const char *gateway)
 {
@@ -333,7 +333,7 @@ int set_local_gateway(const char *ifname, const char *gateway)
     sd = socket(AF_INET, SOCK_STREAM, 0);
     if (sd == -1) {
         LOG_E("socket error: %s", strerror(errno));
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
     
     memset(&route,  0, sizeof(struct rtentry));
@@ -348,7 +348,7 @@ int set_local_gateway(const char *ifname, const char *gateway)
     if(inet_aton(gateway, &sin->sin_addr) < 0) {
         LOG_E("inet_aton failed");
         close(sd);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
     
     memcpy(&route.rt_gateway, sin, sizeof(struct sockaddr_in));
@@ -361,11 +361,11 @@ int set_local_gateway(const char *ifname, const char *gateway)
 
     if((ioctl(sd, SIOCADDRT, &route)) < 0) {
         close(sd);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     close(sd);
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -374,8 +374,8 @@ int set_local_gateway(const char *ifname, const char *gateway)
  * @param ifname the device name of netdev
  * @param mac    the DNS address buffer
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int get_local_dns(const char *ifname, char* dns_addr)
 {
@@ -384,7 +384,7 @@ int get_local_dns(const char *ifname, char* dns_addr)
     res_state res = malloc(sizeof(struct __res_state));
     res_ninit(res);
     if (res->nscount < 1) {
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     memcpy(&sin, &res->nsaddr_list[0], sizeof(sin));
@@ -394,7 +394,7 @@ int get_local_dns(const char *ifname, char* dns_addr)
     if (res)
         free(res);
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -403,8 +403,8 @@ int get_local_dns(const char *ifname, char* dns_addr)
  * @param ifname the device name of netdev
  * @param mac    the DNS address you want to set
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int set_local_dns(const char *ifname, const char* dns_addr)
 {
@@ -427,7 +427,7 @@ int set_local_dns(const char *ifname, const char* dns_addr)
         system(dnsconf);
     }
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -436,8 +436,8 @@ int set_local_dns(const char *ifname, const char* dns_addr)
  * @param ifname the device name of netdev
  * @param mac    the attribute buffer
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int get_ip_attr(const char *ifname, netdev_attr_t *attr)
 {
@@ -457,7 +457,7 @@ int get_ip_attr(const char *ifname, netdev_attr_t *attr)
         strncpy(attr->dns, NONE_IP, IP_SIZE);
     }
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -466,8 +466,8 @@ int get_ip_attr(const char *ifname, netdev_attr_t *attr)
  * @param ifname the device name of netdev
  * @param mac    the attribute you want to set
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int set_ip_attr(const char *ifname, const netdev_attr_t *attr)
 {
@@ -476,7 +476,7 @@ int set_ip_attr(const char *ifname, const netdev_attr_t *attr)
     set_local_gateway(ifname, attr->gateway);
     set_local_dns(ifname, attr->dns);
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -486,7 +486,7 @@ int set_ip_attr(const char *ifname, const netdev_attr_t *attr)
  *
  * @return 0 (LINK_UP) while link up, 
  *         1 (LINK_DOWN) while link down, 
- *         <0 (-AG_ERROR) while error.
+ *         <0 (-EMBER_ERROR) while error.
  */
 link_status_t get_netdev_status(const char *ifname)
 {
@@ -497,7 +497,7 @@ link_status_t get_netdev_status(const char *ifname)
 
     if (( skfd = socket( AF_INET, SOCK_DGRAM, 0 ) ) < 0 ) {
         LOG_E("socket error");
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     memset(&ifr, 0, sizeof(ifr));
@@ -509,7 +509,7 @@ link_status_t get_netdev_status(const char *ifname)
     if (ioctl(skfd, SIOCETHTOOL, &ifr) == -1) {
         LOG_E("ETHTOOL_GLINK failed: %s", strerror(errno));
         close(skfd);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     close(skfd);
@@ -522,8 +522,8 @@ link_status_t get_netdev_status(const char *ifname)
  * @param ifname the device name of netdev
  * @param status the status you want to set, LINK_UP or LINK_DOWN
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int set_netdev_status(const char *ifname, const link_status_t status)
 {
@@ -532,14 +532,14 @@ int set_netdev_status(const char *ifname, const link_status_t status)
 
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         LOG_E("Create socket failed");
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
     
     strcpy(ifr.ifr_name, ifname);
     if (ioctl(sockfd, SIOCGIFFLAGS, &ifr) < 0) {
         LOG_E("ioctl SIOCGIFFLAGS failed");
         close(sockfd);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     if (status == LINK_UP) {
@@ -552,11 +552,11 @@ int set_netdev_status(const char *ifname, const link_status_t status)
     if (ioctl(sockfd, SIOCSIFFLAGS, &ifr) < 0) {
         LOG_E("ioctl SIOCSIFFLAGS failed");
         close(sockfd);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
     
     close(sockfd);
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -566,8 +566,8 @@ int set_netdev_status(const char *ifname, const link_status_t status)
  * @param ip     the ip address obtained, buffer len must greater than INET_ADDRSTRLEN.
  * @param port   the port obtained,.
  *
- * @return AG_EOK while success, 
- *         -AG_ERROR while failure.
+ * @return EMBER_EOK while success, 
+ *         -EMBER_ERROR while failure.
  */
 int get_local_ip_by_socket(const int sockfd, char *ip, int *port)
 {
@@ -575,7 +575,7 @@ int get_local_ip_by_socket(const int sockfd, char *ip, int *port)
     socklen_t len = sizeof(struct sockaddr);
 
     if (0 != getsockname(sockfd, &local_addr, &len)) {
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     struct sockaddr_in *sin = (struct sockaddr_in *)(&local_addr);
@@ -585,5 +585,5 @@ int get_local_ip_by_socket(const int sockfd, char *ip, int *port)
 
     *port = sin->sin_port;
 
-    return AG_EOK;
+    return EMBER_EOK;
 }

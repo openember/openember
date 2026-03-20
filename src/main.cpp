@@ -23,11 +23,11 @@
 #define LOG_TAG              APPLICATION_NAME
 #include "openember.h"
 
-#define AG_GLOBALS
+#define EMBER_GLOBALS
 #include "fsm.h"
 #include "smm.h"
 
-AG_EXT State context;
+EMBER_EXT State context;
 static msg_node_t client;
 
 
@@ -65,7 +65,7 @@ static int create_lock_file(const char *lockfile)
     if (lock_fd < 0)
     {
         perror("Fail to open");
-        return -AG_ENOFILE;
+        return -EMBER_ENOFILE;
     }
 
     struct flock lock;
@@ -77,7 +77,7 @@ static int create_lock_file(const char *lockfile)
         perror("Fail to fcntl F_GETLK");
         close(lock_fd);
         LOG_I("%s has been running", APPLICATION_NAME);
-        return -AG_ENOPERM;
+        return -EMBER_ENOPERM;
     }
 
     lock.l_type = F_WRLCK;
@@ -88,7 +88,7 @@ static int create_lock_file(const char *lockfile)
         perror("Fail to fcntl F_SETLK");
         close(lock_fd);
         LOG_I("%s has been running", APPLICATION_NAME);
-        return -AG_ENOPERM;
+        return -EMBER_ENOPERM;
     }
 
     char buf[32] = {0};
@@ -97,7 +97,7 @@ static int create_lock_file(const char *lockfile)
     int len = snprintf(buf, 32, "%d\n", (int)s_pid);
     write(lock_fd, buf, len); // Write pid to the file
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 static void destroy_lock_file(int fd)
@@ -113,7 +113,7 @@ static int get_instance_pid(const char *lockfile)
     if (lock_fd < 0)
     {
         perror("Fail to open");
-        return -AG_ENOFILE;
+        return -EMBER_ENOFILE;
     }
 
     char buf[32] = {0};
@@ -124,7 +124,7 @@ static int get_instance_pid(const char *lockfile)
     if(ret == -1) {
         printf("read Error\n");
         close(lock_fd);
-        return -AG_EIO;
+        return -EMBER_EIO;
     }
 
     LOG_I("PID: %s", buf);
@@ -149,7 +149,7 @@ static int startup_modules(void)
     system("/opt/openember/bin/DeviceManager &");
     system("/opt/openember/bin/Acquisition &");
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
@@ -158,10 +158,10 @@ static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
         event_msg_t *e = (event_msg_t *)payload;
         printf("Payload len = %lu >> event: [%d] %s\n", payloadlen, e->event_id, e->event_data.event_str);
 
-        if (AG_EVENT_EXCEPTION == e->event_id) {
+        if (EMBER_EVENT_EXCEPTION == e->event_id) {
             context.goWrong();
         }
-        else if (AG_EVENT_RECOVERY == e->event_id) {
+        else if (EMBER_EVENT_RECOVERY == e->event_id) {
             context.recovery();
         }
     }
@@ -189,24 +189,24 @@ static int msg_init(void)
     int rc = 0, cn = 0;
 
     rc = msg_bus_init(&client, APPLICATION_NAME, NULL, _msg_arrived_cb);
-    if (rc != AG_EOK) {
+    if (rc != EMBER_EOK) {
         LOG_E("Message bus init failed.\n");
         return -1;
     }
 
     /* Subscription list */
     rc = msg_bus_subscribe(client, SYS_EVENT_TOPIC);
-    if (rc != AG_EOK) cn++;
+    if (rc != EMBER_EOK) cn++;
     rc = msg_bus_subscribe(client, MOD_REGISTER_TOPIC);
-    if (rc != AG_EOK) cn++;
+    if (rc != EMBER_EOK) cn++;
 
     if (cn != 0) {
         msg_bus_deinit(client);
         LOG_E("Message bus subscribe failed.\n");
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int main(int argc, char *argv[])
@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
             printf("** Stop %s\n", APPLICATION_NAME);
 
             rc = create_lock_file(DEFAULT_FILE);
-            if (rc == AG_EOK) {
+            if (rc == EMBER_EOK) {
                 LOG_E("Lock file was not locked up");
                 destroy_lock_file(lock_fd);
                 exit(1);
@@ -240,7 +240,7 @@ int main(int argc, char *argv[])
     }
 
     log_init(APPLICATION_NAME);
-    LOG_I("Start openember app, version: %lu.%lu.%lu", AG_VERSION, AG_SUBVERSION, AG_REVISION);
+    LOG_I("Start openember app, version: %lu.%lu.%lu", EMBER_VERSION, EMBER_SUBVERSION, EMBER_REVISION);
     LOG_I("Process id is %d", getpid());
 
     signal(SIGHUP, sigroutine);
@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, sigroutine);
 
     rc = create_lock_file(DEFAULT_FILE);
-    if (rc != AG_EOK) {
+    if (rc != EMBER_EOK) {
         LOG_E("Can not create lock file");
         exit(1);
     }

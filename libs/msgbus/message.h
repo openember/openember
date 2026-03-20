@@ -8,20 +8,20 @@
  * 2022-07-07     luhuadong    the first version
  */
 
-#ifndef __AG_MSG_WRAPPER_H__
-#define __AG_MSG_WRAPPER_H__
+#ifndef __EMBER_MSG_WRAPPER_H__
+#define __EMBER_MSG_WRAPPER_H__
 
 #include "openember.h"
 
-#ifdef AG_LIBS_USING_MQTT
+#ifdef EMBER_LIBS_USING_MQTT
 #include "mqtt_wrapper.h"
 #endif
 
-#ifdef AG_LIBS_USING_ZEROMQ
+#ifdef EMBER_LIBS_USING_ZEROMQ
 #include "zmq_wrapper.h"
 #endif
 
-#ifdef AG_LIBS_USING_NNG
+#ifdef EMBER_LIBS_USING_NNG
 #include "nng_wrapper.h"
 #endif
 
@@ -36,4 +36,4 @@ int msg_smm_register(msg_node_t handle, const char *name, mod_class_t cls);
 }
 #endif
 
-#endif /* __AG_MSG_WRAPPER_H__ */
+#endif /* __EMBER_MSG_WRAPPER_H__ */

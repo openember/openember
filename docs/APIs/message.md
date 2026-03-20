@@ -25,8 +25,8 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
 | address   | 消息总线的地址，传入 `NULL` 表示使用默认消息总线 |
 | cb        | 消息处理回调函数，当接收到消息时会自动调用该函数 |
 | **返回**  | ——                                               |
-| AG_EOK    | 初始化成功                                       |
-| -AG_ERROR | 初始化失败                                       |
+| EMBER_EOK    | 初始化成功                                       |
+| -EMBER_ERROR | 初始化失败                                       |
 
 当不再需要操作消息总线传递消息时，可以调用 `msg_bus_deinit()` 注销并释放消息节点的所有资源。
 
@@ -40,8 +40,8 @@ int msg_bus_deinit(msg_node_t handle);
 | --------- | -------------------- |
 | handle    | 要注销的消息节点句柄 |
 | **返回**  | ——                   |
-| AG_EOK    | 注销成功             |
-| -AG_ERROR | 注销失败             |
+| EMBER_EOK    | 注销成功             |
+| -EMBER_ERROR | 注销失败             |
 
 
 
@@ -66,8 +66,8 @@ int msg_bus_set_callback(msg_node_t handle, msg_arrived_cb_t *cb);
 | handle    | 消息节点句柄     |
 | cb        | 消息处理回调函数 |
 | **返回**  | ——               |
-| AG_EOK    | 回调函数绑定成功 |
-| -AG_ERROR | 回调函数绑定失败 |
+| EMBER_EOK    | 回调函数绑定成功 |
+| -EMBER_ERROR | 回调函数绑定失败 |
 
 设置好消息处理回调函数以后，就可以订阅消息了，订阅消息的接口如下。
 
@@ -82,8 +82,8 @@ int msg_bus_subscribe(msg_node_t handle, const char *topic);
 | handle    | 消息节点句柄                              |
 | topic     | 消息主题，字符串类型，例如 `/test/topic1` |
 | **返回**  | ——                                        |
-| AG_EOK    | 订阅成功                                  |
-| -AG_ERROR | 订阅失败                                  |
+| EMBER_EOK    | 订阅成功                                  |
+| -EMBER_ERROR | 订阅失败                                  |
 
 
 
@@ -103,8 +103,8 @@ int msg_bus_publish(msg_node_t handle, const char *topic, const char *payload);
 | topic     | 要发布的消息主题           |
 | payload   | 要发布的消息内容（字符串） |
 | **返回**  | ——                         |
-| AG_EOK    | 发布成功                   |
-| -AG_ERROR | 发布失败                   |
+| EMBER_EOK    | 发布成功                   |
+| -EMBER_ERROR | 发布失败                   |
 
 `msg_bus_publish()` 接口默认采用字符串（如 JSON 格式）作为 Payload 的格式，如果需要使用透传方式（如结构体）则可以使用 `msg_bus_publish_raw()` 接口，函数原型如下。
 
@@ -121,8 +121,8 @@ int msg_bus_publish_raw(msg_node_t handle, const char *topic, const void *payloa
 | payload    | 要发布的消息内容（支持结构体） |
 | payloadlen | 要发布消息的长度               |
 | **返回**   | ——                             |
-| AG_EOK     | 发布成功                       |
-| -AG_ERROR  | 发布失败                       |
+| EMBER_EOK     | 发布成功                       |
+| -EMBER_ERROR  | 发布失败                       |
 
 
 
@@ -144,9 +144,9 @@ int msg_bus_recv(msg_node_t handle, char** topic, void** payload, int* payloadle
 | payloadlen   | 接收消息长度的变量地址，由调用者传入               |
 | timeout      | 超时时间，单位毫秒                                 |
 | **返回**     | ——                                                 |
-| AG_EOK       | 接收成功                                           |
-| -AG_ERROR    | 接收失败（例如设置了消息订阅回调函数）             |
-| -AG_ETIMEOUT | 超时返回                                           |
+| EMBER_EOK       | 接收成功                                           |
+| -EMBER_ERROR    | 接收失败（例如设置了消息订阅回调函数）             |
+| -EMBER_ETIMEOUT | 超时返回                                           |
 
 
 
@@ -164,6 +164,6 @@ int msg_bus_is_connected(msg_node_t handle);
 | -------- | ------------------ |
 | handle   | 消息节点句柄       |
 | **返回** | ——                 |
-| AG_TRUE  | 已连接             |
-| AG_FALSE | 未连接（断开连接） |
+| EMBER_TRUE  | 已连接             |
+| EMBER_FALSE | 未连接（断开连接） |
 

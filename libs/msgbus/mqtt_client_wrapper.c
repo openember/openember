@@ -11,7 +11,7 @@
 
 #define LOG_TAG "MSG"
 #include "openember.h"
-#if defined (AG_LIBS_USING_MQTT) && defined (AG_LIBS_USING_MQTT_CLIENT) && ! defined(AG_LIBS_USING_MQTT_ASYNC)
+#if defined (EMBER_LIBS_USING_MQTT) && defined (EMBER_LIBS_USING_MQTT_CLIENT) && ! defined(EMBER_LIBS_USING_MQTT_ASYNC)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,7 +80,7 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
     rc = MQTTClient_create(handle, address, name, MQTTCLIENT_PERSISTENCE_NONE, NULL);
     if (rc != MQTTCLIENT_SUCCESS) {
         LOG_E("Failed to create client, return code %d", rc);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
     if (cb) {
@@ -88,7 +88,7 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
         if (rc != MQTTCLIENT_SUCCESS) {
             LOG_E("Failed to set callbacks, return code %d", rc);
             MQTTClient_destroy(handle);
-            return -AG_ERROR;
+            return -EMBER_ERROR;
         }
     }
 
@@ -97,16 +97,16 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
     if (rc != MQTTCLIENT_SUCCESS) {
         LOG_E("Failed to connect, return code %d", rc);
         MQTTClient_destroy(handle);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_deinit(msg_node_t handle)
 {
     MQTTClient_destroy(&handle);
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_publish(msg_node_t handle, const char *topic, const char *payload)
@@ -124,10 +124,10 @@ int msg_bus_publish(msg_node_t handle, const char *topic, const char *payload)
     rc = MQTTClient_waitForCompletion(handle, token, TIMEOUT);
     if (rc != MQTTCLIENT_SUCCESS) {
         LOG_E("Failed to publish, return code %d", rc);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_publish_raw(msg_node_t handle, const char *topic, const void *payload, const int payloadlen)
@@ -139,10 +139,10 @@ int msg_bus_publish_raw(msg_node_t handle, const char *topic, const void *payloa
     rc = MQTTClient_waitForCompletion(handle, token, TIMEOUT);
     if (rc != MQTTCLIENT_SUCCESS) {
         LOG_E("Failed to publish, return code %d", rc);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_subscribe(msg_node_t handle, const char *topic)
@@ -152,10 +152,10 @@ int msg_bus_subscribe(msg_node_t handle, const char *topic)
     rc = MQTTClient_subscribe(handle, topic, QOS);
     if (rc != MQTTCLIENT_SUCCESS) {
         LOG_E("Failed to subscribe, return code %d", rc);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_unsubscribe(msg_node_t handle, const char *topic)
@@ -164,9 +164,9 @@ int msg_bus_unsubscribe(msg_node_t handle, const char *topic)
     rc = MQTTClient_unsubscribe(handle, topic);
     if (rc != MQTTCLIENT_SUCCESS) {
         LOG_E("Failed to unsubscribe, return code %d", rc);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_set_callback(msg_node_t handle, msg_arrived_cb_t *cb)
@@ -176,9 +176,9 @@ int msg_bus_set_callback(msg_node_t handle, msg_arrived_cb_t *cb)
     rc = MQTTClient_setCallbacks(handle, (void *)cb, connlost, msgarrvd, delivered);
     if (rc != MQTTCLIENT_SUCCESS) {
         LOG_E("Failed to set callbacks, return code %d", rc);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 /**
@@ -190,8 +190,8 @@ int msg_bus_set_callback(msg_node_t handle, msg_arrived_cb_t *cb)
  * @param payload   The address of a pointer to the received message (auto allocate), Set to NULL if the timeout expires.
  * @param timeout   The length of time to wait for a message in milliseconds.
  *
- * @return AG_EOK if a message is received,
- *         -AG_ERROR if there was a problem trying to receive a message.
+ * @return EMBER_EOK if a message is received,
+ *         -EMBER_ERROR if there was a problem trying to receive a message.
  */
 int msg_bus_recv(msg_node_t handle, char** topicName, void** payload, int* payloadLen, time_t timeout)
 {
@@ -201,17 +201,17 @@ int msg_bus_recv(msg_node_t handle, char** topicName, void** payload, int* paylo
     rc = MQTTClient_receive(handle, topicName, &topicLen, &m, timeout);
     if (rc != MQTTCLIENT_SUCCESS && rc != MQTTCLIENT_TOPICNAME_TRUNCATED) {
         LOG_E("Failed to receive, return code %d", rc);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
     else if (rc == MQTTCLIENT_SUCCESS && m == NULL) {
         LOG_D("Timeout to receive, return code %d", rc);
-        return -AG_ETIMEOUT;
+        return -EMBER_ETIMEOUT;
     }
 
     *payload = m->payload;
     *payloadLen = m->payloadlen;
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_connect(msg_node_t handle)
@@ -228,21 +228,21 @@ int msg_bus_connect(msg_node_t handle)
     rc = MQTTClient_connect(handle, &conn_opts);
     if (rc != MQTTCLIENT_SUCCESS) {
         LOG_E("Failed to connect, return code %d", rc);
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_disconnect(msg_node_t handle)
 {
     MQTTClient_disconnect(handle, 10000);
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int msg_bus_is_connected(msg_node_t handle)
 {
-    if (MQTTClient_isConnected(handle)) return AG_TRUE;
-    else return AG_FALSE;
+    if (MQTTClient_isConnected(handle)) return EMBER_TRUE;
+    else return EMBER_FALSE;
 }
 
 #define container_of(ptr, type, member) (                  \
@@ -266,4 +266,4 @@ void msg_bus_free(void *topic, void *msg)
 }
 #endif
 
-#endif /* AG_LIBS_USING_MQTT_CLIENT */
+#endif /* EMBER_LIBS_USING_MQTT_CLIENT */

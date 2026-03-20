@@ -17,7 +17,7 @@
 #define LOG_TAG                "Workflow"
 #include "openember.h"
 
-#define AG_GLOBALS
+#define EMBER_GLOBALS
 #include "smm.h"
 
 #ifdef __cplusplus
@@ -62,7 +62,7 @@ smm_t *smm_register(const char *name, const mod_class_t cls, const int pid, void
     /* unlock */
     pthread_rwlock_unlock(&rwlock_mod);
 
-    module->status = AG_MODULE_INIT;
+    module->status = EMBER_MODULE_INIT;
 
     return module;
 }
@@ -70,20 +70,20 @@ smm_t *smm_register(const char *name, const mod_class_t cls, const int pid, void
 int smm_unregister(smm_t *module)
 {
     if (module == NULL)
-        return -AG_EINVAL;
+        return -EMBER_EINVAL;
     
     pthread_rwlock_wrlock(&rwlock_mod);
     list_del(&(module->list));
     g_device_num -= 1;
     pthread_rwlock_unlock(&rwlock_mod);
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int smm_init(void)
 {
     LOG_D("Submodule init");
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int smm_kill_all_modules(void)
@@ -101,12 +101,12 @@ int smm_kill_all_modules(void)
     }
 
     pthread_rwlock_unlock(&rwlock_mod);
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 int smm_stop_all_modules(void)
 {
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 #ifdef __cplusplus

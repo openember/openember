@@ -31,7 +31,7 @@ static msg_node_t client;
 static pool_t *ppool;
 
 /* Options */
-static ag_bool_t sync_mode = AG_FALSE; /* AG_TRUE or AG_FALSE */
+static ember_bool_t sync_mode = EMBER_FALSE; /* EMBER_TRUE or EMBER_FALSE */
 
 #ifdef TEMPLATE_RAW_MSG
 typedef struct test_msg {
@@ -82,7 +82,7 @@ static int msg_init(void)
     else {
         rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb);
     }
-    if (rc != AG_EOK) {
+    if (rc != EMBER_EOK) {
         LOG_E("Message bus init failed.\n");
         return -1;
     }
@@ -91,20 +91,20 @@ static int msg_init(void)
 
     /* Subscription list */
     rc = msg_bus_subscribe(client, TEST_TOPIC);
-    if (rc != AG_EOK) cn++;
+    if (rc != EMBER_EOK) cn++;
     rc = msg_bus_subscribe(client, SYS_EVENT_REPLY_TOPIC);
-    if (rc != AG_EOK) cn++;
+    if (rc != EMBER_EOK) cn++;
     rc = msg_bus_subscribe(client, MOD_REGISTER_REPLY_TOPIC);
-    if (rc != AG_EOK) cn++;
+    if (rc != EMBER_EOK) cn++;
 
     if (cn != 0) {
         ppool_destroy(ppool);
         msg_bus_deinit(client);
         LOG_E("Message bus subscribe failed.\n");
-        return -AG_ERROR;
+        return -EMBER_ERROR;
     }
 
-    return AG_EOK;
+    return EMBER_EOK;
 }
 
 void yaml_test(void)
@@ -139,18 +139,18 @@ int main(void)
     LOG_W("Hello OpenEmber!");
     LOG_E("Hello OpenEmber!");
 
-    LOG_I("Version: %lu.%lu.%lu", AG_VERSION, AG_SUBVERSION, AG_REVISION);
+    LOG_I("Version: %lu.%lu.%lu", EMBER_VERSION, EMBER_SUBVERSION, EMBER_REVISION);
 
     yaml_test();
 
     rc = msg_init();
-    if (rc != AG_EOK) {
+    if (rc != EMBER_EOK) {
         LOG_E("Message channel init failed.");
         exit(1);
     }
 
     rc = msg_smm_register(client, MODULE_NAME, SUBmod_class_tEST);
-    if (rc != AG_EOK) {
+    if (rc != EMBER_EOK) {
         LOG_E("Module register failed.");
         exit(1);
     }

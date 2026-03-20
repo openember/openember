@@ -8,12 +8,12 @@
  * 2022-07-07     luhuadong    the first version
  */
 
-#ifndef __AG_ZMQ_WRAPPER_H__
-#define __AG_ZMQ_WRAPPER_H__
+#ifndef __EMBER_ZMQ_WRAPPER_H__
+#define __EMBER_ZMQ_WRAPPER_H__
 
 #include "openember.h"
 
-#ifdef AG_LIBS_USING_ZEROMQ
+#ifdef EMBER_LIBS_USING_ZEROMQ
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +34,6 @@ int msg_bus_subscribe(msg_node_t handle, const char *topic);
 }
 #endif
 
-#endif /* AG_LIBS_USING_ZEROMQ */
+#endif /* EMBER_LIBS_USING_ZEROMQ */
 
-#endif /* __AG_ZMQ_WRAPPER_H__ */
+#endif /* __EMBER_ZMQ_WRAPPER_H__ */
