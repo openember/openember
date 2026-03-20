@@ -42,6 +42,11 @@ option( BUILD_PUBSUB_NNG "Build ember_pubsub pub/sub skeleton with NNG transport
 option( BUILD_PUBSUB_LCM "Build ember_pubsub pub/sub skeleton with LCM transport" OFF)
 
 option( OPENEMBER_MSGBUS_USE_NNG "Use NNG backend for internal msgbus" ON)
+option( OPENEMBER_MSGBUS_USE_LCM "Use LCM backend for internal msgbus" OFF)
+
+if(OPENEMBER_MSGBUS_USE_NNG AND OPENEMBER_MSGBUS_USE_LCM)
+    message(FATAL_ERROR "OPENEMBER_MSGBUS_USE_NNG and OPENEMBER_MSGBUS_USE_LCM cannot both be ON. Please select exactly one.")
+endif()
 
 # Transport backend selection（默认保持与旧逻辑一致：BUILD_PUBSUB_ZMQ=ON 则优先 zmq）
 set(OPENEMBER_PUBSUB_BACKEND "udp")
@@ -157,6 +162,12 @@ if(OPENEMBER_MSGBUS_USE_NNG AND NOT OPENEMBER_PUBSUB_BACKEND STREQUAL "nng")
     message(STATUS "└── nng (msgbus) include: ${OPENEMBER_NNG_INCLUDE_DIRS}")
 endif()
 
+if(OPENEMBER_MSGBUS_USE_LCM AND NOT OPENEMBER_PUBSUB_BACKEND STREQUAL "lcm")
+    openember_transport_resolve_lcm()
+    message(STATUS "├── lcm (msgbus): ${OPENEMBER_LCM_LIBRARIES}")
+    message(STATUS "└── lcm (msgbus) include: ${OPENEMBER_LCM_INCLUDE_DIRS}")
+endif()
+
 set(SQLITE_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/sqlite)
 set(SQLITE_LIBRARIES sqlite3)
 
@@ -179,8 +190,13 @@ set( OPENEMBER_EXTERNAL_LIBRARIES
 )
 
 if(OPENEMBER_MSGBUS_USE_NNG)
+    add_definitions(-DEMBER_LIBS_USING_NNG)
     list(APPEND OPENEMBER_EXTERNAL_INCLUDE_DIRS ${OPENEMBER_NNG_INCLUDE_DIRS})
     list(APPEND OPENEMBER_EXTERNAL_LIBRARIES ${OPENEMBER_NNG_LIBRARIES})
+elseif(OPENEMBER_MSGBUS_USE_LCM)
+    add_definitions(-DEMBER_LIBS_USING_LCM)
+    list(APPEND OPENEMBER_EXTERNAL_INCLUDE_DIRS ${OPENEMBER_LCM_INCLUDE_DIRS})
+    list(APPEND OPENEMBER_EXTERNAL_LIBRARIES ${OPENEMBER_LCM_LIBRARIES})
 endif()
 
 set( OPENEMBER_INTERNAL_INCLUDE_DIRS 

@@ -91,22 +91,27 @@ cmake --build . --target pubsub_publisher pubsub_subscriber -j$(nproc)
 
 - `examples/pubsub_two_nodes/README.md`
 
-## 4.1 内部通信骨架（msgbus）= NNG
+## 4.1 内部通信骨架（msgbus）= NNG / LCM
 
-当前 `libs/msgbus` 默认使用 NNG（`-DOPENEMBER_MSGBUS_USE_NNG=ON`，默认值为 ON），其工作方式依赖一个 NNG forwarder 用于跨进程转发消息帧。
+`libs/msgbus` 支持在构建期切换内部通信后端（通过 CMake 选项控制）：
 
-- forwarder 程序：`build/bin/msgbus_nng_forwarder`
-- 默认端点：
-  - IN 端点（modules PUB listen -> forwarder SUB dial）：`ipc:///tmp/openember-msgbus-in.ipc`
-  - OUT 端点（forwarder PUB listen -> modules SUB dial）：`ipc:///tmp/openember-msgbus-out.ipc`
-- 启动方式（先启动 forwarder，再启动模块）：
-```bash
-./msgbus_nng_forwarder
-./Template
-```
+- 默认：NNG（`-DOPENEMBER_MSGBUS_USE_NNG=ON`）
+  - 工作方式依赖 `msgbus_nng_forwarder` 做跨进程转发
+  - forwarder 程序：`build/bin/msgbus_nng_forwarder`
+  - 默认端点（IPC）：
+    - IN 端点（modules PUB listen -> forwarder SUB dial）：`ipc:///tmp/openember-msgbus-in.ipc`
+    - OUT 端点（forwarder PUB listen -> modules SUB dial）：`ipc:///tmp/openember-msgbus-out.ipc`
+  - 启动方式（先启动 forwarder，再启动模块）：
+    ```bash
+    ./msgbus_nng_forwarder
+    ./Template
+    ```
+  - 如需自定义端点，可传参：
+    `./msgbus_nng_forwarder <in_url> <out_url>`（即先 IN 再 OUT）
 
-如需自定义端口，可传参：
-`./msgbus_nng_forwarder <in_url> <out_url>`（即先 IN 再 OUT）
+- 可选：LCM（`-DOPENEMBER_MSGBUS_USE_LCM=ON`，并关闭 NNG：`-DOPENEMBER_MSGBUS_USE_NNG=OFF`）
+  - LCM 后端不需要额外 forwarder；直接启动模块即可
+  - 模块示例：`./Template`
 
 ## 5. 交叉编译（可选）
 

@@ -25,6 +25,10 @@
 #include "nng_wrapper.h"
 #endif
 
+#ifdef EMBER_LIBS_USING_LCM
+#include "lcm_wrapper.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
