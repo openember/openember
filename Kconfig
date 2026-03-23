@@ -4,6 +4,7 @@ source "Kconfig.build"
 source "Kconfig.logging"
 source "Kconfig.dependencies"
 source "Kconfig.transport"
+source "Kconfig.modules"
 
 endmenu
 

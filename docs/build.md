@@ -57,6 +57,9 @@ cmake --build build -j"$(nproc)"
 - **Transport / Msgbus**
   - Pub/Sub backend（三选一）：ZMQ / NNG / LCM（映射到 `BUILD_PUBSUB_*`）
   - Internal msgbus backend（二选一）：NNG / LCM（映射到 `OPENEMBER_MSGBUS_USE_*`）
+- **Framework Modules（新增）**
+  - 可单独启停：`Template` / `Alogd` / `DeviceManager` / `MessageDispatcher` / `ConfigManager` / `MonitorAlarm` / `OTA` / `Acquisition` / `WebServer`
+  - 映射到 `OPENEMBER_MODULE_*`，由 `modules/CMakeLists.txt` 条件 `add_subdirectory()` 控制
 
 ## 4. 运行说明
 

@@ -41,6 +41,7 @@
 #define EMBER_LIBS_USING_LOG
 
 #include "ember_log_backend.h"
+#include "ember_log_path.h"
 
 /* JSON 实现选择：CMake OPENEMBER_JSON_LIBRARY → ember_json_config.h */
 #include "ember_json_config.h"

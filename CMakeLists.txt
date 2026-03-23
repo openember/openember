@@ -148,16 +148,19 @@ else()
 endif()
 
 if(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
-    # Used by inc/ember_config.h to define LOG_FILE
     if(NOT DEFINED OPENEMBER_LOG_FILE OR "${OPENEMBER_LOG_FILE}" STREQUAL "")
         set(OPENEMBER_LOG_FILE "/etc/openember/zlog.conf" CACHE STRING "zlog.conf path" FORCE)
     endif()
-    add_definitions("-DOPENEMBER_LOG_FILE=\\\"${OPENEMBER_LOG_FILE}\\\"")
 endif()
 
 configure_file(
     ${CMAKE_SOURCE_DIR}/inc/ember_log_backend.h.in
     ${CMAKE_BINARY_DIR}/include/ember_log_backend.h
+    @ONLY)
+
+configure_file(
+    ${CMAKE_SOURCE_DIR}/inc/ember_log_path.h.in
+    ${CMAKE_BINARY_DIR}/include/ember_log_path.h
     @ONLY)
 
 ################################################################################

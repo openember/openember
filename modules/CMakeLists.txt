@@ -1,11 +1,37 @@
 set(FOLDER_NAME "modules")
 
-add_subdirectory(Template)
-add_subdirectory(Alogd)
-add_subdirectory(DeviceManager)
-add_subdirectory(MessageDispatcher)
-add_subdirectory(ConfigManager)
-add_subdirectory(MonitorAlarm)
-add_subdirectory(OTA)
-add_subdirectory(Acquisition)
-add_subdirectory(WebServer)
+if(NOT DEFINED OPENEMBER_MODULE_TEMPLATE OR OPENEMBER_MODULE_TEMPLATE)
+    add_subdirectory(Template)
+endif()
+
+if(NOT DEFINED OPENEMBER_MODULE_ALOGD OR OPENEMBER_MODULE_ALOGD)
+    add_subdirectory(Alogd)
+endif()
+
+if(NOT DEFINED OPENEMBER_MODULE_DEVICE_MANAGER OR OPENEMBER_MODULE_DEVICE_MANAGER)
+    add_subdirectory(DeviceManager)
+endif()
+
+if(NOT DEFINED OPENEMBER_MODULE_MESSAGE_DISPATCHER OR OPENEMBER_MODULE_MESSAGE_DISPATCHER)
+    add_subdirectory(MessageDispatcher)
+endif()
+
+if(NOT DEFINED OPENEMBER_MODULE_CONFIG_MANAGER OR OPENEMBER_MODULE_CONFIG_MANAGER)
+    add_subdirectory(ConfigManager)
+endif()
+
+if(NOT DEFINED OPENEMBER_MODULE_MONITOR_ALARM OR OPENEMBER_MODULE_MONITOR_ALARM)
+    add_subdirectory(MonitorAlarm)
+endif()
+
+if(NOT DEFINED OPENEMBER_MODULE_OTA OR OPENEMBER_MODULE_OTA)
+    add_subdirectory(OTA)
+endif()
+
+if(NOT DEFINED OPENEMBER_MODULE_ACQUISITION OR OPENEMBER_MODULE_ACQUISITION)
+    add_subdirectory(Acquisition)
+endif()
+
+if(NOT DEFINED OPENEMBER_MODULE_WEB_SERVER OR OPENEMBER_MODULE_WEB_SERVER)
+    add_subdirectory(WebServer)
+endif()

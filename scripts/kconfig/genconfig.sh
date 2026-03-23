@@ -61,6 +61,15 @@ opt_disabled="$(onoff CONFIG_OPENEMBER_OPTIMIZATION_DISABLED)"
 crosscompile_enabled="$(onoff CONFIG_OPENEMBER_CROSSCOMPILE_ENABLED)"
 use_yamlcpp="$(onoff CONFIG_OPENEMBER_USE_YAMLCPP)"
 use_asio="$(onoff CONFIG_OPENEMBER_USE_ASIO)"
+module_template="$(onoff CONFIG_OPENEMBER_MODULE_TEMPLATE)"
+module_alogd="$(onoff CONFIG_OPENEMBER_MODULE_ALOGD)"
+module_device_manager="$(onoff CONFIG_OPENEMBER_MODULE_DEVICE_MANAGER)"
+module_message_dispatcher="$(onoff CONFIG_OPENEMBER_MODULE_MESSAGE_DISPATCHER)"
+module_config_manager="$(onoff CONFIG_OPENEMBER_MODULE_CONFIG_MANAGER)"
+module_monitor_alarm="$(onoff CONFIG_OPENEMBER_MODULE_MONITOR_ALARM)"
+module_ota="$(onoff CONFIG_OPENEMBER_MODULE_OTA)"
+module_acquisition="$(onoff CONFIG_OPENEMBER_MODULE_ACQUISITION)"
+module_web_server="$(onoff CONFIG_OPENEMBER_MODULE_WEB_SERVER)"
 
 log_file="/etc/openember/zlog.conf"
 log_file="$(awk '
@@ -94,6 +103,16 @@ set(OPENMP_ENABLED ${openmp_enabled} CACHE BOOL "Whether to enable omp feature" 
 set(DEBUG_ENABLED ${debug_enabled} CACHE BOOL "Whether to enable debug mode" FORCE)
 set(OPTIMIZATION_DISABLED ${opt_disabled} CACHE BOOL "Whether to disable optimization" FORCE)
 set(CROSSCOMPILE_ENABLED ${crosscompile_enabled} CACHE BOOL "Whether to build for ARM" FORCE)
+
+set(OPENEMBER_MODULE_TEMPLATE ${module_template} CACHE BOOL "Build module Template" FORCE)
+set(OPENEMBER_MODULE_ALOGD ${module_alogd} CACHE BOOL "Build module Alogd" FORCE)
+set(OPENEMBER_MODULE_DEVICE_MANAGER ${module_device_manager} CACHE BOOL "Build module DeviceManager" FORCE)
+set(OPENEMBER_MODULE_MESSAGE_DISPATCHER ${module_message_dispatcher} CACHE BOOL "Build module MessageDispatcher" FORCE)
+set(OPENEMBER_MODULE_CONFIG_MANAGER ${module_config_manager} CACHE BOOL "Build module ConfigManager" FORCE)
+set(OPENEMBER_MODULE_MONITOR_ALARM ${module_monitor_alarm} CACHE BOOL "Build module MonitorAlarm" FORCE)
+set(OPENEMBER_MODULE_OTA ${module_ota} CACHE BOOL "Build module OTA" FORCE)
+set(OPENEMBER_MODULE_ACQUISITION ${module_acquisition} CACHE BOOL "Build module Acquisition" FORCE)
+set(OPENEMBER_MODULE_WEB_SERVER ${module_web_server} CACHE BOOL "Build module WebServer" FORCE)
 
 # Keep existing CMake backend selection interface
 set(BUILD_PUBSUB_ZMQ OFF CACHE BOOL "" FORCE)
