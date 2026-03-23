@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
+JOBS="${OPENEMBER_JOBS:-$(nproc)}"
+
+usage() {
+  cat <<EOF
+OpenEmber CLI
+
+Usage:
+  ember menuconfig [build_dir]
+  ember genconfig [build_dir]
+  ember configure [build_dir]
+  ember build [build_dir]
+  ember all [build_dir]
+  ember clean [build_dir]
+  ember help
+
+Environment:
+  OPENEMBER_BUILD_DIR   default build dir (default: build)
+  OPENEMBER_JOBS        parallel jobs for build (default: nproc)
+  OPENEMBER_KCONFIG_NONINTERACTIVE=1  generate default .config without TUI
+EOF
+}
+
+resolve_build_dir() {
+  local arg="${1:-}"
+  if [[ -n "${arg}" ]]; then
+    echo "${arg}"
+  else
+    echo "${BUILD_DIR}"
+  fi
+}
+
+cmd="${1:-help}"
+arg_build_dir="${2:-}"
+bd="$(resolve_build_dir "${arg_build_dir}")"
+
+case "${cmd}" in
+  menuconfig)
+    bash "${ROOT_DIR}/scripts/kconfig/menuconfig.sh" "${bd}"
+    ;;
+  genconfig)
+    bash "${ROOT_DIR}/scripts/kconfig/genconfig.sh" "${bd}"
+    ;;
+  configure)
+    cmake -S "${ROOT_DIR}" -B "${bd}"
+    ;;
+  build)
+    # Auto bootstrap config pipeline if needed.
+    if [[ ! -f "${bd}/.config" ]]; then
+      echo "[ember] ${bd}/.config not found, generating default config..." >&2
+      OPENEMBER_KCONFIG_NONINTERACTIVE=1 bash "${ROOT_DIR}/scripts/kconfig/menuconfig.sh" "${bd}"
+    fi
+    if [[ ! -f "${bd}/config.cmake" ]]; then
+      echo "[ember] ${bd}/config.cmake not found, generating..." >&2
+      bash "${ROOT_DIR}/scripts/kconfig/genconfig.sh" "${bd}"
+    fi
+    cmake -S "${ROOT_DIR}" -B "${bd}"
+    cmake --build "${bd}" -j"${JOBS}"
+    ;;
+  all)
+    bash "${ROOT_DIR}/scripts/kconfig/menuconfig.sh" "${bd}"
+    bash "${ROOT_DIR}/scripts/kconfig/genconfig.sh" "${bd}"
+    cmake -S "${ROOT_DIR}" -B "${bd}"
+    cmake --build "${bd}" -j"${JOBS}"
+    ;;
+  clean)
+    rm -rf "${bd}"
+    ;;
+  help|-h|--help)
+    usage
+    ;;
+  *)
+    echo "Unknown command: ${cmd}" >&2
+    usage
+    exit 1
+    ;;
+esac
+

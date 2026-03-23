@@ -63,6 +63,33 @@ make all
 make all BUILD_DIR=build-dev JOBS=16
 ```
 
+## 2.2 方案二：使用 `ember` 命令（新增）
+
+新增脚本：`scripts/ember`。可直接执行：
+
+```bash
+./scripts/ember menuconfig
+./scripts/ember genconfig
+./scripts/ember configure
+./scripts/ember build
+```
+
+其中 `./scripts/ember build` 会自动补齐流程：
+
+- 若 `build/.config` 不存在：自动以非交互默认配置生成
+- 若 `build/config.cmake` 不存在：自动执行 `genconfig`
+- 然后自动执行 `cmake -S . -B build` + `cmake --build build -j$(nproc)`
+
+可选：
+
+```bash
+# 指定构建目录
+./scripts/ember build build-dev
+
+# 环境变量控制
+OPENEMBER_BUILD_DIR=build-dev OPENEMBER_JOBS=16 ./scripts/ember build
+```
+
 ## 3. 当前已支持的 Kconfig 配置项
 
 `menuconfig` 已支持以下关键配置（无需再手工 `-D`）：
