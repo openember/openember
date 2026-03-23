@@ -1,4 +1,6 @@
 # zlog 依赖获取脚本（FetchContent），参考 AimRT 的 GetXxx.cmake 组织方式
+#
+# 上游 HardySimpson/zlog 根目录无 CMakeLists.txt，由 cmake/vendor/zlog 包装编译。
 
 include(FetchContent)
 
@@ -7,52 +9,44 @@ function(openember_get_zlog)
     # - library target: `zlog`
     # - alias target:   `ZLOG::ZLOG`
 
-    set(OPENEMBER_ZLOG_LOCAL_SOURCE "" CACHE PATH "Optional local path override for zlog")
+    if(NOT DEFINED OPENEMBER_ZLOG_LOCAL_SOURCE)
+        set(OPENEMBER_ZLOG_LOCAL_SOURCE "" CACHE PATH "Optional local path override for zlog")
+    endif()
 
-    # Keep the fetched build minimal: disable zlog unit tests by default.
-    # zlog uses a plain variable named `UNIT_TEST` (not an option), so force it via cache.
+    # 上游使用普通变量 UNIT_TEST；默认关闭单元测试（包装 CMake 未接入上游 test/ makefile）
     set(UNIT_TEST OFF CACHE BOOL "Build zlog unit tests" FORCE)
 
-    # 先尝试用 FetchContent 下载；
-    # 如果下载出来的源码不包含 CMake（某些 upstream tarball 只有 makefile/README），则回退到仓库内的 third_party/zlog。
     if(OPENEMBER_ZLOG_LOCAL_SOURCE)
         FetchContent_Declare(
             openember_zlog
-            SOURCE_DIR ${OPENEMBER_ZLOG_LOCAL_SOURCE}
-            OVERRIDE_FIND_PACKAGE
+            SOURCE_DIR "${OPENEMBER_ZLOG_LOCAL_SOURCE}"
         )
-        FetchContent_MakeAvailable(openember_zlog)
     else()
         FetchContent_Declare(
             openember_zlog
-            URL ${OPENEMBER_ZLOG_URL}
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            GIT_REPOSITORY https://github.com/HardySimpson/zlog.git
+            GIT_TAG ${OPENEMBER_ZLOG_GIT_TAG}
         )
-        FetchContent_Populate(openember_zlog)
-
-        if(EXISTS "${openember_zlog_SOURCE_DIR}/CMakeLists.txt")
-            FetchContent_MakeAvailable(openember_zlog)
-        else()
-            message(WARNING "zlog fetched source has no CMakeLists.txt, fallback to bundled third_party/zlog for CMake build")
-            add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/zlog" "${CMAKE_BINARY_DIR}/third_party/zlog" EXCLUDE_FROM_ALL)
-        endif()
     endif()
+
+    FetchContent_Populate(openember_zlog)
+
+    set(OPENEMBER_ZLOG_FETCHED_SRC "${openember_zlog_SOURCE_DIR}/src" CACHE INTERNAL "")
+    if(NOT EXISTS "${OPENEMBER_ZLOG_FETCHED_SRC}/zlog.h")
+        message(FATAL_ERROR
+            "zlog: zlog.h not found under ${OPENEMBER_ZLOG_FETCHED_SRC}\n"
+            "  Check OPENEMBER_ZLOG_GIT_TAG / OPENEMBER_ZLOG_LOCAL_SOURCE.")
+    endif()
+
+    add_subdirectory(
+        "${CMAKE_SOURCE_DIR}/cmake/vendor/zlog"
+        "${CMAKE_BINARY_DIR}/_deps/openember_zlog-build"
+    )
 
     if(TARGET zlog AND NOT TARGET ZLOG::ZLOG)
         add_library(ZLOG::ZLOG ALIAS zlog)
     endif()
 
-    # Keep legacy variable interface for the rest of OpenEmber.
-    set(_zlog_inc "${openember_zlog_SOURCE_DIR}/src")
-    if(NOT EXISTS "${_zlog_inc}/zlog.h")
-        set(_zlog_inc "${CMAKE_SOURCE_DIR}/third_party/zlog/src")
-    endif()
-    set(ZLOG_INCLUDE_DIRS ${_zlog_inc} PARENT_SCOPE)
-    if(TARGET zlog)
-        set(ZLOG_LIBRARIES zlog PARENT_SCOPE)
-    else()
-        # Fallback: let consumers use plain name if target isn't created for some reason.
-        set(ZLOG_LIBRARIES zlog PARENT_SCOPE)
-    endif()
+    set(ZLOG_INCLUDE_DIRS "${OPENEMBER_ZLOG_FETCHED_SRC}" PARENT_SCOPE)
+    set(ZLOG_LIBRARIES zlog PARENT_SCOPE)
 endfunction()
-

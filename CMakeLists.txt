@@ -142,6 +142,10 @@ openember_third_party_resolve_paho_mqtt_c()
 message(STATUS "├── ${PAHO_MQTT_C_LIBRARIES}")
 message(STATUS "└── ${PAHO_MQTT_C_INCLUDE_DIRS}")
 
+openember_third_party_resolve_sqlite()
+message(STATUS "├── sqlite: ${SQLITE_LIBRARIES}")
+message(STATUS "└── sqlite include: ${SQLITE_INCLUDE_DIRS}")
+
 if(OPENEMBER_PUBSUB_BACKEND STREQUAL "zmq")
     openember_transport_resolve_libzmq()
     message(STATUS "├── libzmq: ${OPENEMBER_LIBZMQ_LIBRARIES}")
@@ -167,11 +171,6 @@ if(OPENEMBER_MSGBUS_USE_LCM AND NOT OPENEMBER_PUBSUB_BACKEND STREQUAL "lcm")
     message(STATUS "├── lcm (msgbus): ${OPENEMBER_LCM_LIBRARIES}")
     message(STATUS "└── lcm (msgbus) include: ${OPENEMBER_LCM_INCLUDE_DIRS}")
 endif()
-
-set(SQLITE_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/third_party/sqlite)
-set(SQLITE_LIBRARIES sqlite3)
-
-add_subdirectory(third_party)
 
 set( OPENEMBER_EXTERNAL_INCLUDE_DIRS
     ${ZLOG_INCLUDE_DIRS}
