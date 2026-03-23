@@ -70,6 +70,7 @@ module_monitor_alarm="$(onoff CONFIG_OPENEMBER_MODULE_MONITOR_ALARM)"
 module_ota="$(onoff CONFIG_OPENEMBER_MODULE_OTA)"
 module_acquisition="$(onoff CONFIG_OPENEMBER_MODULE_ACQUISITION)"
 module_web_server="$(onoff CONFIG_OPENEMBER_MODULE_WEB_SERVER)"
+feature_algorithm="$(onoff CONFIG_OPENEMBER_FEATURE_ALGORITHM)"
 
 log_file="/etc/openember/zlog.conf"
 log_file="$(awk '
@@ -113,6 +114,7 @@ set(OPENEMBER_MODULE_MONITOR_ALARM ${module_monitor_alarm} CACHE BOOL "Build mod
 set(OPENEMBER_MODULE_OTA ${module_ota} CACHE BOOL "Build module OTA" FORCE)
 set(OPENEMBER_MODULE_ACQUISITION ${module_acquisition} CACHE BOOL "Build module Acquisition" FORCE)
 set(OPENEMBER_MODULE_WEB_SERVER ${module_web_server} CACHE BOOL "Build module WebServer" FORCE)
+set(OPENEMBER_FEATURE_ALGORITHM ${feature_algorithm} CACHE BOOL "Enable Algorithm module" FORCE)
 
 # Keep existing CMake backend selection interface
 set(BUILD_PUBSUB_ZMQ OFF CACHE BOOL "" FORCE)

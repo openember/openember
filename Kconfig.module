@@ -1,3 +1,5 @@
+menu "Module"
+
 menu "Transport / Msgbus"
 
 choice OPENEMBER_PUBSUB_BACKEND_CHOICE
@@ -26,6 +28,16 @@ config OPENEMBER_MSGBUS_BACKEND_LCM
     bool "LCM"
 
 endchoice
+
+endmenu
+
+menu "Loadable/Feature Modules"
+
+config OPENEMBER_FEATURE_ALGORITHM
+    bool "Enable module: Algorithm"
+    default y
+
+endmenu
 
 endmenu
 

@@ -154,12 +154,12 @@ if(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
 endif()
 
 configure_file(
-    ${CMAKE_SOURCE_DIR}/inc/ember_log_backend.h.in
+    ${CMAKE_SOURCE_DIR}/core/inc/ember_log_backend.h.in
     ${CMAKE_BINARY_DIR}/include/ember_log_backend.h
     @ONLY)
 
 configure_file(
-    ${CMAKE_SOURCE_DIR}/inc/ember_log_path.h.in
+    ${CMAKE_SOURCE_DIR}/core/inc/ember_log_path.h.in
     ${CMAKE_BINARY_DIR}/include/ember_log_path.h
     @ONLY)
 
@@ -182,7 +182,7 @@ else()
 endif()
 
 configure_file(
-    ${CMAKE_SOURCE_DIR}/inc/ember_json_config.h.in
+    ${CMAKE_SOURCE_DIR}/core/inc/ember_json_config.h.in
     ${CMAKE_BINARY_DIR}/include/ember_json_config.h
     @ONLY)
 
@@ -301,16 +301,16 @@ endif()
 
 set( OPENEMBER_INTERNAL_INCLUDE_DIRS 
     ${CMAKE_BINARY_DIR}/include
-    ${CMAKE_SOURCE_DIR}/inc
-    ${CMAKE_SOURCE_DIR}/libs/HAL
-    ${CMAKE_SOURCE_DIR}/libs/GSDL/src
-    ${CMAKE_SOURCE_DIR}/libs/Log
-    ${CMAKE_SOURCE_DIR}/libs/ppool
-    ${CMAKE_SOURCE_DIR}/libs/msgbus
-    ${CMAKE_SOURCE_DIR}/libs/Common
-    ${CMAKE_SOURCE_DIR}/libs/Algorithm
-    ${CMAKE_SOURCE_DIR}/libs/libcsv
-    ${CMAKE_SOURCE_DIR}/libs/libyaml
+    ${CMAKE_SOURCE_DIR}/core/inc
+    ${CMAKE_SOURCE_DIR}/components/HAL
+    ${CMAKE_SOURCE_DIR}/components/GSDL/src
+    ${CMAKE_SOURCE_DIR}/components/Log
+    ${CMAKE_SOURCE_DIR}/components/ppool
+    ${CMAKE_SOURCE_DIR}/components/msgbus
+    ${CMAKE_SOURCE_DIR}/components/Common
+    ${CMAKE_SOURCE_DIR}/modules/Algorithm
+    ${CMAKE_SOURCE_DIR}/components/libcsv
+    ${CMAKE_SOURCE_DIR}/components/libyaml
 )
 
 set( OPENEMBER_INCLUDE_DIRS 
@@ -335,9 +335,10 @@ set( OPENEMBER_LIBRARIES
     ${OPENEMBER_INTERNAL_LIBRARIES}
 )
 
-add_subdirectory(libs)
+add_subdirectory(components)
 add_subdirectory(modules)
-add_subdirectory(src)
+add_subdirectory(apps)
+add_subdirectory(core)
 
 if(BUILD_PUBSUB_ZMQ OR BUILD_PUBSUB_NNG OR BUILD_PUBSUB_LCM OR OPENEMBER_MSGBUS_USE_NNG)
     add_subdirectory(examples)

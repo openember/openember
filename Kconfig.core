@@ -1,0 +1,16 @@
+menu "Core"
+
+config OPENEMBER_DEBUG_ENABLED
+    bool "Debug build"
+    default y
+
+config OPENEMBER_OPTIMIZATION_DISABLED
+    bool "Disable optimization"
+    default n
+
+config OPENEMBER_ENABLE_OPENMP
+    bool "Enable OpenMP"
+    default n
+
+endmenu
+

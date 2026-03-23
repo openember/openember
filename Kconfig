@@ -1,10 +1,8 @@
-menu "OpenEmber"
+mainmenu "OpenEmber Configuration"
 
-source "Kconfig.build"
-source "Kconfig.logging"
-source "Kconfig.dependencies"
-source "Kconfig.transport"
-source "Kconfig.modules"
-
-endmenu
+source "Kconfig.application"
+source "Kconfig.module"
+source "Kconfig.component"
+source "Kconfig.core"
+source "Kconfig.platform"
 

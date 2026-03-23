@@ -1,0 +1,52 @@
+menu "Application"
+
+config OPENEMBER_ENABLE_TESTS
+    bool "Build unit tests"
+    default y
+
+config OPENEMBER_ENABLE_EXAMPLES
+    bool "Build examples"
+    default y
+
+menu "Application Nodes"
+
+config OPENEMBER_MODULE_TEMPLATE
+    bool "Build app: Template"
+    default y
+
+config OPENEMBER_MODULE_ALOGD
+    bool "Build app: Alogd"
+    default y
+
+config OPENEMBER_MODULE_DEVICE_MANAGER
+    bool "Build app: DeviceManager"
+    default y
+
+config OPENEMBER_MODULE_MESSAGE_DISPATCHER
+    bool "Build app: MessageDispatcher"
+    default y
+
+config OPENEMBER_MODULE_CONFIG_MANAGER
+    bool "Build app: ConfigManager"
+    default y
+
+config OPENEMBER_MODULE_MONITOR_ALARM
+    bool "Build app: MonitorAlarm"
+    default y
+
+config OPENEMBER_MODULE_OTA
+    bool "Build app: OTA"
+    default y
+
+config OPENEMBER_MODULE_ACQUISITION
+    bool "Build app: Acquisition"
+    default y
+
+config OPENEMBER_MODULE_WEB_SERVER
+    bool "Build app: WebServer"
+    default y
+
+endmenu
+
+endmenu
+

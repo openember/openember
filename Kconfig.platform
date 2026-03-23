@@ -1,0 +1,23 @@
+menu "Platform"
+
+config OPENEMBER_CROSSCOMPILE_ENABLED
+    bool "Enable cross compile mode (aarch64)"
+    default n
+
+choice OPENEMBER_THIRD_PARTY_MODE_CHOICE
+    prompt "Third-party mode"
+    default OPENEMBER_TP_MODE_FETCH
+
+config OPENEMBER_TP_MODE_FETCH
+    bool "FetchContent"
+
+config OPENEMBER_TP_MODE_VENDOR
+    bool "Vendor (download/_extracted)"
+
+config OPENEMBER_TP_MODE_SYSTEM
+    bool "System packages"
+
+endchoice
+
+endmenu
+

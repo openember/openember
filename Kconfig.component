@@ -1,0 +1,55 @@
+menu "Component"
+
+menu "Logging"
+
+choice OPENEMBER_LOG_BACKEND
+    prompt "Log backend"
+    default OPENEMBER_LOG_BACKEND_ZLOG
+
+config OPENEMBER_LOG_BACKEND_ZLOG
+    bool "zlog"
+
+config OPENEMBER_LOG_BACKEND_SPDLOG
+    bool "spdlog"
+
+config OPENEMBER_LOG_BACKEND_BUILTIN
+    bool "builtin (stderr)"
+
+endchoice
+
+config OPENEMBER_LOG_FILE
+    string "zlog.conf path"
+    default "/etc/openember/zlog.conf" if OPENEMBER_LOG_BACKEND_ZLOG
+
+endmenu
+
+menu "Serialization / Config"
+
+choice OPENEMBER_JSON_LIBRARY_CHOICE
+    prompt "JSON library"
+    default OPENEMBER_JSON_LIBRARY_CJSON
+
+config OPENEMBER_JSON_LIBRARY_CJSON
+    bool "cJSON (C)"
+
+config OPENEMBER_JSON_LIBRARY_NLOHMANN
+    bool "nlohmann/json (C++)"
+
+endchoice
+
+config OPENEMBER_USE_YAMLCPP
+    bool "Enable yaml-cpp dependency"
+    default y
+
+endmenu
+
+menu "Networking Utility"
+
+config OPENEMBER_USE_ASIO
+    bool "Enable standalone Asio dependency"
+    default y
+
+endmenu
+
+endmenu
+
