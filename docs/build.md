@@ -35,6 +35,34 @@ cmake --build build -j"$(nproc)"
 - `CMakeLists.txt` 会自动 `include(${CMAKE_BINARY_DIR}/config.cmake)`（若存在）。
 - `scripts/kconfig/genconfig.sh` 会把 Kconfig 选项映射成 CMake cache 变量（`FORCE`），实现“以 Kconfig 为主”。
 
+## 2.1 方案一：使用 `make` 包装命令（新增）
+
+根目录已提供 `Makefile`，可将多条命令简化为：
+
+```bash
+# 菜单配置（交互）
+make menuconfig
+
+# 生成 build/config.cmake
+make genconfig
+
+# 配置 + 编译
+make configure
+make build
+```
+
+或一步到位：
+
+```bash
+make all
+```
+
+可选参数：
+
+```bash
+make all BUILD_DIR=build-dev JOBS=16
+```
+
 ## 3. 当前已支持的 Kconfig 配置项
 
 `menuconfig` 已支持以下关键配置（无需再手工 `-D`）：
