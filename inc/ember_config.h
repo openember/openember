@@ -47,7 +47,11 @@
 
 #if EMBER_LOG_BACKEND_IS_ZLOG
 #define EMBER_LIBS_USING_ZLOG
-#define LOG_FILE "/etc/openember/zlog.conf"
+/* Allow Kconfig/CMake to override zlog.conf path */
+#ifndef OPENEMBER_LOG_FILE
+#define OPENEMBER_LOG_FILE "/etc/openember/zlog.conf"
+#endif
+#define LOG_FILE OPENEMBER_LOG_FILE
 #elif EMBER_LOG_BACKEND_IS_SPDLOG
 #define EMBER_LIBS_USING_SPDLOG
 #elif EMBER_LOG_BACKEND_IS_BUILTIN

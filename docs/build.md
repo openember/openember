@@ -1,125 +1,81 @@
-# OpenEmber 构建方法（CMake）
+# OpenEmber 构建方法（Kconfig + CMake）
 
-本文档汇总当前仓库的“推荐构建方式”和常用开关。后续如果你要求我修改/新增构建流程，我会同步更新本文档。
+本文档给出当前推荐流程：先通过 Kconfig 生成 `build/config.cmake`，再由 CMake 读取配置完成构建。
 
 ## 1. 前置条件
 
 - Linux 环境
-- CMake 版本：项目要求 `cmake_minimum_required(VERSION 3.1.0)`
-- C/C++ 编译器：系统默认即可（示例使用 GCC 13）
+- CMake（项目当前最小版本 `3.1.0`）
+- GCC/G++ 或兼容编译器
 
-## 2. 标准构建流程
+> Kconfig 工具链采用 Linux 原生 `kconfig-frontends`。  
+> 项目脚本会自动下载并解压 `kconfig-frontends-nox` 到仓库本地目录 `.kconfig-frontends/`（无需 root 安装）。
 
-在工程根目录创建构建目录（示例：`build/`）：
+## 2. 一键推荐流程（不传 `-DXXX`）
+
+在工程根目录执行：
 
 ```bash
-mkdir -p build
-cd build
-cmake .. \
-  -DEXAMPLES_ENABLED=ON \
-  -DTESTS_ENABLED=ON \
-  -DOPENEMBER_THIRD_PARTY_MODE=FETCH
-cmake --build . -j$(nproc)
+# 1) 进入 menuconfig（交互式）
+bash scripts/kconfig/menuconfig.sh build
+
+# 如果环境不支持交互 TUI（如 CI / 无 TTY），使用默认配置生成 .config：
+# OPENEMBER_KCONFIG_NONINTERACTIVE=1 bash scripts/kconfig/menuconfig.sh build
+
+# 2) 由 .config 生成 build/config.cmake
+bash scripts/kconfig/genconfig.sh build
+
+# 3) CMake 读取 build/config.cmake 并构建
+cmake -S . -B build
+cmake --build build -j"$(nproc)"
 ```
 
 说明：
 
-- `OPENEMBER_THIRD_PARTY_MODE` 控制第三方库来源：
-  - `FETCH`：CMake 运行时下载并构建固定版本
-  - `VENDOR`：优先使用仓库/`download/_extracted/` 中已准备好的源码（适合离线/内网）
-  - `SYSTEM`：优先使用系统已安装依赖（Yocto/企业镜像场景）
+- `CMakeLists.txt` 会自动 `include(${CMAKE_BINARY_DIR}/config.cmake)`（若存在）。
+- `scripts/kconfig/genconfig.sh` 会把 Kconfig 选项映射成 CMake cache 变量（`FORCE`），实现“以 Kconfig 为主”。
 
-## 3. 选择 pub/sub transport（两节点示例）
+## 3. 当前已支持的 Kconfig 配置项
 
-当前 `libs/pubsub` 会根据下面三个开关之一启用后端（并构建 `examples/pubsub_two_nodes`）：
+`menuconfig` 已支持以下关键配置（无需再手工 `-D`）：
 
-- `-DBUILD_PUBSUB_ZMQ=ON`：ZeroMQ（libzmq）
-- `-DBUILD_PUBSUB_NNG=ON`：NNG（nanomsg-next-gen）
-- `-DBUILD_PUBSUB_LCM=ON`：LCM（lcm）
+- **Build Options**
+  - `TESTS_ENABLED`
+  - `EXAMPLES_ENABLED`
+  - `OPENMP_ENABLED`
+  - `DEBUG_ENABLED`
+  - `OPTIMIZATION_DISABLED`
+  - `CROSSCOMPILE_ENABLED`
+- **Logging**
+  - `OPENEMBER_LOG_BACKEND`：`ZLOG` / `SPDLOG` / `BUILTIN`
+  - `OPENEMBER_LOG_FILE`：zlog 配置路径（例如 `/etc/openember/zlog.conf`）
+- **Dependencies**
+  - `OPENEMBER_THIRD_PARTY_MODE`：`FETCH` / `VENDOR` / `SYSTEM`
+  - `OPENEMBER_JSON_LIBRARY`：`CJSON` / `NLOHMANN_JSON`
+  - `OPENEMBER_WITH_YAMLCPP`
+  - `OPENEMBER_WITH_ASIO`
+- **Transport / Msgbus**
+  - Pub/Sub backend（三选一）：ZMQ / NNG / LCM（映射到 `BUILD_PUBSUB_*`）
+  - Internal msgbus backend（二选一）：NNG / LCM（映射到 `OPENEMBER_MSGBUS_USE_*`）
 
-默认情况下 `BUILD_PUBSUB_ZMQ=ON`，其他两个关闭。
+## 4. 运行说明
 
-### 3.1 构建 ZMQ 版本示例
+构建产物通常位于 `build/bin/`：
 
-```bash
-mkdir -p build-zmq && cd build-zmq
-cmake .. \
-  -DOPENEMBER_THIRD_PARTY_MODE=VENDOR \
-  -DBUILD_PUBSUB_ZMQ=ON \
-  -DBUILD_PUBSUB_NNG=OFF \
-  -DBUILD_PUBSUB_LCM=OFF
-cmake --build . --target pubsub_publisher pubsub_subscriber -j$(nproc)
-```
+- `Template`
+- `msgbus_nng_forwarder`（当 msgbus 使用 NNG 时）
+- `pubsub_publisher` / `pubsub_subscriber`（按 pub/sub backend 相关配置生成）
 
-### 3.2 构建 NNG 版本示例
+## 5. 常见问题
 
-```bash
-mkdir -p build-nng && cd build-nng
-cmake .. \
-  -DOPENEMBER_THIRD_PARTY_MODE=VENDOR \
-  -DBUILD_PUBSUB_ZMQ=OFF \
-  -DBUILD_PUBSUB_NNG=ON \
-  -DBUILD_PUBSUB_LCM=OFF
-cmake --build . --target pubsub_publisher pubsub_subscriber -j$(nproc)
-```
-
-### 3.3 构建 LCM 版本示例
-
-```bash
-mkdir -p build-lcm && cd build-lcm
-cmake .. \
-  -DOPENEMBER_THIRD_PARTY_MODE=VENDOR \
-  -DBUILD_PUBSUB_ZMQ=OFF \
-  -DBUILD_PUBSUB_NNG=OFF \
-  -DBUILD_PUBSUB_LCM=ON
-cmake --build . --target pubsub_publisher pubsub_subscriber -j$(nproc)
-```
-
-## 4. 运行示例
-
-示例程序通常在 `build/bin/` 下生成，运行时先启动订阅端再启动发布端：
-
-```bash
-# 终端 1：订阅端
-./pubsub_subscriber
-
-# 终端 2：发布端
-./pubsub_publisher
-```
-
-如需自定义 URL / provider，请参考：
-
-- `examples/pubsub_two_nodes/README.md`
-
-## 4.1 内部通信骨架（msgbus）= NNG / LCM
-
-`libs/msgbus` 支持在构建期切换内部通信后端（通过 CMake 选项控制）：
-
-- 默认：NNG（`-DOPENEMBER_MSGBUS_USE_NNG=ON`）
-  - 工作方式依赖 `msgbus_nng_forwarder` 做跨进程转发
-  - forwarder 程序：`build/bin/msgbus_nng_forwarder`
-  - 默认端点（IPC）：
-    - IN 端点（modules PUB listen -> forwarder SUB dial）：`ipc:///tmp/openember-msgbus-in.ipc`
-    - OUT 端点（forwarder PUB listen -> modules SUB dial）：`ipc:///tmp/openember-msgbus-out.ipc`
-  - 启动方式（先启动 forwarder，再启动模块）：
+- **`Permission denied`（运行 kconfig 脚本）**
+  - 已修复：`menuconfig.sh` 内部改为 `bash ensure-kconfig-frontends-nox.sh` 调用，不依赖执行位。
+- **`Missing build/.config`**
+  - 需要先执行 `menuconfig.sh` 生成 `.config`，再执行 `genconfig.sh`。
+- **无交互环境无法打开菜单**
+  - 使用：
     ```bash
-    ./msgbus_nng_forwarder
-    ./Template
+    OPENEMBER_KCONFIG_NONINTERACTIVE=1 bash scripts/kconfig/menuconfig.sh build
     ```
-  - 如需自定义端点，可传参：
-    `./msgbus_nng_forwarder <in_url> <out_url>`（即先 IN 再 OUT）
-
-- 可选：LCM（`-DOPENEMBER_MSGBUS_USE_LCM=ON`，并关闭 NNG：`-DOPENEMBER_MSGBUS_USE_NNG=OFF`）
-  - LCM 后端不需要额外 forwarder；直接启动模块即可
-  - 模块示例：`./Template`
-
-## 5. 交叉编译（可选）
-
-顶层支持：
-
-- `-DCROSSCOMPILE_ENABLED=ON`
-
-该模式会切换编译器/系统根路径到 `aarch64`（当前脚本示例写死了 Petalinux sysroot 路径）。
-
-建议你如果需要正式支持某个目标平台，把 sysroot 路径改成可配置参数，再同步到本文档。
+    该模式会按默认值生成 `.config`。
 

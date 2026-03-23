@@ -1,0 +1,39 @@
+menu "Dependencies"
+
+choice OPENEMBER_THIRD_PARTY_MODE_CHOICE
+    prompt "Third-party mode"
+    default OPENEMBER_TP_MODE_FETCH
+
+config OPENEMBER_TP_MODE_FETCH
+    bool "FetchContent"
+
+config OPENEMBER_TP_MODE_VENDOR
+    bool "Vendor (download/_extracted)"
+
+config OPENEMBER_TP_MODE_SYSTEM
+    bool "System packages"
+
+endchoice
+
+choice OPENEMBER_JSON_LIBRARY_CHOICE
+    prompt "JSON library"
+    default OPENEMBER_JSON_LIBRARY_CJSON
+
+config OPENEMBER_JSON_LIBRARY_CJSON
+    bool "cJSON (C)"
+
+config OPENEMBER_JSON_LIBRARY_NLOHMANN
+    bool "nlohmann/json (C++)"
+
+endchoice
+
+config OPENEMBER_USE_YAMLCPP
+    bool "Enable yaml-cpp dependency"
+    default y
+
+config OPENEMBER_USE_ASIO
+    bool "Enable standalone Asio dependency"
+    default y
+
+endmenu
+

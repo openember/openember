@@ -65,3 +65,9 @@ download/_extracted/
 
 # 本地下载的第三方压缩包（不建议提交）
 download/*.zip
+
+# Local Kconfig frontends tools downloaded by scripts/kconfig/*
+.kconfig-frontends/
+
+# Local experiment build folders
+build-kconfig*/

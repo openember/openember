@@ -22,6 +22,11 @@ include(${CMAKE_SOURCE_DIR}/cmake/OpenEmberCMakeHelper.cmake NO_POLICY_SCOPE)
 # Third-party dependency policy (FetchContent / Vendor / System)
 include(${CMAKE_SOURCE_DIR}/cmake/Dependencies.cmake)
 
+# Kconfig generated cache/config (optional)
+if(EXISTS "${CMAKE_BINARY_DIR}/config.cmake")
+    include("${CMAKE_BINARY_DIR}/config.cmake")
+endif()
+
 ################################################################################
 # Options
 ################################################################################
@@ -140,6 +145,14 @@ elseif(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
     set(OPENEMBER_LOG_BACKEND_IS_SPDLOG 1)
 else()
     message(FATAL_ERROR "OPENEMBER_LOG_BACKEND must be BUILTIN, ZLOG, or SPDLOG (got '${OPENEMBER_LOG_BACKEND}')")
+endif()
+
+if(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
+    # Used by inc/ember_config.h to define LOG_FILE
+    if(NOT DEFINED OPENEMBER_LOG_FILE OR "${OPENEMBER_LOG_FILE}" STREQUAL "")
+        set(OPENEMBER_LOG_FILE "/etc/openember/zlog.conf" CACHE STRING "zlog.conf path" FORCE)
+    endif()
+    add_definitions("-DOPENEMBER_LOG_FILE=\\\"${OPENEMBER_LOG_FILE}\\\"")
 endif()
 
 configure_file(

@@ -1,0 +1,9 @@
+menu "OpenEmber"
+
+source "Kconfig.build"
+source "Kconfig.logging"
+source "Kconfig.dependencies"
+source "Kconfig.transport"
+
+endmenu
+

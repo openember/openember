@@ -1,0 +1,23 @@
+menu "Logging"
+
+choice OPENEMBER_LOG_BACKEND
+    prompt "Log backend"
+    default OPENEMBER_LOG_BACKEND_ZLOG
+
+config OPENEMBER_LOG_BACKEND_ZLOG
+    bool "zlog"
+
+config OPENEMBER_LOG_BACKEND_SPDLOG
+    bool "spdlog"
+
+config OPENEMBER_LOG_BACKEND_BUILTIN
+    bool "builtin (stderr)"
+
+endchoice
+
+config OPENEMBER_LOG_FILE
+    string "zlog.conf path"
+    default "/etc/openember/zlog.conf" if OPENEMBER_LOG_BACKEND_ZLOG
+
+endmenu
+
