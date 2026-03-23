@@ -34,6 +34,12 @@ set(OPENEMBER_SQLITE_URL
 
 include(${CMAKE_SOURCE_DIR}/cmake/GetSqlite.cmake)
 
+include(${CMAKE_SOURCE_DIR}/cmake/GetNlohmannJson.cmake)
+
+include(${CMAKE_SOURCE_DIR}/cmake/GetYamlCpp.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/GetAsio.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/GetSpdlog.cmake)
+
 # ------------------------------------------------------------
 # Transport dependencies (nng / lcm / libzmq / cppzmq)
 # ------------------------------------------------------------
@@ -64,6 +70,14 @@ set(OPENEMBER_PAHO_MQTT_C_URL
     "https://github.com/eclipse-paho/paho.mqtt.c/archive/v${OPENEMBER_PAHO_MQTT_C_VERSION}.tar.gz")
 
 function(openember_third_party_resolve_zlog)
+    # 仅当 OPENEMBER_LOG_BACKEND=ZLOG 时解析 zlog（由根 CMakeLists 在 include 本文件前设置）
+    if(NOT OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
+        set(ZLOG_INCLUDE_DIRS "" PARENT_SCOPE)
+        set(ZLOG_LIBRARIES "" PARENT_SCOPE)
+        set(BUILD_ZLOG FALSE PARENT_SCOPE)
+        return()
+    endif()
+
     # Prefer system package if available
     find_package(ZLOG QUIET)
     if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
@@ -145,6 +159,28 @@ function(openember_third_party_resolve_cjson)
     set(BUILD_CJSON FALSE PARENT_SCOPE)
     set(CJSON_INCLUDE_DIRS ${CJSON_INCLUDE_DIRS} PARENT_SCOPE)
     set(CJSON_LIBRARIES ${CJSON_LIBRARIES} PARENT_SCOPE)
+endfunction()
+
+function(openember_third_party_resolve_nlohmann_json)
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
+        find_package(nlohmann_json CONFIG REQUIRED)
+        return()
+    endif()
+
+    find_package(nlohmann_json CONFIG QUIET)
+    if(nlohmann_json_FOUND)
+        return()
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        if(NOT OPENEMBER_NLOHMANN_JSON_LOCAL_SOURCE)
+            set(OPENEMBER_NLOHMANN_JSON_LOCAL_SOURCE
+                "${CMAKE_SOURCE_DIR}/download/_extracted/json-${OPENEMBER_NLOHMANN_JSON_VERSION}"
+                CACHE PATH "Local nlohmann/json sources (VENDOR mode)" FORCE)
+        endif()
+    endif()
+
+    openember_get_nlohmann_json()
 endfunction()
 
 function(openember_third_party_resolve_paho_mqtt_c)
@@ -309,6 +345,65 @@ function(openember_transport_resolve_cppzmq)
 
     openember_get_cppzmq()
     set(OPENEMBER_CPPZMQ_INCLUDE_DIRS ${OPENEMBER_CPPZMQ_INCLUDE_DIRS} PARENT_SCOPE)
+endfunction()
+
+# 可选 C++ 依赖：yaml-cpp / Asio；spdlog 仅在 OPENEMBER_LOG_BACKEND=SPDLOG 时拉取
+function(openember_third_party_resolve_optional_cxx_deps)
+    if(OPENEMBER_WITH_YAMLCPP)
+        if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
+            find_package(yaml-cpp REQUIRED)
+        elseif(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+            if(NOT OPENEMBER_YAMLCPP_LOCAL_SOURCE)
+                set(OPENEMBER_YAMLCPP_LOCAL_SOURCE
+                    "${CMAKE_SOURCE_DIR}/download/_extracted/yaml-cpp-${OPENEMBER_YAMLCPP_VERSION}"
+                    CACHE PATH "Local yaml-cpp sources (VENDOR)" FORCE)
+            endif()
+            openember_get_yaml_cpp()
+        else()
+            openember_get_yaml_cpp()
+        endif()
+    endif()
+
+    if(OPENEMBER_WITH_ASIO)
+        if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
+            find_path(OPENEMBER_ASIO_INCLUDE_DIR "asio.hpp" PATH_SUFFIXES "asio/include")
+            if(NOT OPENEMBER_ASIO_INCLUDE_DIR)
+                message(FATAL_ERROR "SYSTEM mode: standalone Asio headers not found (asio.hpp)")
+            endif()
+            if(NOT TARGET openember::asio)
+                add_library(openember_asio_sys INTERFACE)
+                add_library(openember::asio ALIAS openember_asio_sys)
+                target_include_directories(openember_asio_sys INTERFACE ${OPENEMBER_ASIO_INCLUDE_DIR})
+                target_compile_definitions(openember_asio_sys INTERFACE ASIO_STANDALONE ASIO_NO_DEPRECATED)
+                find_package(Threads REQUIRED)
+                target_link_libraries(openember_asio_sys INTERFACE Threads::Threads)
+            endif()
+        elseif(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+            if(NOT OPENEMBER_ASIO_LOCAL_SOURCE)
+                set(OPENEMBER_ASIO_LOCAL_SOURCE
+                    "${CMAKE_SOURCE_DIR}/download/_extracted/asio-${OPENEMBER_ASIO_TAG}"
+                    CACHE PATH "Local Asio sources (VENDOR)" FORCE)
+            endif()
+            openember_get_asio()
+        else()
+            openember_get_asio()
+        endif()
+    endif()
+
+    if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
+        if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
+            find_package(spdlog REQUIRED)
+        elseif(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+            if(NOT OPENEMBER_SPDLOG_LOCAL_SOURCE)
+                set(OPENEMBER_SPDLOG_LOCAL_SOURCE
+                    "${CMAKE_SOURCE_DIR}/download/_extracted/spdlog-${OPENEMBER_SPDLOG_VERSION}"
+                    CACHE PATH "Local spdlog sources (VENDOR)" FORCE)
+            endif()
+            openember_get_spdlog()
+        else()
+            openember_get_spdlog()
+        endif()
+    endif()
 endfunction()
 
 

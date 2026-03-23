@@ -37,12 +37,21 @@
 #define EMBER_LIBS_USING_NNG
 #endif
 
-/* Log definitions */
+/* Log definitions — 后端由 CMake OPENEMBER_LOG_BACKEND 生成 ember_log_backend.h */
 #define EMBER_LIBS_USING_LOG
 
+#include "ember_log_backend.h"
+
+/* JSON 实现选择：CMake OPENEMBER_JSON_LIBRARY → ember_json_config.h */
+#include "ember_json_config.h"
+
+#if EMBER_LOG_BACKEND_IS_ZLOG
 #define EMBER_LIBS_USING_ZLOG
-#ifdef EMBER_LIBS_USING_ZLOG
-#define LOG_FILE    "/etc/openember/zlog.conf"
+#define LOG_FILE "/etc/openember/zlog.conf"
+#elif EMBER_LOG_BACKEND_IS_SPDLOG
+#define EMBER_LIBS_USING_SPDLOG
+#elif EMBER_LOG_BACKEND_IS_BUILTIN
+#define EMBER_LIBS_USING_LOG_BUILTIN
 #endif
 
 //#define EMBER_LIBS_USING_EASYLOGGER

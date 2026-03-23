@@ -22,7 +22,14 @@
 #include "openember.h"
 #include "ppool.h"
 
+#if OPENEMBER_JSON_USE_NLOHMANN_JSON
+#include <string>
+#include <nlohmann/json.hpp>
+#endif
+#if OPENEMBER_JSON_USE_CJSON
 #include "cJSON.h"
+#endif
+
 #include "yaml.h"
 
 //#define TEMPLATE_RAW_MSG
@@ -44,13 +51,27 @@ static void task_entry(void *args)
 {
     if (!args) {
         LOG_E("Invalid arguments for thread routine");
-        return ;
+        return;
     }
 
+#if OPENEMBER_JSON_USE_CJSON
     cJSON *json = cJSON_Parse((char *)args);
-    printf("%s\n", cJSON_Print(json));
-
-    cJSON_Delete(json);
+    if (json) {
+        char *printed = cJSON_Print(json);
+        if (printed) {
+            printf("%s\n", printed);
+            free(printed);
+        }
+        cJSON_Delete(json);
+    }
+#elif OPENEMBER_JSON_USE_NLOHMANN_JSON
+    try {
+        nlohmann::json j = nlohmann::json::parse(std::string(static_cast<char *>(args)));
+        printf("%s\n", j.dump(4).c_str());
+    } catch (const std::exception &e) {
+        LOG_E("JSON: %s", e.what());
+    }
+#endif
     free(args);
 }
 

@@ -119,17 +119,82 @@ if (OPENMP_ENABLED)
 endif()
 
 ################################################################################
+# Log backend (BUILTIN / ZLOG / SPDLOG) + generated ember_log_backend.h
+################################################################################
+if(NOT DEFINED OPENEMBER_LOG_BACKEND)
+    set(OPENEMBER_LOG_BACKEND "ZLOG" CACHE STRING "OpenEmber logging backend")
+endif()
+set_property(CACHE OPENEMBER_LOG_BACKEND PROPERTY STRINGS BUILTIN ZLOG SPDLOG)
+
+option(OPENEMBER_WITH_YAMLCPP "Fetch/use yaml-cpp (optional C++ dependency)" ON)
+option(OPENEMBER_WITH_ASIO "Fetch/use standalone Asio (optional)" ON)
+
+set(OPENEMBER_LOG_BACKEND_IS_BUILTIN 0)
+set(OPENEMBER_LOG_BACKEND_IS_ZLOG 0)
+set(OPENEMBER_LOG_BACKEND_IS_SPDLOG 0)
+if(OPENEMBER_LOG_BACKEND STREQUAL "BUILTIN")
+    set(OPENEMBER_LOG_BACKEND_IS_BUILTIN 1)
+elseif(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
+    set(OPENEMBER_LOG_BACKEND_IS_ZLOG 1)
+elseif(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
+    set(OPENEMBER_LOG_BACKEND_IS_SPDLOG 1)
+else()
+    message(FATAL_ERROR "OPENEMBER_LOG_BACKEND must be BUILTIN, ZLOG, or SPDLOG (got '${OPENEMBER_LOG_BACKEND}')")
+endif()
+
+configure_file(
+    ${CMAKE_SOURCE_DIR}/inc/ember_log_backend.h.in
+    ${CMAKE_BINARY_DIR}/include/ember_log_backend.h
+    @ONLY)
+
+################################################################################
+# JSON 库选择：cJSON（C）或 nlohmann/json（C++）
+################################################################################
+if(NOT DEFINED OPENEMBER_JSON_LIBRARY)
+    set(OPENEMBER_JSON_LIBRARY "CJSON" CACHE STRING "JSON implementation for OpenEmber")
+endif()
+set_property(CACHE OPENEMBER_JSON_LIBRARY PROPERTY STRINGS CJSON NLOHMANN_JSON)
+
+set(OPENEMBER_JSON_USE_CJSON 0)
+set(OPENEMBER_JSON_USE_NLOHMANN_JSON 0)
+if(OPENEMBER_JSON_LIBRARY STREQUAL "CJSON")
+    set(OPENEMBER_JSON_USE_CJSON 1)
+elseif(OPENEMBER_JSON_LIBRARY STREQUAL "NLOHMANN_JSON")
+    set(OPENEMBER_JSON_USE_NLOHMANN_JSON 1)
+else()
+    message(FATAL_ERROR "OPENEMBER_JSON_LIBRARY must be CJSON or NLOHMANN_JSON (got '${OPENEMBER_JSON_LIBRARY}')")
+endif()
+
+configure_file(
+    ${CMAKE_SOURCE_DIR}/inc/ember_json_config.h.in
+    ${CMAKE_BINARY_DIR}/include/ember_json_config.h
+    @ONLY)
+
+################################################################################
 # Resolve third-party dependencies
 ################################################################################
 
 # zlog / cJSON: use OPENEMBER_THIRD_PARTY_MODE (FetchContent / Vendor / System)
 openember_third_party_resolve_zlog()
-message(STATUS "├── zlog: ${ZLOG_LIBRARIES}")
-message(STATUS "└── zlog include: ${ZLOG_INCLUDE_DIRS}")
+if(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
+    message(STATUS "├── zlog: ${ZLOG_LIBRARIES}")
+    message(STATUS "└── zlog include: ${ZLOG_INCLUDE_DIRS}")
+else()
+    message(STATUS "├── zlog: (skipped, OPENEMBER_LOG_BACKEND=${OPENEMBER_LOG_BACKEND})")
+endif()
 
-openember_third_party_resolve_cjson()
-message(STATUS "├── cJSON: ${CJSON_LIBRARIES}")
-message(STATUS "└── cJSON include: ${CJSON_INCLUDE_DIRS}")
+if(OPENEMBER_JSON_LIBRARY STREQUAL "CJSON")
+    openember_third_party_resolve_cjson()
+    set(OPENEMBER_JSON_INCLUDE_DIRS ${CJSON_INCLUDE_DIRS})
+    set(OPENEMBER_JSON_LIBRARIES ${CJSON_LIBRARIES})
+    message(STATUS "├── JSON: cJSON (${CJSON_LIBRARIES})")
+    message(STATUS "└── JSON include: ${CJSON_INCLUDE_DIRS}")
+elseif(OPENEMBER_JSON_LIBRARY STREQUAL "NLOHMANN_JSON")
+    openember_third_party_resolve_nlohmann_json()
+    set(OPENEMBER_JSON_INCLUDE_DIRS "")
+    set(OPENEMBER_JSON_LIBRARIES nlohmann_json::nlohmann_json)
+    message(STATUS "├── JSON: nlohmann_json (target nlohmann_json::nlohmann_json)")
+endif()
 
 # EasyLogger 已删除：仅保留 CMake 选项占位，强制关闭。
 set(EASYLOGGER_INCLUDE_DIRS "")
@@ -145,6 +210,17 @@ message(STATUS "└── ${PAHO_MQTT_C_INCLUDE_DIRS}")
 openember_third_party_resolve_sqlite()
 message(STATUS "├── sqlite: ${SQLITE_LIBRARIES}")
 message(STATUS "└── sqlite include: ${SQLITE_INCLUDE_DIRS}")
+
+openember_third_party_resolve_optional_cxx_deps()
+if(OPENEMBER_WITH_YAMLCPP)
+    message(STATUS "├── optional: yaml-cpp enabled (target yaml-cpp::yaml-cpp)")
+endif()
+if(OPENEMBER_WITH_ASIO)
+    message(STATUS "├── optional: Asio enabled (target openember::asio)")
+endif()
+if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
+    message(STATUS "├── log backend: spdlog (target spdlog::spdlog)")
+endif()
 
 if(OPENEMBER_PUBSUB_BACKEND STREQUAL "zmq")
     openember_transport_resolve_libzmq()
@@ -172,19 +248,28 @@ if(OPENEMBER_MSGBUS_USE_LCM AND NOT OPENEMBER_PUBSUB_BACKEND STREQUAL "lcm")
     message(STATUS "└── lcm (msgbus) include: ${OPENEMBER_LCM_INCLUDE_DIRS}")
 endif()
 
+set(OPENEMBER_LOG_BACKEND_INCLUDES "")
+set(OPENEMBER_LOG_BACKEND_LIBS "")
+if(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
+    list(APPEND OPENEMBER_LOG_BACKEND_INCLUDES ${ZLOG_INCLUDE_DIRS})
+    list(APPEND OPENEMBER_LOG_BACKEND_LIBS ${ZLOG_LIBRARIES})
+elseif(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
+    list(APPEND OPENEMBER_LOG_BACKEND_LIBS spdlog::spdlog)
+endif()
+
 set( OPENEMBER_EXTERNAL_INCLUDE_DIRS
-    ${ZLOG_INCLUDE_DIRS}
+    ${OPENEMBER_LOG_BACKEND_INCLUDES}
     ${EASYLOGGER_INCLUDE_DIRS}
     ${PAHO_MQTT_C_INCLUDE_DIRS}
-    ${CJSON_INCLUDE_DIRS}
+    ${OPENEMBER_JSON_INCLUDE_DIRS}
     ${SQLITE_INCLUDE_DIRS}
 )
 
 set( OPENEMBER_EXTERNAL_LIBRARIES
-    ${ZLOG_LIBRARIES}
+    ${OPENEMBER_LOG_BACKEND_LIBS}
     ${EASYLOGGER_LIBRARIES}
     ${PAHO_MQTT_C_LIBRARIES}
-    ${CJSON_LIBRARIES}
+    ${OPENEMBER_JSON_LIBRARIES}
     ${SQLITE_LIBRARIES} dl
 )
 
@@ -199,6 +284,7 @@ elseif(OPENEMBER_MSGBUS_USE_LCM)
 endif()
 
 set( OPENEMBER_INTERNAL_INCLUDE_DIRS 
+    ${CMAKE_BINARY_DIR}/include
     ${CMAKE_SOURCE_DIR}/inc
     ${CMAKE_SOURCE_DIR}/libs/HAL
     ${CMAKE_SOURCE_DIR}/libs/GSDL/src

@@ -1,4 +1,4 @@
-# cJSON 依赖获取脚本（FetchContent），参考 AimRT 的 GetXxx.cmake 组织方式
+# cJSON 依赖获取脚本（FetchContent / OpenEmber GetXxx 约定）
 
 include(FetchContent)
 

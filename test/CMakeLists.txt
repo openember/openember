@@ -1,18 +1,23 @@
-aux_source_directory(. TEST_SRCS)
+set(_openember_tests
+    minunit_example.c
+    test_log.c
+)
 
-foreach(TEST_SRC ${TEST_SRCS})
-    string(REGEX MATCH "^.*/([^/]+)[.]c$" TEST_NAME ${TEST_SRC})
-    set(TEST_NAME ${CMAKE_MATCH_1})
+if(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
+    list(APPEND _openember_tests test_zlog_conf.c)
+endif()
 
-    message(STATUS "${TEST_NAME} ${TEST_SRC}")
-
-    OPENEMBER_ADD_TEST(TARGET   ${TEST_NAME} 
-                   SRCS     ${TEST_SRC} 
-                   LIBS     ${OPENEMBER_LIBRARIES} 
-                   INCLUDES ${OPENEMBER_INCLUDE_DIRS} 
+foreach(_t ${_openember_tests})
+    string(REPLACE ".c" "" TEST_NAME ${_t})
+    message(STATUS "${TEST_NAME} ${_t}")
+    OPENEMBER_ADD_TEST(TARGET   ${TEST_NAME}
+                   SRCS     ${_t}
+                   LIBS     ${OPENEMBER_LIBRARIES}
+                   INCLUDES ${OPENEMBER_INCLUDE_DIRS}
     )
+endforeach()
 
-endforeach(TEST_SRC)
-
-file(GLOB CONF_FILES . *.conf)
-file(COPY ${CONF_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(GLOB CONF_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.conf)
+if(CONF_FILES)
+    file(COPY ${CONF_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endif()
