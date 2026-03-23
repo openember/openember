@@ -1,7 +1,44 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+resolve_realpath() {
+  local p="$1"
+  if command -v realpath >/dev/null 2>&1; then
+    realpath "$p"
+  else
+    readlink -f "$p"
+  fi
+}
+
+find_project_root() {
+  # 1) explicit override
+  if [[ -n "${OPENEMBER_ROOT:-}" ]]; then
+    echo "${OPENEMBER_ROOT}"
+    return 0
+  fi
+
+  # 2) run from project root (works for symlinked ember in repo root or /usr/local/bin)
+  if [[ -f "./CMakeLists.txt" && -f "./scripts/kconfig/menuconfig.sh" ]]; then
+    pwd
+    return 0
+  fi
+
+  # 3) derive from script real path
+  local self_real script_dir candidate
+  self_real="$(resolve_realpath "${BASH_SOURCE[0]}")"
+  script_dir="$(cd "$(dirname "${self_real}")" && pwd)"
+  candidate="$(cd "${script_dir}/.." && pwd)"
+  if [[ -f "${candidate}/CMakeLists.txt" && -f "${candidate}/scripts/kconfig/menuconfig.sh" ]]; then
+    echo "${candidate}"
+    return 0
+  fi
+
+  echo "Cannot locate OpenEmber project root." >&2
+  echo "Please run from project root, or set OPENEMBER_ROOT=/path/to/openember." >&2
+  return 1
+}
+
+ROOT_DIR="$(find_project_root)"
 BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
 JOBS="${OPENEMBER_JOBS:-$(nproc)}"
 
