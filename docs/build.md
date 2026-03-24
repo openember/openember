@@ -88,7 +88,47 @@ make all BUILD_DIR=build-dev JOBS=16
 
 # 环境变量控制
 OPENEMBER_BUILD_DIR=build-dev OPENEMBER_JOBS=16 ./scripts/ember build
+
+# 安装到当前用户（推荐，默认）
+./scripts/ember install
+
+# 自定义安装目录（例如系统目录）
+./scripts/ember install --prefix /usr/local/bin
 ```
+
+说明：
+
+- `ember install` 默认安装到 `~/.local/bin/ember`，并自动写入 `~/.bashrc`：
+  - 自动补齐 PATH（若缺失）
+  - 自动加载补全（新开终端生效）
+- 若使用 `--prefix` 且目录需要权限，脚本会在必要时自动调用 `sudo` 完成软链接写入。
+- 不建议使用 `sudo ./scripts/ember install ...` 直接整条提权执行。
+
+### 2.2.1 命令补全
+
+安装后一般无需手动配置补全；若只想临时在当前 shell 启用，可执行：
+
+```bash
+source <(./scripts/ember completion bash)
+```
+
+如果 ember 在 PATH（例如软链接到 `/usr/local/bin/ember`），也可以：
+
+```bash
+source <(ember completion bash)
+```
+
+卸载：
+
+```bash
+# 自动探测并删除 PATH 中的 ember、默认路径及常见系统路径中的 ember
+./scripts/ember uninstall
+
+# 额外指定一个前缀目录参与删除
+./scripts/ember uninstall --prefix /usr/local/bin
+```
+
+
 
 ## 3. 当前已支持的 Kconfig 配置项
 

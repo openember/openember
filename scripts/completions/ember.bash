@@ -9,7 +9,7 @@ _ember_complete() {
   words=("${COMP_WORDS[@]}")
   cword="${COMP_CWORD}"
 
-  local commands="menuconfig genconfig configure build all clean completion help -h --help"
+  local commands="menuconfig genconfig configure build all clean completion install uninstall help -h --help"
 
   # First positional arg: subcommand.
   if [[ "${cword}" -eq 1 ]]; then
@@ -21,6 +21,19 @@ _ember_complete() {
   if [[ "${words[1]}" == "completion" && "${cword}" -eq 2 ]]; then
     COMPREPLY=( $(compgen -W "bash" -- "${cur}") )
     return 0
+  fi
+
+  # install/uninstall option completion.
+  if [[ "${words[1]}" == "install" || "${words[1]}" == "uninstall" ]]; then
+    if [[ "${prev}" == "--prefix" ]]; then
+      COMPREPLY=( $(compgen -d -- "${cur}") )
+      return 0
+    fi
+
+    if [[ "${cur}" == --* ]]; then
+      COMPREPLY=( $(compgen -W "--prefix" -- "${cur}") )
+      return 0
+    fi
   fi
 
   # For commands that accept build_dir, complete as directory paths.

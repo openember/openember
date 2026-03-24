@@ -41,6 +41,15 @@ find_project_root() {
 ROOT_DIR="$(find_project_root)"
 BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
 JOBS="${OPENEMBER_JOBS:-$(nproc)}"
+EMBER_COMPLETION_BEGIN="# >>> openember ember completion >>>"
+EMBER_COMPLETION_END="# <<< openember ember completion <<<"
+EMBER_PATH_BEGIN="# >>> openember ember path >>>"
+EMBER_PATH_END="# <<< openember ember path <<<"
+REAL_USER="${SUDO_USER:-${USER}}"
+REAL_HOME="$(getent passwd "${REAL_USER}" | cut -d: -f6)"
+if [[ -z "${REAL_HOME}" ]]; then
+  REAL_HOME="${HOME}"
+fi
 
 usage() {
   cat <<EOF
@@ -54,6 +63,8 @@ Usage:
   ember all [build_dir]
   ember clean [build_dir]
   ember completion bash
+  ember install [--prefix <dir>]
+  ember uninstall [--prefix <dir>]
   ember help
 
 Environment:
@@ -70,6 +81,156 @@ resolve_build_dir() {
   else
     echo "${BUILD_DIR}"
   fi
+}
+
+upsert_block_in_file() {
+  local file="$1"
+  local begin="$2"
+  local end="$3"
+  local content="$4"
+
+  mkdir -p "$(dirname "${file}")"
+  touch "${file}"
+
+  awk -v b="${begin}" -v e="${end}" '
+    $0 == b { in_block=1; next }
+    $0 == e { in_block=0; next }
+    !in_block { print }
+  ' "${file}" > "${file}.tmp"
+  mv "${file}.tmp" "${file}"
+
+  {
+    printf "\n%s\n" "${begin}"
+    printf "%s\n" "${content}"
+    printf "%s\n" "${end}"
+  } >> "${file}"
+}
+
+remove_block_in_file() {
+  local file="$1"
+  local begin="$2"
+  local end="$3"
+  if [[ ! -f "${file}" ]]; then
+    return 0
+  fi
+  awk -v b="${begin}" -v e="${end}" '
+    $0 == b { in_block=1; next }
+    $0 == e { in_block=0; next }
+    !in_block { print }
+  ' "${file}" > "${file}.tmp"
+  mv "${file}.tmp" "${file}"
+}
+
+install_with_prefix() {
+  local target_bin="$1"
+  local target_link="${target_bin}/ember"
+  local bashrc="${REAL_HOME}/.bashrc"
+  local self_real
+  self_real="$(resolve_realpath "${BASH_SOURCE[0]}")"
+
+  if ! mkdir -p "${target_bin}" 2>/dev/null || ! ln -sfn "${self_real}" "${target_link}" 2>/dev/null; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo mkdir -p "${target_bin}"
+      sudo ln -sfn "${self_real}" "${target_link}"
+    else
+      echo "Cannot write ${target_bin}. Try a writable prefix or install sudo." >&2
+      return 1
+    fi
+  fi
+
+  upsert_block_in_file "${bashrc}" "${EMBER_PATH_BEGIN}" "${EMBER_PATH_END}" \
+"if [ -d \"${target_bin}\" ] && [[ \":\$PATH:\" != *\":${target_bin}:\"* ]]; then
+  export PATH=\"${target_bin}:\$PATH\"
+fi"
+
+  upsert_block_in_file "${bashrc}" "${EMBER_COMPLETION_BEGIN}" "${EMBER_COMPLETION_END}" \
+'if command -v ember >/dev/null 2>&1; then
+  source <(ember completion bash)
+fi'
+
+  echo "[ember] installed to ${target_link}"
+  echo "[ember] bash completion registered in ${bashrc} (new shells auto-load)"
+}
+
+remove_ember_link() {
+  local target_link="$1"
+  if [[ ! -L "${target_link}" && ! -e "${target_link}" ]]; then
+    return 0
+  fi
+  if ! rm -f "${target_link}" 2>/dev/null; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo rm -f "${target_link}"
+    else
+      echo "Cannot remove ${target_link}. Try with a writable prefix." >&2
+      return 1
+    fi
+  fi
+  echo "[ember] removed ${target_link}"
+}
+
+uninstall_auto() {
+  local target_prefix="${1:-}"
+  local bashrc="${REAL_HOME}/.bashrc"
+  local cand
+  local -a candidates=()
+  local -A seen=()
+
+  if command -v which >/dev/null 2>&1; then
+    while IFS= read -r cand; do
+      [[ -n "${cand}" ]] && candidates+=("${cand}")
+    done < <(which -a ember 2>/dev/null || true)
+  fi
+
+  candidates+=("${REAL_HOME}/.local/bin/ember" "/usr/local/bin/ember")
+  if [[ -n "${target_prefix}" ]]; then
+    candidates+=("${target_prefix%/}/ember")
+  fi
+
+  for cand in "${candidates[@]}"; do
+    [[ -n "${cand}" ]] || continue
+    if [[ -n "${seen[${cand}]:-}" ]]; then
+      continue
+    fi
+    seen["${cand}"]=1
+    remove_ember_link "${cand}" || true
+  done
+
+  remove_block_in_file "${bashrc}" "${EMBER_COMPLETION_BEGIN}" "${EMBER_COMPLETION_END}"
+  remove_block_in_file "${bashrc}" "${EMBER_PATH_BEGIN}" "${EMBER_PATH_END}"
+  echo "[ember] removed PATH/completion blocks from ${bashrc}"
+}
+
+parse_prefix_arg() {
+  local default_prefix="${1:-}"
+  local prefix="${default_prefix}"
+  shift || true
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --prefix)
+        if [[ $# -lt 2 || -z "${2:-}" ]]; then
+          echo "Missing value for --prefix" >&2
+          return 1
+        fi
+        prefix="$2"
+        shift 2
+        ;;
+      --user)
+        prefix="${REAL_HOME}/.local/bin"
+        shift
+        ;;
+      --system)
+        prefix="/usr/local/bin"
+        shift
+        ;;
+      *)
+        echo "Unknown option: $1" >&2
+        return 1
+        ;;
+    esac
+  done
+
+  echo "${prefix}"
 }
 
 cmd="${1:-help}"
@@ -120,6 +281,20 @@ case "${cmd}" in
         exit 1
         ;;
     esac
+    ;;
+  install)
+    if ! prefix="$(parse_prefix_arg "${REAL_HOME}/.local/bin" "${@:2}")"; then
+      echo "Usage: ember install [--prefix <dir>]" >&2
+      exit 1
+    fi
+    install_with_prefix "${prefix}"
+    ;;
+  uninstall)
+    if ! prefix="$(parse_prefix_arg "" "${@:2}")"; then
+      echo "Usage: ember uninstall [--prefix <dir>]" >&2
+      exit 1
+    fi
+    uninstall_auto "${prefix}"
     ;;
   help|-h|--help)
     usage
