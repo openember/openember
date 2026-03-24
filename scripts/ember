@@ -53,6 +53,7 @@ Usage:
   ember build [build_dir]
   ember all [build_dir]
   ember clean [build_dir]
+  ember completion bash
   ember help
 
 Environment:
@@ -106,6 +107,19 @@ case "${cmd}" in
     ;;
   clean)
     rm -rf "${bd}"
+    ;;
+  completion)
+    shell_name="${2:-bash}"
+    case "${shell_name}" in
+      bash)
+        cat "${ROOT_DIR}/scripts/completions/ember.bash"
+        ;;
+      *)
+        echo "Unsupported shell for completion: ${shell_name}" >&2
+        echo "Currently supported: bash" >&2
+        exit 1
+        ;;
+    esac
     ;;
   help|-h|--help)
     usage
