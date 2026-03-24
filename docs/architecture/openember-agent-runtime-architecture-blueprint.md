@@ -32,6 +32,14 @@
 
 而我们希望构建的是：Embodied Agent Runtime（即：具身智能系统运行时）
 
+**表：runtime vs framework vs middleware 的区别**
+
+| 类型       | 作用             |
+| ---------- | ---------------- |
+| framework  | 提供开发结构     |
+| middleware | 提供通信能力     |
+| runtime    | 负责执行系统行为 |
+
 
 
 ## 二、什么是 Embodied Agent Runtime？
@@ -90,6 +98,38 @@ Feedback
 
 统一运行架构。
 
+### 为什么 OpenEmber 天然适合成为 Agent Runtime？
+
+因为我们已经设计了：
+
+```bash
+transport middleware
+HAL abstraction
+module system
+plugin architecture
+launch system
+Kconfig configuration
+FetchContent dependency manager
+```
+
+这些组合起来就是：
+
+```bash
+runtime skeleton
+```
+
+只需要再补：
+
+```bash
+planner
+memory
+workflow
+tool registry
+execution graph
+```
+
+就完成 Agent Runtime 体系。
+
 
 
 ## 四、Agent Runtime 总体架构
@@ -139,7 +179,7 @@ components/agent/
 └── workflow/
 ```
 
-说明如下：
+说明如下。
 
 
 
@@ -533,3 +573,32 @@ Application orchestration
 机器人 + 自动驾驶 + 工业智能 + 安防 + IoT
 统一智能运行时平台
 ```
+
+
+
+如果继续沿这条路线演进：
+
+OpenEmber 可以成为：
+
+```
+Edge Intelligent Agent Runtime Platform
+```
+
+类似：
+
+```
+ROS2 + LangChain + Triton + systemd
+```
+
+的统一版本。
+
+但：
+
+```
+更轻量
+更模块化
+更嵌入式友好
+更可裁剪
+```
+
+这在当前生态里几乎没有成熟对手。
