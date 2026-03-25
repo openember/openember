@@ -7,6 +7,10 @@ if(OPENEMBER_ENABLE_OSAL)
     list(APPEND _openember_tests test_osal.c)
 endif()
 
+if(OPENEMBER_ENABLE_HAL)
+    list(APPEND _openember_tests test_hal.c)
+endif()
+
 if(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
     list(APPEND _openember_tests test_zlog_conf.c)
 endif()
