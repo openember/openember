@@ -1,28 +1,9 @@
 menu "Platform"
 
-config OPENEMBER_CROSSCOMPILE_ENABLED
-    bool "Enable cross compile mode (aarch64)"
-    default n
-
-choice OPENEMBER_THIRD_PARTY_MODE_CHOICE
-    prompt "Third-party mode"
-    default OPENEMBER_TP_MODE_FETCH
-
-config OPENEMBER_TP_MODE_FETCH
-    bool "FetchContent"
-
-config OPENEMBER_TP_MODE_VENDOR
-    bool "Vendor (download/_extracted)"
-
-config OPENEMBER_TP_MODE_SYSTEM
-    bool "System packages"
-
-endchoice
-
 menu "OSAL"
 
 config OPENEMBER_ENABLE_OSAL
-    bool "Build OSAL (pthread mutex/thread/monotonic time)"
+    bool "Build OSAL (Thread / Mutex / Timer ...)"
     default y
     help
       Platform OSAL for Linux: mutex, thread join, sleep, monotonic clock.
@@ -31,7 +12,7 @@ config OPENEMBER_ENABLE_OSAL
 endmenu
 
 config OPENEMBER_ENABLE_HAL
-    bool "Build HAL (Linux file / UART)"
+    bool "Build HAL (UART / I2C / SPI / GPIO / CAN ...)"
     depends on OPENEMBER_ENABLE_OSAL
     default y
     help
