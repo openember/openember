@@ -504,6 +504,97 @@ MU_TEST(test_mq_send_recv_optional)
     mu_assert(r == OE_OK, "mq unlink");
 }
 
+MU_TEST(test_socket_tcp_send_recv)
+{
+    oe_result_t r;
+    oe_socket_t server;
+    oe_socket_t client;
+    oe_socket_t accepted;
+    uint16_t port = 0;
+
+    memset(&server, 0, sizeof(server));
+    memset(&client, 0, sizeof(client));
+    memset(&accepted, 0, sizeof(accepted));
+
+    r = oe_socket_open_tcp_server(&server, "127.0.0.1", 0, 8);
+    mu_assert(r == OE_OK, "tcp server open");
+
+    r = oe_socket_get_local_port(&server, &port);
+    mu_assert(r == OE_OK, "tcp server local port");
+    mu_check(port != 0);
+
+    r = oe_socket_open_tcp_client(&client, "127.0.0.1", port, 1000);
+    mu_assert(r == OE_OK, "tcp client open");
+
+    r = oe_socket_accept(&server, &accepted, 1000);
+    mu_assert(r == OE_OK, "tcp accept");
+
+    uint32_t req = 0x11111111u;
+    uint32_t resp = 0x22222222u;
+    size_t sent = 0;
+    size_t recvd = 0;
+
+    r = oe_socket_send(&client, &req, sizeof(req), &sent, 1000);
+    mu_assert(r == OE_OK, "tcp client send");
+
+    uint32_t got_req = 0;
+    r = oe_socket_recv(&accepted, &got_req, sizeof(got_req), &recvd, 1000);
+    mu_assert(r == OE_OK, "tcp server recv");
+    mu_assert(got_req == req, "tcp server req match");
+
+    r = oe_socket_send(&accepted, &resp, sizeof(resp), &sent, 1000);
+    mu_assert(r == OE_OK, "tcp server send");
+
+    uint32_t got_resp = 0;
+    r = oe_socket_recv(&client, &got_resp, sizeof(got_resp), &recvd, 1000);
+    mu_assert(r == OE_OK, "tcp client recv");
+    mu_assert(got_resp == resp, "tcp client resp match");
+
+    (void)oe_socket_close(&accepted);
+    (void)oe_socket_close(&client);
+    (void)oe_socket_close(&server);
+}
+
+MU_TEST(test_socket_udp_send_recv)
+{
+    oe_result_t r;
+    oe_socket_t rx;
+    oe_socket_t tx;
+    uint16_t port = 0;
+
+    memset(&rx, 0, sizeof(rx));
+    memset(&tx, 0, sizeof(tx));
+
+    r = oe_socket_open_udp(&rx, "127.0.0.1", 0);
+    mu_assert(r == OE_OK, "udp rx open");
+
+    r = oe_socket_get_local_port(&rx, &port);
+    mu_assert(r == OE_OK, "udp rx local port");
+    mu_check(port != 0);
+
+    r = oe_socket_open_udp(&tx, "127.0.0.1", 0);
+    mu_assert(r == OE_OK, "udp tx open");
+
+    r = oe_socket_udp_connect(&tx, "127.0.0.1", port);
+    mu_assert(r == OE_OK, "udp connect");
+
+    const char msg[] = "hello-udp";
+    size_t sent = 0;
+    r = oe_socket_send(&tx, msg, sizeof(msg), &sent, 1000);
+    mu_assert(r == OE_OK, "udp send");
+
+    char buf[32];
+    size_t got = 0;
+    memset(buf, 0, sizeof(buf));
+    r = oe_socket_recv(&rx, buf, sizeof(buf), &got, 1000);
+    mu_assert(r == OE_OK, "udp recv");
+    mu_check(got > 0);
+    mu_assert(memcmp(buf, msg, sizeof(msg)) == 0, "udp payload match");
+
+    (void)oe_socket_close(&tx);
+    (void)oe_socket_close(&rx);
+}
+
 MU_TEST_SUITE(osal_suite)
 {
     MU_SUITE_CONFIGURE(NULL, NULL);
@@ -516,6 +607,8 @@ MU_TEST_SUITE(osal_suite)
     MU_RUN_TEST(test_shm_create_open_ptr_unlink);
     MU_RUN_TEST(test_socket_accept_timeout);
     MU_RUN_TEST(test_socket_unix_send_recv);
+    MU_RUN_TEST(test_socket_tcp_send_recv);
+    MU_RUN_TEST(test_socket_udp_send_recv);
     MU_RUN_TEST(test_pipe_read_write);
     MU_RUN_TEST(test_fifo_read_write);
     MU_RUN_TEST(test_signals_wait_timeout_and_ok);
