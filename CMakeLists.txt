@@ -309,7 +309,6 @@ set( OPENEMBER_INTERNAL_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/components/ppool
     ${CMAKE_SOURCE_DIR}/components/msgbus
     ${CMAKE_SOURCE_DIR}/components/Common
-    ${CMAKE_SOURCE_DIR}/components/Network
     ${CMAKE_SOURCE_DIR}/modules/Algorithm
     ${CMAKE_SOURCE_DIR}/components/libcsv
     ${CMAKE_SOURCE_DIR}/components/libyaml
@@ -321,11 +320,15 @@ set( OPENEMBER_INTERNAL_LIBRARIES
     ppool
     msgbus
     Common
-    Network
     Algorithm
     csv
     yaml
 )
+
+if(NOT DEFINED OPENEMBER_COMPONENT_NETWORK OR OPENEMBER_COMPONENT_NETWORK)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/Network)
+    list(APPEND OPENEMBER_INTERNAL_LIBRARIES Network)
+endif()
 
 add_subdirectory(platform)
 if(OPENEMBER_ENABLE_OSAL)

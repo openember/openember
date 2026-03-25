@@ -32,4 +32,6 @@ if(NOT DEFINED OPENEMBER_MODULE_WEB_SERVER OR OPENEMBER_MODULE_WEB_SERVER)
     add_subdirectory(services/web_dashboard)
 endif()
 
-add_subdirectory(examples)
+if(EXAMPLES_ENABLED)
+    add_subdirectory(examples)
+endif()

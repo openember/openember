@@ -72,6 +72,12 @@ config OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER
     help
       Requires internal msgbus backend NNG; CMake skips otherwise.
 
+config OPENEMBER_EXAMPLE_NETWORK_SOCKETS
+    bool "Build example: network_sockets (tcp/udp/unix)"
+    default y
+    help
+      Build apps/examples/network_sockets demos for OSAL sockets and Components/Network wrapper.
+
 endmenu
 
 endmenu

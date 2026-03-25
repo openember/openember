@@ -4,7 +4,9 @@ if(NOT DEFINED OPENEMBER_MODULE_TEMPLATE OR OPENEMBER_MODULE_TEMPLATE)
     add_subdirectory(hello_node)
 endif()
 
-add_subdirectory(network_sockets)
+if(NOT DEFINED OPENEMBER_EXAMPLE_NETWORK_SOCKETS OR OPENEMBER_EXAMPLE_NETWORK_SOCKETS)
+    add_subdirectory(network_sockets)
+endif()
 
 # pub/sub 双节点演示（依赖当前选择的 pubsub transport）
 if(OPENEMBER_PUBSUB_BACKEND STREQUAL "zmq")

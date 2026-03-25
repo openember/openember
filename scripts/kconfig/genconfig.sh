@@ -61,6 +61,7 @@ opt_disabled="$(onoff CONFIG_OPENEMBER_OPTIMIZATION_DISABLED)"
 crosscompile_enabled="$(onoff CONFIG_OPENEMBER_CROSSCOMPILE_ENABLED)"
 use_yamlcpp="$(onoff CONFIG_OPENEMBER_USE_YAMLCPP)"
 use_asio="$(onoff CONFIG_OPENEMBER_USE_ASIO)"
+component_network="$(onoff CONFIG_OPENEMBER_COMPONENT_NETWORK)"
 module_launch_manager="$(onoff CONFIG_OPENEMBER_MODULE_LAUNCH_MANAGER)"
 if ! grep -q "^CONFIG_OPENEMBER_MODULE_LAUNCH_MANAGER=" "${CONFIG_FILE}"; then
   module_launch_manager=ON
@@ -81,6 +82,10 @@ fi
 example_msgbus_nng_forwarder="$(onoff CONFIG_OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER)"
 if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER=" "${CONFIG_FILE}"; then
   example_msgbus_nng_forwarder=ON
+fi
+example_network_sockets="$(onoff CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS)"
+if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS=" "${CONFIG_FILE}"; then
+  example_network_sockets=ON
 fi
 
 enable_osal="$(onoff CONFIG_OPENEMBER_ENABLE_OSAL)"
@@ -118,6 +123,7 @@ set(OPENEMBER_THIRD_PARTY_MODE "${tp_mode}" CACHE STRING "Third-party source mod
 set(OPENEMBER_JSON_LIBRARY "${json_lib}" CACHE STRING "JSON implementation for OpenEmber" FORCE)
 set(OPENEMBER_WITH_YAMLCPP ${use_yamlcpp} CACHE BOOL "Fetch/use yaml-cpp (optional C++ dependency)" FORCE)
 set(OPENEMBER_WITH_ASIO ${use_asio} CACHE BOOL "Fetch/use standalone Asio (optional)" FORCE)
+set(OPENEMBER_COMPONENT_NETWORK ${component_network} CACHE BOOL "Build component: Network (high-level socket wrapper)" FORCE)
 
 set(TESTS_ENABLED ${tests_enabled} CACHE BOOL "Whether to unit test" FORCE)
 set(EXAMPLES_ENABLED ${examples_enabled} CACHE BOOL "Whether compile examples" FORCE)
@@ -138,6 +144,7 @@ set(OPENEMBER_MODULE_WEB_SERVER ${module_web_server} CACHE BOOL "Build app servi
 set(OPENEMBER_FEATURE_ALGORITHM ${feature_algorithm} CACHE BOOL "Enable Algorithm module" FORCE)
 set(OPENEMBER_EXAMPLE_PUBSUB_TWO_NODES ${example_pubsub_two_nodes} CACHE BOOL "Build example pubsub_two_nodes" FORCE)
 set(OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER ${example_msgbus_nng_forwarder} CACHE BOOL "Build example msgbus_nng_forwarder" FORCE)
+set(OPENEMBER_EXAMPLE_NETWORK_SOCKETS ${example_network_sockets} CACHE BOOL "Build example network_sockets" FORCE)
 
 set(OPENEMBER_ENABLE_OSAL ${enable_osal} CACHE BOOL "Build platform OSAL (Linux pthread)" FORCE)
 set(OPENEMBER_ENABLE_HAL ${enable_hal} CACHE BOOL "Build platform HAL (Linux file/uart; requires OSAL)" FORCE)

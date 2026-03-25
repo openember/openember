@@ -51,5 +51,16 @@ config OPENEMBER_USE_ASIO
 
 endmenu
 
+menu "Network"
+
+config OPENEMBER_COMPONENT_NETWORK
+    bool "Build component: Network (high-level socket wrapper)"
+    default y
+    depends on OPENEMBER_ENABLE_OSAL
+    help
+      Build Components/Network library (URI-based high-level socket wrapper) on top of OSAL sockets.
+
+endmenu
+
 endmenu
 
