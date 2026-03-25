@@ -30,5 +30,13 @@ config OPENEMBER_ENABLE_OSAL
 
 endmenu
 
+config OPENEMBER_ENABLE_HAL
+    bool "Build HAL (Linux file / UART)"
+    depends on OPENEMBER_ENABLE_OSAL
+    default y
+    help
+      Platform HAL: POSIX file I/O and UART via termios.
+      Produces static library openember_hal. Requires OSAL.
+
 endmenu
 
