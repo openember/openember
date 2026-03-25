@@ -1,7 +1,7 @@
 mainmenu "OpenEmber Configuration"
 
-source "apps/Kconfig.application"
-source "modules/Kconfig.module"
-source "components/Kconfig.component"
-source "core/Kconfig.core"
-source "platform/Kconfig.platform"
+source "apps/Kconfig"
+source "modules/Kconfig"
+source "components/Kconfig"
+source "core/Kconfig"
+source "platform/Kconfig"

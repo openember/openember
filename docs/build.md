@@ -11,7 +11,7 @@
 > Kconfig 工具链采用 Linux 原生 `kconfig-frontends`。  
 > 项目脚本会自动下载并解压 `kconfig-frontends-nox` 到仓库本地目录 `.kconfig-frontends/`（无需 root 安装）。
 
-仓库根目录仅保留顶层 `Kconfig`；各层选项分文件位于 `apps/Kconfig.application`、`modules/Kconfig.module`、`components/Kconfig.component`、`core/Kconfig.core`、`platform/Kconfig.platform`（`menuconfig.sh` 会按相同相对路径复制到构建目录供工具解析）。
+仓库根目录仅保留顶层 `Kconfig`；各层选项分文件位于 `apps/Kconfig`、`modules/Kconfig`、`components/Kconfig`、`core/Kconfig`、`platform/Kconfig`（`menuconfig.sh` 会按相同相对路径复制到构建目录供工具解析）。
 
 ## 2. 一键推荐流程（不传 `-DXXX`）
 

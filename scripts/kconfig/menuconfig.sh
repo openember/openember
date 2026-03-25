@@ -11,11 +11,11 @@ mkdir -p "${BUILD_DIR}"
 # 顶层 Kconfig + 各层分文件（与仓库根目录相对路径一致，便于 kconfig 解析 source）
 cp -f "${ROOT_DIR}/Kconfig" "${BUILD_DIR}/Kconfig"
 _layer_kconfigs=(
-  "apps/Kconfig.application"
-  "modules/Kconfig.module"
-  "components/Kconfig.component"
-  "core/Kconfig.core"
-  "platform/Kconfig.platform"
+  "apps/Kconfig"
+  "modules/Kconfig"
+  "components/Kconfig"
+  "core/Kconfig"
+  "platform/Kconfig"
 )
 for rel in "${_layer_kconfigs[@]}"; do
   mkdir -p "${BUILD_DIR}/$(dirname "${rel}")"
