@@ -1,7 +1,6 @@
 set(FOLDER_NAME "components")
 
 add_subdirectory(Log)
-add_subdirectory(HAL)
 add_subdirectory(GDSL)
 add_subdirectory(msgbus)
 add_subdirectory(Common)

@@ -304,7 +304,6 @@ endif()
 set( OPENEMBER_INTERNAL_INCLUDE_DIRS 
     ${CMAKE_BINARY_DIR}/include
     ${CMAKE_SOURCE_DIR}/core/inc
-    ${CMAKE_SOURCE_DIR}/components/HAL
     ${CMAKE_SOURCE_DIR}/components/GSDL/src
     ${CMAKE_SOURCE_DIR}/components/Log
     ${CMAKE_SOURCE_DIR}/components/ppool
@@ -316,7 +315,6 @@ set( OPENEMBER_INTERNAL_INCLUDE_DIRS
 )
 
 set( OPENEMBER_INTERNAL_LIBRARIES 
-    HAL
     gdsl
     Log
     ppool
