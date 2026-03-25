@@ -54,3 +54,4 @@ int main(int argc, char **argv)
     ember_pubsub_destroy(pub);
     return 0;
 }
+

@@ -8,13 +8,13 @@
  * 2022-08-02     luhuadong    the first version
  */
 
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-#define LOG_TAG                "Workflow"
+#define LOG_TAG "Workflow"
 #include "openember.h"
 #include "fsm.h"
 
@@ -37,9 +37,8 @@ static void _poweroff();
 static State *pCurrentState;
 static sem_t stateChangedSem;
 
-static char *const g_StateText[EMBER_SYSTEM_COUNT] = {
-    "Power Off", "Init", "Normal", "Error", "Degrade", "Sleep"
-};
+static const char *const g_StateText[EMBER_SYSTEM_COUNT] = {"Power Off", "Init", "Normal",
+                                                           "Error", "Degrade", "Sleep"};
 
 /*
  *    No.  |                      Action Functions
@@ -48,12 +47,12 @@ static char *const g_StateText[EMBER_SYSTEM_COUNT] = {
  * +-------+---------+------+-------+--------+---------+----------+----------+
  */
 static State stateTable[EMBER_SYSTEM_COUNT] = {
-    { EMBER_SYSTEM_POWEROFF, NULL, ignore, ignore, ignore,  ignore,   ignore,    ignore },     /* 关闭状态 */
-    { EMBER_SYSTEM_INIT,     NULL, _init,  ignore, ignore,  ignore,   ignore,    _poweroff },  /* 初始状态 */
-    { EMBER_SYSTEM_NORMAL,   NULL, ignore, _sleep, ignore,  _gowrong, ignore,    _poweroff },  /* 正常状态 */
-    { EMBER_SYSTEM_ERROR,    NULL, ignore, ignore, ignore,  ignore,   _recovery, _poweroff },  /* 故障状态 */
-    { EMBER_SYSTEM_DEGRADE,  NULL, ignore, ignore, ignore,  _gowrong, _recovery, _poweroff },  /* 降级状态 */
-    { EMBER_SYSTEM_SLEEP,    NULL, ignore, ignore, _wakeup, _gowrong, ignore,    _poweroff }   /* 休眠状态 */
+    {EMBER_SYSTEM_POWEROFF, NULL, ignore, ignore, ignore, ignore, ignore, ignore}, /* 关闭状态 */
+    {EMBER_SYSTEM_INIT, NULL, _init, ignore, ignore, ignore, ignore, _poweroff},   /* 初始状态 */
+    {EMBER_SYSTEM_NORMAL, NULL, ignore, _sleep, ignore, _gowrong, ignore, _poweroff}, /* 正常状态 */
+    {EMBER_SYSTEM_ERROR, NULL, ignore, ignore, ignore, ignore, _recovery, _poweroff}, /* 故障状态 */
+    {EMBER_SYSTEM_DEGRADE, NULL, ignore, ignore, ignore, _gowrong, _recovery, _poweroff}, /* 降级状态 */
+    {EMBER_SYSTEM_SLEEP, NULL, ignore, ignore, _wakeup, _gowrong, ignore, _poweroff} /* 休眠状态 */
 };
 
 static void ignore()
@@ -88,11 +87,9 @@ static void _gowrong()
 
     if (EMBER_SYSTEM_NORMAL == pCurrentState->state) {
         pCurrentState = &stateTable[EMBER_SYSTEM_DEGRADE];
-    }
-    else if (EMBER_SYSTEM_SLEEP == pCurrentState->state) {
+    } else if (EMBER_SYSTEM_SLEEP == pCurrentState->state) {
         pCurrentState = &stateTable[EMBER_SYSTEM_ERROR];
-    }
-    else if (EMBER_SYSTEM_DEGRADE == pCurrentState->state) {
+    } else if (EMBER_SYSTEM_DEGRADE == pCurrentState->state) {
         pCurrentState = &stateTable[EMBER_SYSTEM_ERROR];
     }
 
@@ -113,64 +110,69 @@ static void _poweroff()
     printf(" --> %s\n", g_StateText[pCurrentState->state]);
 }
 
-/* 
- */
-static void onPowerOn(State *pThis)
+static void onPowerOn()
 {
-    pCurrentState->powerOn(pThis);
+    if (pCurrentState->powerOn) {
+        pCurrentState->powerOn();
+    }
     sem_post(&stateChangedSem);
 }
 
-static void onInit(State *pThis)
+static void onInit()
 {
-    pCurrentState->init(pThis);
+    if (pCurrentState->init) {
+        pCurrentState->init();
+    }
     sem_post(&stateChangedSem);
 }
 
-static void onSleep(State *pThis)
+static void onSleep()
 {
-    pCurrentState->sleep(pThis);
+    if (pCurrentState->sleep) {
+        pCurrentState->sleep();
+    }
     sem_post(&stateChangedSem);
 }
 
-static void onWakeUp(State *pThis)
+static void onWakeUp()
 {
-    pCurrentState->wakeUp(pThis);
+    if (pCurrentState->wakeUp) {
+        pCurrentState->wakeUp();
+    }
     sem_post(&stateChangedSem);
 }
 
-static void onGoWrong(State *pThis)
+static void onGoWrong()
 {
-    pCurrentState->goWrong(pThis);
+    if (pCurrentState->goWrong) {
+        pCurrentState->goWrong();
+    }
     sem_post(&stateChangedSem);
 }
 
-static void onRecovery(State *pThis)
+static void onRecovery()
 {
-    pCurrentState->recovery(pThis);
+    if (pCurrentState->recovery) {
+        pCurrentState->recovery();
+    }
     sem_post(&stateChangedSem);
 
     // if ok, then
-    pCurrentState->init(pThis);
+    if (pCurrentState->init) {
+        pCurrentState->init();
+    }
     sem_post(&stateChangedSem);
 }
 
-static void onPowerOff(State *pThis)
+static void onPowerOff()
 {
-    pCurrentState->powerOff(pThis);
+    if (pCurrentState->powerOff) {
+        pCurrentState->powerOff();
+    }
     sem_post(&stateChangedSem);
 }
 
-State context = {
-    EMBER_SYSTEM_INIT,
-    onPowerOn,
-    onInit,
-    onSleep,
-    onWakeUp,
-    onGoWrong,
-    onRecovery,
-    onPowerOff
-};
+State context = {EMBER_SYSTEM_INIT, onPowerOn, onInit, onSleep, onWakeUp, onGoWrong, onRecovery, onPowerOff};
 
 int fsm_init(void)
 {
@@ -197,5 +199,6 @@ state_t fsm_get_current_state(void)
 
 char *fsm_get_state_text(state_t s)
 {
-    return g_StateText[s];
+    return (char *)g_StateText[s];
 }
+

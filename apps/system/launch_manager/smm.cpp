@@ -8,13 +8,13 @@
  * 2022-08-01     luhuadong    the first version
  */
 
-#include <stdlib.h>
-#include <string.h>
+#include <assert.h>
 #include <pthread.h>
 #include <signal.h>
-#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
-#define LOG_TAG                "Workflow"
+#define LOG_TAG "Workflow"
 #include "openember.h"
 
 #define EMBER_GLOBALS
@@ -35,17 +35,18 @@ struct list_head *get_submodule_list(void)
     return &submodule_list;
 }
 
-//int smm_register(smm_t *module, const char *name, const int pid, void *user_data)
+// int smm_register(smm_t *module, const char *name, const int pid, void *user_data)
 smm_t *smm_register(const char *name, const mod_class_t cls, const int pid, void *user_data)
 {
+    (void)user_data;
     assert(name);
 
-    smm_t *module = calloc(1, sizeof(smm_t));
+    smm_t *module = (smm_t *)calloc(1, sizeof(smm_t));
     if (module == NULL) {
         return NULL;
     }
 
-    strncpy(module->name, name, sizeof(module->name)-1);
+    strncpy(module->name, name, sizeof(module->name) - 1);
     module->cls = cls;
     module->pid = pid;
     module->priority = SUBMODULE_PRIO_1;
@@ -71,7 +72,7 @@ int smm_unregister(smm_t *module)
 {
     if (module == NULL)
         return -EMBER_EINVAL;
-    
+
     pthread_rwlock_wrlock(&rwlock_mod);
     list_del(&(module->list));
     g_device_num -= 1;
@@ -112,3 +113,4 @@ int smm_stop_all_modules(void)
 #ifdef __cplusplus
 }
 #endif
+
