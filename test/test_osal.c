@@ -5,6 +5,7 @@
 #include "openember/osal/event.h"
 #include "openember/osal/sem.h"
 #include "openember/osal/shm.h"
+#include "openember/osal/socket.h"
 #include "openember/osal/thread.h"
 #include "openember/osal/time.h"
 #include "openember/osal/types.h"
@@ -12,6 +13,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 static volatile int g_counter;
 
@@ -188,6 +190,107 @@ MU_TEST(test_shm_create_open_ptr_unlink)
     mu_assert(r == OE_OK, "shm unlink");
 }
 
+typedef struct {
+    oe_socket_t server;
+    uint32_t expected;
+    uint32_t response;
+
+    oe_result_t accept_res;
+    oe_result_t recv_res;
+    oe_result_t send_res;
+    uint32_t recv_value;
+} socket_test_ctx_t;
+
+static void socket_server_worker(void *arg)
+{
+    socket_test_ctx_t *ctx = (socket_test_ctx_t *)arg;
+    oe_socket_t client;
+    size_t got = 0;
+    uint32_t v = 0;
+    uint32_t resp = ctx->response;
+
+    memset(&client, 0, sizeof(client));
+    ctx->accept_res = oe_socket_accept(&ctx->server, &client, -1);
+    if (ctx->accept_res != OE_OK) {
+        return;
+    }
+
+    ctx->recv_res = oe_socket_recv(&client, &v, sizeof(v), &got, -1);
+    ctx->recv_value = v;
+    ctx->send_res = oe_socket_send(&client, &resp, sizeof(resp), &got, -1);
+
+    (void)oe_socket_close(&client);
+    (void)got;
+}
+
+MU_TEST(test_socket_accept_timeout)
+{
+    oe_socket_t server;
+    oe_socket_t client;
+    oe_result_t r;
+    char path[108];
+
+    snprintf(path, sizeof(path), "/tmp/oe_sock_test_%d_%u.sock", (int)getpid(), (unsigned)rand());
+
+    r = oe_socket_open_unix_server(&server, path, 8);
+    mu_assert(r == OE_OK, "socket open server");
+
+    memset(&client, 0, sizeof(client));
+    r = oe_socket_accept(&server, &client, 10);
+    mu_assert(r == OE_ERR_TIMEOUT, "socket accept timeout");
+
+    r = oe_socket_close(&server);
+    mu_assert(r == OE_OK, "socket close server");
+}
+
+MU_TEST(test_socket_unix_send_recv)
+{
+    oe_result_t r;
+    socket_test_ctx_t ctx;
+    oe_thread_t th;
+
+    char path[108];
+    snprintf(path, sizeof(path), "/tmp/oe_sock_test_%d_%u.sock", (int)getpid(), (unsigned)rand());
+
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.expected = 0x11223344u;
+    ctx.response = 0x55667788u;
+
+    r = oe_socket_open_unix_server(&ctx.server, path, 8);
+    mu_assert(r == OE_OK, "socket open server");
+
+    r = oe_thread_create(&th, socket_server_worker, &ctx);
+    mu_assert(r == OE_OK, "thread create");
+
+    oe_socket_t cli;
+    memset(&cli, 0, sizeof(cli));
+    r = oe_socket_open_unix_client(&cli, path);
+    mu_assert(r == OE_OK, "socket open client");
+
+    size_t sent = 0;
+    r = oe_socket_send(&cli, &ctx.expected, sizeof(ctx.expected), &sent, 1000);
+    mu_assert(r == OE_OK, "socket send");
+
+    uint32_t got_resp = 0;
+    size_t recvd = 0;
+    r = oe_socket_recv(&cli, &got_resp, sizeof(got_resp), &recvd, 1000);
+    mu_assert(r == OE_OK, "socket recv");
+    mu_assert(got_resp == ctx.response, "socket response value");
+
+    r = oe_socket_close(&cli);
+    mu_assert(r == OE_OK, "socket close client");
+
+    r = oe_thread_join(&th);
+    mu_assert(r == OE_OK, "thread join");
+    mu_assert(ctx.accept_res == OE_OK, "server accept ok");
+    mu_assert(ctx.recv_res == OE_OK, "server recv ok");
+    mu_assert(ctx.send_res == OE_OK, "server send ok");
+    mu_assert(ctx.recv_value == ctx.expected, "server recv value match");
+
+    r = oe_socket_close(&ctx.server);
+    mu_assert(r == OE_OK, "socket close server");
+}
+
 MU_TEST_SUITE(osal_suite)
 {
     MU_SUITE_CONFIGURE(NULL, NULL);
@@ -198,6 +301,8 @@ MU_TEST_SUITE(osal_suite)
     MU_RUN_TEST(test_event_timeout_and_set);
     MU_RUN_TEST(test_sem_trywait_timeout_and_post);
     MU_RUN_TEST(test_shm_create_open_ptr_unlink);
+    MU_RUN_TEST(test_socket_accept_timeout);
+    MU_RUN_TEST(test_socket_unix_send_recv);
 }
 
 int main(void)

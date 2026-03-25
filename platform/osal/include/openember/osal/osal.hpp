@@ -8,6 +8,7 @@
 #include "openember/osal/thread.hpp"
 #include "openember/osal/time.hpp"
 #include "openember/osal/shm.hpp"
+#include "openember/osal/socket.hpp"
 
 #endif /* OPENEMBER_OSAL_HPP_ */
 
