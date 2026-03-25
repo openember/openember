@@ -114,9 +114,11 @@ platform/hal/
 
 ```bash
 uart
+sbus
 spi
 i2c
 can
+1-wire
 usb
 ethernet
 ```
@@ -128,12 +130,23 @@ oe_uart_open()
 oe_uart_read()
 oe_uart_write()
 
+oe_sbus_open()
+oe_sbus_recv_frame()
+
 oe_can_open()
 oe_can_send()
 oe_can_recv()
+
+oe_onewire_open()
+oe_onewire_read_temperature()
 ```
 
 职责：统一设备通信接口访问方式
+
+Linux 兼容性说明（初版）：
+
+- `SBUS`：通常没有独立内核驱动，HAL 在用户态基于 `UART` 进行 SBUS 帧接收与通道解码。
+- `1-Wire`：依赖内核 `w1` 子系统，通过 `sysfs` 的 `w1_slave` 文件读取 scratchpad 并解析温度字段。
 
 不负责：
 
@@ -506,18 +519,22 @@ include/
  └── openember/
      └── hal/
          ├── uart.h
+         ├── sbus.h
          ├── spi.h
          ├── can.h
          ├── gpio.h
+         ├── onewire.h
          └── camera.h
 
 cpp/
- └── uart.hpp
+└── uart.hpp
+└── sbus.hpp
+└── onewire.hpp
 
 src/
- ├── uart_linux.c
- ├── can_socketcan.c
- └── camera_v4l2.c
+├── uart_linux.c
+├── can_socketcan.c
+└── camera_v4l2.c
 ```
 
 说明：
