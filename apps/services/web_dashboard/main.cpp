@@ -16,13 +16,15 @@
 
 static msg_node_t client;
 
-#define WEB_ROOT    "/opt/openember/web_root"
-//#define WEB_ROOT    "../modules/WebServer/web_src/dist"
-//#define WEB_ROOT    "web_root"
 #define WEB_PORT    "0.0.0.0:8000"
 
 static const char *s_debug_level = "2";    // debug level, from 0 to 4
-static const char *s_root_dir = WEB_ROOT;
+static const char *s_root_dir =
+#ifdef OPENEMBER_WEB_DASHBOARD_ROOT_DIR
+    OPENEMBER_WEB_DASHBOARD_ROOT_DIR;
+#else
+    "apps/services/web_dashboard/web_root";
+#endif
 static const char *s_listening_address = WEB_PORT;
 static const char *s_enable_hexdump = "no";
 static const char *s_ssi_pattern = "#.html";

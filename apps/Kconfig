@@ -38,6 +38,13 @@ config OPENEMBER_MODULE_WEB_SERVER
     bool "Build app: services/web_dashboard"
     default y
 
+config OPENEMBER_WEB_DASHBOARD_ROOT_DIR
+    string "web_dashboard web root directory"
+    default "apps/services/web_dashboard/web_root"
+    help
+      Default web root directory for web_dashboard.
+      If a relative path is used, CMake will treat it as relative to the repository root.
+
 endmenu
 
 menu "tools"
