@@ -10,6 +10,7 @@ add_library(openember_osal STATIC
     src/linux/oe_socket.c
     src/linux/oe_pipe.c
     src/linux/oe_fifo.c
+    src/linux/oe_signals.c
 )
 
 target_include_directories(openember_osal PUBLIC

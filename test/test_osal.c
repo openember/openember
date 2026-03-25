@@ -8,6 +8,7 @@
 #include "openember/osal/socket.h"
 #include "openember/osal/pipe.h"
 #include "openember/osal/fifo.h"
+#include "openember/osal/signals.h"
 #include "openember/osal/thread.h"
 #include "openember/osal/time.h"
 #include "openember/osal/types.h"
@@ -16,6 +17,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 
 static volatile int g_counter;
 
@@ -404,6 +406,58 @@ MU_TEST(test_fifo_read_write)
     mu_assert(r == OE_OK, "fifo unlink");
 }
 
+typedef struct {
+    int signum;
+} signals_sender_ctx_t;
+
+static void signals_sender_worker(void *arg)
+{
+    signals_sender_ctx_t *ctx = (signals_sender_ctx_t *)arg;
+    (void)kill(getpid(), ctx->signum);
+}
+
+MU_TEST(test_signals_wait_timeout_and_ok)
+{
+    oe_signals_t sigs;
+    oe_signals_caps_t caps;
+    oe_signal_info_t info;
+    oe_result_t r;
+
+    int signum = SIGUSR1;
+    memset(&sigs, 0, sizeof(sigs));
+    memset(&caps, 0, sizeof(caps));
+    memset(&info, 0, sizeof(info));
+
+    r = oe_signals_query_caps(&caps);
+    mu_assert(r == OE_OK, "signals query caps");
+    mu_check(caps.supports_signalfd == 1u);
+
+    r = oe_signals_open(&sigs, &signum, 1);
+    mu_assert(r == OE_OK, "signals open");
+
+    r = oe_signals_wait(&sigs, &info, 10);
+    mu_assert(r == OE_ERR_TIMEOUT, "signals wait timeout");
+
+    /* Send one SIGUSR1 from another thread. */
+    signals_sender_ctx_t sctx;
+    oe_thread_t th;
+    memset(&sctx, 0, sizeof(sctx));
+    sctx.signum = signum;
+
+    r = oe_thread_create(&th, signals_sender_worker, &sctx);
+    mu_assert(r == OE_OK, "signals sender thread create");
+
+    r = oe_signals_wait(&sigs, &info, 1000);
+    mu_assert(r == OE_OK, "signals wait ok");
+    mu_assert(info.signum == signum, "signals wait signum match");
+
+    r = oe_thread_join(&th);
+    mu_assert(r == OE_OK, "signals sender thread join");
+
+    r = oe_signals_close(&sigs);
+    mu_assert(r == OE_OK, "signals close");
+}
+
 MU_TEST_SUITE(osal_suite)
 {
     MU_SUITE_CONFIGURE(NULL, NULL);
@@ -418,6 +472,7 @@ MU_TEST_SUITE(osal_suite)
     MU_RUN_TEST(test_socket_unix_send_recv);
     MU_RUN_TEST(test_pipe_read_write);
     MU_RUN_TEST(test_fifo_read_write);
+    MU_RUN_TEST(test_signals_wait_timeout_and_ok);
 }
 
 int main(void)

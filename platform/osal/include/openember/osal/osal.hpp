@@ -11,6 +11,7 @@
 #include "openember/osal/socket.hpp"
 #include "openember/osal/pipe.hpp"
 #include "openember/osal/fifo.hpp"
+#include "openember/osal/signals.hpp"
 
 #endif /* OPENEMBER_OSAL_HPP_ */
 
