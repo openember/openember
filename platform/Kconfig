@@ -19,5 +19,16 @@ config OPENEMBER_TP_MODE_SYSTEM
 
 endchoice
 
+menu "OSAL"
+
+config OPENEMBER_ENABLE_OSAL
+    bool "Build OSAL (pthread mutex/thread/monotonic time)"
+    default y
+    help
+      Platform OSAL for Linux: mutex, thread join, sleep, monotonic clock.
+      Produces static library openember_osal.
+
+endmenu
+
 endmenu
 

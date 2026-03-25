@@ -83,6 +83,11 @@ if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER=" "${CONFIG_FILE}";
   example_msgbus_nng_forwarder=ON
 fi
 
+enable_osal="$(onoff CONFIG_OPENEMBER_ENABLE_OSAL)"
+if ! grep -q "^CONFIG_OPENEMBER_ENABLE_OSAL=" "${CONFIG_FILE}"; then
+  enable_osal=ON
+fi
+
 log_file="/etc/openember/zlog.conf"
 log_file="$(awk '
   /^CONFIG_OPENEMBER_LOG_FILE=/ {
@@ -128,6 +133,8 @@ set(OPENEMBER_MODULE_WEB_SERVER ${module_web_server} CACHE BOOL "Build app servi
 set(OPENEMBER_FEATURE_ALGORITHM ${feature_algorithm} CACHE BOOL "Enable Algorithm module" FORCE)
 set(OPENEMBER_EXAMPLE_PUBSUB_TWO_NODES ${example_pubsub_two_nodes} CACHE BOOL "Build example pubsub_two_nodes" FORCE)
 set(OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER ${example_msgbus_nng_forwarder} CACHE BOOL "Build example msgbus_nng_forwarder" FORCE)
+
+set(OPENEMBER_ENABLE_OSAL ${enable_osal} CACHE BOOL "Build platform OSAL (Linux pthread)" FORCE)
 
 # Keep existing CMake backend selection interface
 set(BUILD_PUBSUB_ZMQ OFF CACHE BOOL "" FORCE)
