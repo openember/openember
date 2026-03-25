@@ -40,7 +40,7 @@
 实现顺序（每完成一个模块做一次 commit，并补/跑对应单元测试）：
 
 - [x] **P0**：`cond` / `event`（等待/唤醒 + 超时语义 + `*_query_caps()`）
-- [ ] **P1**：`semaphore`（进程内为主；后续视需要扩展命名信号量）
+- [x] **P1**：`semaphore`（进程内为主；后续视需要扩展命名信号量）
 - [ ] **P1**：`shm`（共享内存 create/open/map/unmap/close/unlink + `*_query_caps()`）
 - [ ] **P1**：`socket`（至少 Unix domain socket；可选 TCP/UDP；支持超时与 poll/wait）
 - [ ] **P1**：`pipe` / `fifo`（匿名管道 + 有名管道，适合控制通道/日志/小数据流）

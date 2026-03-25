@@ -5,6 +5,7 @@ add_library(openember_osal STATIC
     src/linux/oe_time.c
     src/linux/oe_cond.c
     src/linux/oe_event.c
+    src/linux/oe_sem.c
 )
 
 target_include_directories(openember_osal PUBLIC

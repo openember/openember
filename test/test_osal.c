@@ -3,6 +3,7 @@
 #include "openember/osal/mutex.h"
 #include "openember/osal/cond.h"
 #include "openember/osal/event.h"
+#include "openember/osal/sem.h"
 #include "openember/osal/thread.h"
 #include "openember/osal/time.h"
 #include "openember/osal/types.h"
@@ -116,6 +117,30 @@ MU_TEST(test_event_timeout_and_set)
     mu_assert(r == OE_OK, "event destroy");
 }
 
+MU_TEST(test_sem_trywait_timeout_and_post)
+{
+    oe_sem_t s;
+    oe_result_t r;
+
+    r = oe_sem_init(&s, 0);
+    mu_assert(r == OE_OK, "sem init");
+
+    r = oe_sem_trywait(&s);
+    mu_assert(r == OE_ERR_AGAIN, "sem trywait empty");
+
+    r = oe_sem_wait_timeout_ms(&s, 5);
+    mu_assert(r == OE_ERR_TIMEOUT, "sem timedwait timeout");
+
+    r = oe_sem_post(&s);
+    mu_assert(r == OE_OK, "sem post");
+
+    r = oe_sem_wait_timeout_ms(&s, 0);
+    mu_assert(r == OE_OK, "sem wait after post");
+
+    r = oe_sem_destroy(&s);
+    mu_assert(r == OE_OK, "sem destroy");
+}
+
 MU_TEST_SUITE(osal_suite)
 {
     MU_SUITE_CONFIGURE(NULL, NULL);
@@ -124,6 +149,7 @@ MU_TEST_SUITE(osal_suite)
     MU_RUN_TEST(test_time_monotonic);
     MU_RUN_TEST(test_cond_timeout);
     MU_RUN_TEST(test_event_timeout_and_set);
+    MU_RUN_TEST(test_sem_trywait_timeout_and_post);
 }
 
 int main(void)
