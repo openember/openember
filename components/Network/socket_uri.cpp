@@ -106,8 +106,9 @@ oe_result_t Socket::listen(std::string_view uri, uint32_t backlog)
     case Scheme::Unix:
         return oe_socket_open_unix_server(&s_, ep.path.c_str(), backlog);
     case Scheme::Tcp:
+        return oe_socket_open_tcp_server(&s_, ep.host.empty() ? NULL : ep.host.c_str(), ep.port, backlog);
     case Scheme::Udp:
-        return OE_ERR_UNSUPPORTED;
+        return oe_socket_open_udp(&s_, ep.host.empty() ? NULL : ep.host.c_str(), ep.port);
     default:
         return OE_ERR_UNSUPPORTED;
     }
@@ -125,8 +126,14 @@ oe_result_t Socket::connect(std::string_view uri)
     case Scheme::Unix:
         return oe_socket_open_unix_client(&s_, ep.path.c_str());
     case Scheme::Tcp:
-    case Scheme::Udp:
-        return OE_ERR_UNSUPPORTED;
+        return oe_socket_open_tcp_client(&s_, ep.host.c_str(), ep.port, 5000);
+    case Scheme::Udp: {
+        oe_result_t rr = oe_socket_open_udp(&s_, "0.0.0.0", 0);
+        if (rr != OE_OK) {
+            return rr;
+        }
+        return oe_socket_udp_connect(&s_, ep.host.c_str(), ep.port);
+    }
     default:
         return OE_ERR_UNSUPPORTED;
     }
