@@ -1,39 +1,202 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>OpenEmber - 一个嵌入式软件框架</title>
-        <!-- 开发环境版本，包含了有帮助的命令行警告 -->
-        <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script> -->
-        <!-- 生产环境版本，优化了尺寸和速度 -->
-        <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2"></script> -->
-    </head>
-    <body>
-        <div id="app">
-            <p>{{message}}</p>
-            <p v-if="seen">现在你看到我了</p>
-            <ol>
-                <li v-for="todo in todos">
-                  {{ todo.text }}
-                </li>
-            </ol>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenEmber Dashboard (Layui Demo)</title>
+
+    <!--
+      Layui 适合嵌入式场景的原因：
+      - 原生 HTML/CSS/JS 方式使用，不依赖 Node/Vite/Webpack 构建链
+      - 可直接使用 CDN（开发方便），也可把静态资源离线打包到 web_root（量产）
+
+      文档： https://layui.dev/docs/2/
+      这里先用 CDN 快速演示；后续如需离线部署，可把 layui 的 dist 目录放到 web_root/layui 并改成本地引用。
+    -->
+    <link href="https://unpkg.com/layui@2.13.5/dist/css/layui.css" rel="stylesheet" />
+    <style>
+      body { background: #f6f7fb; }
+      .oe-card-title { display: flex; justify-content: space-between; align-items: center; }
+      .oe-muted { color: rgba(0,0,0,.55); }
+      .oe-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+      .oe-kv { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; }
+      .oe-log { height: 220px; overflow: auto; background: #0b1020; color: #d6e0ff; padding: 12px; border-radius: 8px; }
+      .oe-badge-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:8px; vertical-align:middle; }
+    </style>
+  </head>
+  <body>
+    <div class="layui-layout layui-layout-admin">
+      <div class="layui-header">
+        <div class="layui-logo">OpenEmber</div>
+        <ul class="layui-nav layui-layout-left">
+          <li class="layui-nav-item layui-this"><a href="javascript:;">Dashboard</a></li>
+          <li class="layui-nav-item"><a href="javascript:;">System</a></li>
+          <li class="layui-nav-item"><a href="javascript:;">Modules</a></li>
+        </ul>
+        <ul class="layui-nav layui-layout-right">
+          <li class="layui-nav-item">
+            <a href="javascript:;">
+              <span class="oe-badge-dot" id="dotConn"></span>
+              <span id="txtConn">Disconnected</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="layui-side layui-bg-black">
+        <div class="layui-side-scroll">
+          <ul class="layui-nav layui-nav-tree" lay-filter="nav">
+            <li class="layui-nav-item layui-this"><a href="javascript:;" data-page="overview">概览</a></li>
+            <li class="layui-nav-item"><a href="javascript:;" data-page="logs">日志</a></li>
+            <li class="layui-nav-item"><a href="javascript:;" data-page="about">关于</a></li>
+          </ul>
         </div>
+      </div>
 
-        <script src="js/vue.js" type="text/javascript" charset="utf-8"></script>
+      <div class="layui-body" style="padding: 16px;">
+        <div class="layui-row layui-col-space16">
+          <div class="layui-col-md8">
+            <div class="layui-card">
+              <div class="layui-card-header">
+                <div class="oe-card-title">
+                  <span>设备概览</span>
+                  <div>
+                    <button class="layui-btn layui-btn-sm" id="btnRefresh">刷新</button>
+                    <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnToggleTheme">切换浅/深</button>
+                  </div>
+                </div>
+              </div>
+              <div class="layui-card-body">
+                <div class="oe-kv">
+                  <div class="oe-muted">设备</div><div id="kvDevice">OpenEmber Target</div>
+                  <div class="oe-muted">版本</div><div class="oe-mono" id="kvVersion">unknown</div>
+                  <div class="oe-muted">运行时间</div><div class="oe-mono" id="kvUptime">--</div>
+                  <div class="oe-muted">Web 根目录</div><div class="oe-mono" id="kvWebRoot">/</div>
+                  <div class="oe-muted">HTTP</div><div class="oe-mono" id="kvHttp">0.0.0.0:8000</div>
+                </div>
+                <hr class="layui-border-blue" />
+                <div class="layui-progress layui-progress-big" lay-showpercent="true">
+                  <div class="layui-progress-bar" lay-percent="0%" id="barCpu"></div>
+                </div>
+                <div class="layui-progress layui-progress-big" lay-showpercent="true" style="margin-top: 10px;">
+                  <div class="layui-progress-bar layui-bg-orange" lay-percent="0%" id="barMem"></div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <script type="text/javascript">
-            var app=new Vue({
-                el:'#app',
-                data:{
-                    message:'Hello OpenEmber!',
-                    seen: true,
-                    todos: [
-                        { text: '学习 JavaScript' },
-                        { text: '学习 Vue' },
-                        { text: '整个牛项目 —— OpenEmber' }
-                    ]
-                }
-            });
-        </script>
-    </body>
+          <div class="layui-col-md4">
+            <div class="layui-card">
+              <div class="layui-card-header">模块状态（示例）</div>
+              <div class="layui-card-body">
+                <table class="layui-table" lay-size="sm">
+                  <thead>
+                    <tr>
+                      <th>模块</th>
+                      <th>状态</th>
+                      <th class="layui-hide-xs">PID</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tblMods"></tbody>
+                </table>
+                <div class="oe-muted">说明：当前为前端 mock 数据，后续可接 `/api/*` 或消息总线桥接。</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="layui-col-md12">
+            <div class="layui-card">
+              <div class="layui-card-header">运行日志（示例）</div>
+              <div class="layui-card-body">
+                <div class="oe-log oe-mono" id="logBox"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="layui-footer">OpenEmber · Layui demo page</div>
+    </div>
+
+    <script src="https://unpkg.com/layui@2.13.5/dist/layui.js"></script>
+    <script>
+      layui.use(function () {
+        var element = layui.element;
+        var layer = layui.layer;
+
+        var isDark = false;
+        var startMs = Date.now();
+
+        function setConn(ok) {
+          var dot = document.getElementById('dotConn');
+          var txt = document.getElementById('txtConn');
+          dot.style.background = ok ? '#16b777' : '#ff5722';
+          txt.textContent = ok ? 'Connected' : 'Disconnected';
+        }
+
+        function log(line) {
+          var box = document.getElementById('logBox');
+          var ts = new Date().toISOString().replace('T', ' ').replace('Z', '');
+          box.textContent += '[' + ts + '] ' + line + '\n';
+          box.scrollTop = box.scrollHeight;
+        }
+
+        function rand(min, max) {
+          return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function renderModules() {
+          var rows = [
+            { name: 'log_service', st: 'RUN', pid: 1024 },
+            { name: 'config_service', st: 'RUN', pid: 1033 },
+            { name: 'device_manager', st: 'RUN', pid: 1041 },
+            { name: 'health_monitor', st: 'RUN', pid: 1048 },
+            { name: 'web_dashboard', st: 'RUN', pid: 1056 }
+          ];
+          var html = rows.map(function (r) {
+            var badge = r.st === 'RUN'
+              ? '<span class="layui-badge layui-bg-green">RUN</span>'
+              : '<span class="layui-badge">UNK</span>';
+            return '<tr><td>' + r.name + '</td><td>' + badge + '</td><td class="layui-hide-xs oe-mono">' + r.pid + '</td></tr>';
+          }).join('');
+          document.getElementById('tblMods').innerHTML = html;
+        }
+
+        function refresh() {
+          // 目前后端只做静态目录服务；这里用 mock 数据先把 dashboard 结构搭起来。
+          var cpu = rand(3, 68);
+          var mem = rand(8, 84);
+          document.getElementById('barCpu').setAttribute('lay-percent', cpu + '%');
+          document.getElementById('barMem').setAttribute('lay-percent', mem + '%');
+          element.render('progress');
+
+          var uptimeSec = Math.floor((Date.now() - startMs) / 1000);
+          document.getElementById('kvUptime').textContent = uptimeSec + 's';
+          document.getElementById('kvVersion').textContent = 'OpenEmber (demo)';
+          document.getElementById('kvWebRoot').textContent = location.pathname.replace(/\\/[^\\/]*$/, '/') || '/';
+          document.getElementById('kvHttp').textContent = location.host || '0.0.0.0:8000';
+
+          renderModules();
+          log('refresh cpu=' + cpu + '% mem=' + mem + '%');
+        }
+
+        document.getElementById('btnRefresh').addEventListener('click', function () {
+          refresh();
+          layer.msg('已刷新', { icon: 1, time: 800 });
+        });
+
+        document.getElementById('btnToggleTheme').addEventListener('click', function () {
+          isDark = !isDark;
+          document.body.style.background = isDark ? '#0f1226' : '#f6f7fb';
+          layer.msg(isDark ? '深色背景（示例）' : '浅色背景（示例）', { time: 900 });
+        });
+
+        // 这里先展示“无后端连接”，后续如果你们添加 /api/health，可在此做 fetch 探测并切换状态。
+        setConn(false);
+        log('Layui dashboard loaded (CDN mode)');
+        refresh();
+        setInterval(refresh, 2000);
+      });
+    </script>
+  </body>
 </html>
