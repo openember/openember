@@ -35,6 +35,7 @@ option( OPTIMIZATION_DISABLED "Whether to disable the optimization of compilatio
 option( CROSSCOMPILE_ENABLED "Whether to build for ARM" OFF)
 option( OPENMP_ENABLED "Whether to enable omp feature" OFF)
 option( TESTS_ENABLED "Whether to unit test" ON)
+option( OPENEMBER_ENABLE_OSAL "Build platform OSAL (Linux pthread)" ON)
 option( EXAMPLES_ENABLED "Whether compile examples" ON)
 option( BUILD_CJSON "Whether compile cJSON" OFF)
 option( BUILD_MQTT "Whether compile MQTT" OFF)
@@ -313,11 +314,6 @@ set( OPENEMBER_INTERNAL_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/components/libyaml
 )
 
-set( OPENEMBER_INCLUDE_DIRS 
-    ${OPENEMBER_EXTERNAL_INCLUDE_DIRS}
-    ${OPENEMBER_INTERNAL_INCLUDE_DIRS}
-)
-
 set( OPENEMBER_INTERNAL_LIBRARIES 
     HAL
     gdsl
@@ -328,6 +324,17 @@ set( OPENEMBER_INTERNAL_LIBRARIES
     Algorithm
     csv
     yaml
+)
+
+add_subdirectory(platform)
+if(OPENEMBER_ENABLE_OSAL)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/platform/osal/include)
+    list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_osal)
+endif()
+
+set( OPENEMBER_INCLUDE_DIRS 
+    ${OPENEMBER_EXTERNAL_INCLUDE_DIRS}
+    ${OPENEMBER_INTERNAL_INCLUDE_DIRS}
 )
 
 set( OPENEMBER_LIBRARIES
