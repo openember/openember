@@ -7,6 +7,7 @@
 #include "openember/hal/gpio.h"
 #include "openember/hal/i2c.h"
 #include "openember/hal/spi.h"
+#include "openember/hal/can.h"
 #include "openember/osal/types.h"
 
 #include <stdio.h>
@@ -106,6 +107,15 @@ MU_TEST(test_hal_caps)
         r = oe_spi_query_caps(&sc);
         mu_assert(r == OE_OK, "spi query caps");
         mu_check(sc.supports_full_duplex == 1u);
+    }
+
+    {
+        oe_can_caps_t cc;
+        memset(&cc, 0, sizeof(cc));
+        r = oe_can_query_caps(&cc);
+        mu_assert(r == OE_OK, "can query caps");
+        mu_check(cc.max_data_len_can == 8u);
+        mu_check(cc.max_data_len_can_fd <= 64u);
     }
 }
 
