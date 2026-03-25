@@ -31,12 +31,24 @@ oe_result_t parse_endpoint(std::string_view uri, Endpoint &out)
     if (starts_with(uri, "tcp://")) {
         out.scheme = Scheme::Tcp;
         std::string_view rest = uri.substr(std::strlen("tcp://"));
-        auto pos = rest.find(':');
-        if (pos == std::string_view::npos) {
-            return OE_ERR_INVALID_ARG;
+        std::string_view host_sv;
+        std::string_view port_sv;
+        if (!rest.empty() && rest.front() == '[') {
+            auto rb = rest.find(']');
+            if (rb == std::string_view::npos || rb + 2 > rest.size() || rest[rb + 1] != ':') {
+                return OE_ERR_INVALID_ARG;
+            }
+            host_sv = rest.substr(1, rb - 1);
+            port_sv = rest.substr(rb + 2);
+        } else {
+            auto pos = rest.rfind(':');
+            if (pos == std::string_view::npos) {
+                return OE_ERR_INVALID_ARG;
+            }
+            host_sv = rest.substr(0, pos);
+            port_sv = rest.substr(pos + 1);
         }
-        out.host = std::string(rest.substr(0, pos));
-        auto port_sv = rest.substr(pos + 1);
+        out.host = std::string(host_sv);
         if (out.host.empty() || port_sv.empty()) {
             return OE_ERR_INVALID_ARG;
         }
@@ -57,12 +69,24 @@ oe_result_t parse_endpoint(std::string_view uri, Endpoint &out)
     if (starts_with(uri, "udp://")) {
         out.scheme = Scheme::Udp;
         std::string_view rest = uri.substr(std::strlen("udp://"));
-        auto pos = rest.find(':');
-        if (pos == std::string_view::npos) {
-            return OE_ERR_INVALID_ARG;
+        std::string_view host_sv;
+        std::string_view port_sv;
+        if (!rest.empty() && rest.front() == '[') {
+            auto rb = rest.find(']');
+            if (rb == std::string_view::npos || rb + 2 > rest.size() || rest[rb + 1] != ':') {
+                return OE_ERR_INVALID_ARG;
+            }
+            host_sv = rest.substr(1, rb - 1);
+            port_sv = rest.substr(rb + 2);
+        } else {
+            auto pos = rest.rfind(':');
+            if (pos == std::string_view::npos) {
+                return OE_ERR_INVALID_ARG;
+            }
+            host_sv = rest.substr(0, pos);
+            port_sv = rest.substr(pos + 1);
         }
-        out.host = std::string(rest.substr(0, pos));
-        auto port_sv = rest.substr(pos + 1);
+        out.host = std::string(host_sv);
         if (out.host.empty() || port_sv.empty()) {
             return OE_ERR_INVALID_ARG;
         }

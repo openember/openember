@@ -3,8 +3,9 @@
  * A lightweight higher-level API built on platform/osal sockets.
  * It parses URIs like:
  *   - unix:///tmp/oe.sock
- *   - tcp://127.0.0.1:1234   (currently unsupported in OSAL, returns OE_ERR_UNSUPPORTED)
- *   - udp://127.0.0.1:1234   (currently unsupported in OSAL, returns OE_ERR_UNSUPPORTED)
+ *   - tcp://127.0.0.1:1234
+ *   - udp://127.0.0.1:1234
+ *   - tcp://[::1]:1234
  */
 #ifndef OPENEMBER_COMPONENTS_NETWORK_SOCKET_URI_H_
 #define OPENEMBER_COMPONENTS_NETWORK_SOCKET_URI_H_

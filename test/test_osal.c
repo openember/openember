@@ -523,7 +523,7 @@ MU_TEST(test_socket_tcp_send_recv)
     mu_assert(r == OE_OK, "tcp server local port");
     mu_check(port != 0);
 
-    r = oe_socket_open_tcp_client(&client, "127.0.0.1", port, 1000);
+    r = oe_socket_open_tcp_client(&client, "localhost", port, 1000);
     mu_assert(r == OE_OK, "tcp client open");
 
     r = oe_socket_accept(&server, &accepted, 1000);

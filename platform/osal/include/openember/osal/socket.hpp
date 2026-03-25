@@ -50,6 +50,20 @@ public:
         return oe_socket_recv(&s_, buf, len, out_received, timeout_ms);
     }
 
+    oe_result_t sendto(const void *buf, size_t len, const oe_sockaddr_t *to, size_t *out_sent, int timeout_ms)
+    {
+        return oe_socket_sendto(&s_, buf, len, to, out_sent, timeout_ms);
+    }
+
+    oe_result_t recvfrom(void *buf,
+                         size_t len,
+                         size_t *out_received,
+                         oe_sockaddr_t *out_from,
+                         int timeout_ms)
+    {
+        return oe_socket_recvfrom(&s_, buf, len, out_received, out_from, timeout_ms);
+    }
+
     oe_result_t close()
     {
         return oe_socket_close(&s_);
