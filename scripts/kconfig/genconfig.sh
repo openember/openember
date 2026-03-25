@@ -61,16 +61,27 @@ opt_disabled="$(onoff CONFIG_OPENEMBER_OPTIMIZATION_DISABLED)"
 crosscompile_enabled="$(onoff CONFIG_OPENEMBER_CROSSCOMPILE_ENABLED)"
 use_yamlcpp="$(onoff CONFIG_OPENEMBER_USE_YAMLCPP)"
 use_asio="$(onoff CONFIG_OPENEMBER_USE_ASIO)"
+module_launch_manager="$(onoff CONFIG_OPENEMBER_MODULE_LAUNCH_MANAGER)"
+if ! grep -q "^CONFIG_OPENEMBER_MODULE_LAUNCH_MANAGER=" "${CONFIG_FILE}"; then
+  module_launch_manager=ON
+fi
 module_template="$(onoff CONFIG_OPENEMBER_MODULE_TEMPLATE)"
 module_alogd="$(onoff CONFIG_OPENEMBER_MODULE_ALOGD)"
 module_device_manager="$(onoff CONFIG_OPENEMBER_MODULE_DEVICE_MANAGER)"
-module_message_dispatcher="$(onoff CONFIG_OPENEMBER_MODULE_MESSAGE_DISPATCHER)"
 module_config_manager="$(onoff CONFIG_OPENEMBER_MODULE_CONFIG_MANAGER)"
 module_monitor_alarm="$(onoff CONFIG_OPENEMBER_MODULE_MONITOR_ALARM)"
 module_ota="$(onoff CONFIG_OPENEMBER_MODULE_OTA)"
 module_acquisition="$(onoff CONFIG_OPENEMBER_MODULE_ACQUISITION)"
 module_web_server="$(onoff CONFIG_OPENEMBER_MODULE_WEB_SERVER)"
 feature_algorithm="$(onoff CONFIG_OPENEMBER_FEATURE_ALGORITHM)"
+example_pubsub_two_nodes="$(onoff CONFIG_OPENEMBER_EXAMPLE_PUBSUB_TWO_NODES)"
+if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_PUBSUB_TWO_NODES=" "${CONFIG_FILE}"; then
+  example_pubsub_two_nodes=ON
+fi
+example_msgbus_nng_forwarder="$(onoff CONFIG_OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER)"
+if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER=" "${CONFIG_FILE}"; then
+  example_msgbus_nng_forwarder=ON
+fi
 
 log_file="/etc/openember/zlog.conf"
 log_file="$(awk '
@@ -105,16 +116,18 @@ set(DEBUG_ENABLED ${debug_enabled} CACHE BOOL "Whether to enable debug mode" FOR
 set(OPTIMIZATION_DISABLED ${opt_disabled} CACHE BOOL "Whether to disable optimization" FORCE)
 set(CROSSCOMPILE_ENABLED ${crosscompile_enabled} CACHE BOOL "Whether to build for ARM" FORCE)
 
-set(OPENEMBER_MODULE_TEMPLATE ${module_template} CACHE BOOL "Build module Template" FORCE)
-set(OPENEMBER_MODULE_ALOGD ${module_alogd} CACHE BOOL "Build module Alogd" FORCE)
-set(OPENEMBER_MODULE_DEVICE_MANAGER ${module_device_manager} CACHE BOOL "Build module DeviceManager" FORCE)
-set(OPENEMBER_MODULE_MESSAGE_DISPATCHER ${module_message_dispatcher} CACHE BOOL "Build module MessageDispatcher" FORCE)
-set(OPENEMBER_MODULE_CONFIG_MANAGER ${module_config_manager} CACHE BOOL "Build module ConfigManager" FORCE)
-set(OPENEMBER_MODULE_MONITOR_ALARM ${module_monitor_alarm} CACHE BOOL "Build module MonitorAlarm" FORCE)
-set(OPENEMBER_MODULE_OTA ${module_ota} CACHE BOOL "Build module OTA" FORCE)
-set(OPENEMBER_MODULE_ACQUISITION ${module_acquisition} CACHE BOOL "Build module Acquisition" FORCE)
-set(OPENEMBER_MODULE_WEB_SERVER ${module_web_server} CACHE BOOL "Build module WebServer" FORCE)
+set(OPENEMBER_MODULE_LAUNCH_MANAGER ${module_launch_manager} CACHE BOOL "Build app system/launch_manager" FORCE)
+set(OPENEMBER_MODULE_TEMPLATE ${module_template} CACHE BOOL "Build app examples/hello_node" FORCE)
+set(OPENEMBER_MODULE_ALOGD ${module_alogd} CACHE BOOL "Build app system/log_service" FORCE)
+set(OPENEMBER_MODULE_DEVICE_MANAGER ${module_device_manager} CACHE BOOL "Build app system/device_manager" FORCE)
+set(OPENEMBER_MODULE_CONFIG_MANAGER ${module_config_manager} CACHE BOOL "Build app system/config_service" FORCE)
+set(OPENEMBER_MODULE_MONITOR_ALARM ${module_monitor_alarm} CACHE BOOL "Build app system/health_monitor" FORCE)
+set(OPENEMBER_MODULE_OTA ${module_ota} CACHE BOOL "Build app services/ota_update_service" FORCE)
+set(OPENEMBER_MODULE_ACQUISITION ${module_acquisition} CACHE BOOL "Build app references/sensor_data_reference" FORCE)
+set(OPENEMBER_MODULE_WEB_SERVER ${module_web_server} CACHE BOOL "Build app services/web_dashboard" FORCE)
 set(OPENEMBER_FEATURE_ALGORITHM ${feature_algorithm} CACHE BOOL "Enable Algorithm module" FORCE)
+set(OPENEMBER_EXAMPLE_PUBSUB_TWO_NODES ${example_pubsub_two_nodes} CACHE BOOL "Build example pubsub_two_nodes" FORCE)
+set(OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER ${example_msgbus_nng_forwarder} CACHE BOOL "Build example msgbus_nng_forwarder" FORCE)
 
 # Keep existing CMake backend selection interface
 set(BUILD_PUBSUB_ZMQ OFF CACHE BOOL "" FORCE)

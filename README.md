@@ -119,9 +119,10 @@ OpenEmber 不只是 Robot Application Framework，而是一个通用的 Middlewa
 openember/
 │
 ├── apps/
-│   ├── launch/
-│   ├── demos/
-│   └── tools/
+│   ├── system/        # launch_manager、log_service 等
+│   ├── services/      # web_dashboard、ota_update_service 等
+│   ├── references/    # 参考实现节点
+│   └── examples/      # hello_node、pubsub 示例等
 │
 ├── modules/
 │   ├── transport/
@@ -144,11 +145,7 @@ openember/
 │   └── transport/
 │
 ├── core/
-│   ├── runtime/
-│   ├── executor/
-│   ├── node/
-│   ├── topic/
-│   └── parameter/
+│   └── inc/           # 框架公共头文件（生成项与 openember.h 等）
 │
 ├── platform/
 │   ├── os/
@@ -178,15 +175,19 @@ OpenEmber v0.1 就采用：
 
 
 
-## 模块功能
+## 节点功能
 
-| 模块名称 | 简介         | 说明                                                         |
-| -------- | ------------ | ------------------------------------------------------------ |
-| Log      | 日志服务系统 | 抽象日志输入接口，实现日志的统一管理，包括定时冲刷、自动滚动、磁盘管理等。 |
-| OTA      | 远程升级     | 包括在线升级、离线升级、状态脚本等功能                       |
-| MSG      | 消息服务     | 支持 DBus、MQTT、ZeroMQ、rabbitMQ、DDS 等底层消息服务        |
-|          |              |                                                              |
-|          |              |                                                              |
+| 节点名称                    | 分类       | 说明                                                         |
+| --------------------------- | ---------- | ------------------------------------------------------------ |
+| `system/launch_manager`     | system     | 启动/编排入口（原 Workflow），负责拉起各子节点与运行时协调。 |
+| `system/log_service`        | system     | 日志服务节点，负责日志采集与持久化。                         |
+| `system/config_service`     | system     | 配置服务节点，负责配置存取与下发。                           |
+| `system/device_manager`     | system     | 设备管理节点，负责设备注册、状态管理与生命周期协调。         |
+| `system/health_monitor`     | system     | 健康监控节点，负责状态巡检与告警。                           |
+| `services/ota_update_service` | services | OTA 服务节点，负责在线/离线升级流程。                        |
+| `services/web_dashboard`    | services   | Web 仪表盘服务，提供运行状态可视化与交互入口。               |
+| `examples/hello_node`       | examples   | 最小示例节点，用于验证运行环境与接口调用。                   |
+| `references/sensor_data_reference` | references | 参考实现节点，演示数据采集节点的通用组织方式。        |
 
 
 

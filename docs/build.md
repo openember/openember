@@ -153,16 +153,17 @@ source <(ember completion bash)
   - Pub/Sub backend（三选一）：ZMQ / NNG / LCM（映射到 `BUILD_PUBSUB_*`）
   - Internal msgbus backend（二选一）：NNG / LCM（映射到 `OPENEMBER_MSGBUS_USE_*`）
 - **Framework Modules（新增）**
-  - 可单独启停：`Template` / `Alogd` / `DeviceManager` / `MessageDispatcher` / `ConfigManager` / `MonitorAlarm` / `OTA` / `Acquisition` / `WebServer`
-  - 映射到 `OPENEMBER_MODULE_*`，由 `modules/CMakeLists.txt` 条件 `add_subdirectory()` 控制
+  - 可单独启停：`system/launch_manager` / `examples/hello_node` / `system/log_service` / `system/device_manager` / `system/config_service` / `system/health_monitor` / `services/ota_update_service` / `references/sensor_data_reference` / `services/web_dashboard`；示例还可选 `examples/pubsub_two_nodes`、`examples/msgbus_nng_forwarder`
+  - 映射到 `OPENEMBER_MODULE_*`，由 `apps/CMakeLists.txt` 条件 `add_subdirectory()` 控制
 
 ## 4. 运行说明
 
 构建产物通常位于 `build/bin/`：
 
-- `Template`
-- `msgbus_nng_forwarder`（当 msgbus 使用 NNG 时）
-- `pubsub_publisher` / `pubsub_subscriber`（按 pub/sub backend 相关配置生成）
+- `launch_manager`
+- `hello_node`
+- `pubsub_publisher` / `pubsub_subscriber`（启用 `OPENEMBER_EXAMPLE_PUBSUB_TWO_NODES` 且 pub/sub 后端为 ZMQ/NNG/LCM 时）
+- `msgbus_nng_forwarder`（启用 `OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER` 且内部 msgbus 为 NNG 时）
 
 ## 5. 常见问题
 

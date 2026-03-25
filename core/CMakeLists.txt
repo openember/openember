@@ -1,14 +1,2 @@
-project(WorkflowController VERSION 1.0.0 LANGUAGES CXX)
-
-set( WORKFLOW_CONTROLLER_SRCS 
-    main.cpp
-    fsm.c
-    smm.c
-)
-
-OPENEMBER_ADD_EXECUTABLE(TARGET ${PROJECT_NAME} 
-    SRCS     ${WORKFLOW_CONTROLLER_SRCS}
-    LIBS     ${OPENEMBER_LIBRARIES}
-    INCLUDES ${OPENEMBER_INCLUDE_DIRS}
-    DESTINATION bin 
-)
+# core/inc 公共头文件由根 CMakeLists.txt 的 configure_file / include 路径引用。
+# 运行时入口与状态机实现已迁至 apps/system/launch_manager。

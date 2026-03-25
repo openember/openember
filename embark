@@ -6,7 +6,7 @@ EMAIL=luhuadong@163.com
 
 HOME_DIR=`pwd`
 BUILD_DIR=${HOME_DIR}/build
-WEB_DIR=${HOME_DIR}/modules/WebServer/web_src
+WEB_DIR=${HOME_DIR}/apps/services/web_dashboard/web_src
 DEPLOY_DIR=/opt/openember
 PACKAGE=openember-${VERSION}.zip
 CONF_DIR=/etc/openember
@@ -37,7 +37,7 @@ BuildProject() {
     cmake ..
     make -j8
 
-    cp -r ../modules/WebServer/web_root ${BUILD_DIR}/bin/
+    cp -r ../apps/services/web_dashboard/web_root ${BUILD_DIR}/bin/
 }
 
 BuildTest() {
@@ -49,7 +49,7 @@ BuildTest() {
 
 RunServer() {
     cd ${BUILD_DIR}
-    ./bin/WebServer
+    ./bin/web_dashboard
 }
 
 PackageAll() {
@@ -86,7 +86,7 @@ DeployHost() {
     fi
 
     # log file
-    sudo cp ../libs/Log/zlog.conf ${CONF_DIR}
+    sudo cp ../components/Log/zlog.conf ${CONF_DIR}
     sudo chmod 777 ${CONF_DIR}/zlog.conf
 
     # web root

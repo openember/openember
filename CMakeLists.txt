@@ -340,10 +340,6 @@ add_subdirectory(modules)
 add_subdirectory(apps)
 add_subdirectory(core)
 
-if(BUILD_PUBSUB_ZMQ OR BUILD_PUBSUB_NNG OR BUILD_PUBSUB_LCM OR OPENEMBER_MSGBUS_USE_NNG)
-    add_subdirectory(examples)
-endif()
-
 #========================================================
 # for unittest, call "cmake .. -DUNIT_TEST=ON"
 if(TESTS_ENABLED)

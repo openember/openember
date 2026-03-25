@@ -8,45 +8,74 @@ config OPENEMBER_ENABLE_EXAMPLES
     bool "Build examples"
     default y
 
-menu "Application Nodes"
+menu "system"
 
-config OPENEMBER_MODULE_TEMPLATE
-    bool "Build app: Template"
+config OPENEMBER_MODULE_LAUNCH_MANAGER
+    bool "Build app: system/launch_manager"
     default y
 
 config OPENEMBER_MODULE_ALOGD
-    bool "Build app: Alogd"
+    bool "Build app: system/log_service"
     default y
 
 config OPENEMBER_MODULE_DEVICE_MANAGER
-    bool "Build app: DeviceManager"
-    default y
-
-config OPENEMBER_MODULE_MESSAGE_DISPATCHER
-    bool "Build app: MessageDispatcher"
+    bool "Build app: system/device_manager"
     default y
 
 config OPENEMBER_MODULE_CONFIG_MANAGER
-    bool "Build app: ConfigManager"
+    bool "Build app: system/config_service"
     default y
 
 config OPENEMBER_MODULE_MONITOR_ALARM
-    bool "Build app: MonitorAlarm"
+    bool "Build app: system/health_monitor"
     default y
+
+endmenu
+
+menu "services"
 
 config OPENEMBER_MODULE_OTA
-    bool "Build app: OTA"
-    default y
-
-config OPENEMBER_MODULE_ACQUISITION
-    bool "Build app: Acquisition"
+    bool "Build app: services/ota_update_service"
     default y
 
 config OPENEMBER_MODULE_WEB_SERVER
-    bool "Build app: WebServer"
+    bool "Build app: services/web_dashboard"
     default y
 
 endmenu
 
+menu "tools"
+
+comment "No standalone tool nodes are bundled in-tree yet."
+
 endmenu
 
+menu "references"
+
+config OPENEMBER_MODULE_ACQUISITION
+    bool "Build app: references/sensor_data_reference"
+    default y
+
+endmenu
+
+menu "examples"
+
+config OPENEMBER_MODULE_TEMPLATE
+    bool "Build app: examples/hello_node"
+    default y
+
+config OPENEMBER_EXAMPLE_PUBSUB_TWO_NODES
+    bool "Build example: pubsub_two_nodes (publisher/subscriber)"
+    default y
+    help
+      Requires a pub/sub transport backend (ZMQ/NNG/LCM); CMake skips if not selected.
+
+config OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER
+    bool "Build example: msgbus_nng_forwarder"
+    default y
+    help
+      Requires internal msgbus backend NNG; CMake skips otherwise.
+
+endmenu
+
+endmenu
