@@ -212,38 +212,34 @@ oe_result_t oe_can_recv_frame(oe_can_t *c, oe_can_frame_t *out_frame, int timeou
         return OE_ERR_TIMEOUT;
     }
 
-    if (p->can_fd_enabled) {
-        struct canfd_frame cfd;
-        memset(&cfd, 0, sizeof(cfd));
-        n = read(p->fd, &cfd, sizeof(cfd));
-        if (n == (ssize_t)sizeof(cfd)) {
-            out_frame->can_id = (uint32_t)(cfd.can_id & CAN_EFF_MASK);
-            out_frame->is_extended = ((cfd.can_id & CAN_EFF_FLAG) != 0) ? 1 : 0;
-            out_frame->is_fd = 1;
-            out_frame->data_len = cfd.len;
-            if (out_frame->data_len > 0) {
-                memcpy(out_frame->data, cfd.data, out_frame->data_len);
-            }
-            return OE_OK;
-        }
-        /* Kernel may still deliver classical frame even with FD enabled. */
-    }
-
-    {
+    union {
         struct can_frame cf;
-        memset(&cf, 0, sizeof(cf));
-        n = read(p->fd, &cf, sizeof(cf));
-        if (n != (ssize_t)sizeof(cf)) {
-            return OE_ERR_INTERNAL;
-        }
-        out_frame->can_id = (uint32_t)(cf.can_id & CAN_EFF_MASK);
-        out_frame->is_extended = ((cf.can_id & CAN_EFF_FLAG) != 0) ? 1 : 0;
-        out_frame->is_fd = 0;
-        out_frame->data_len = cf.can_dlc;
+        struct canfd_frame cfd;
+    } u;
+
+    memset(&u, 0, sizeof(u));
+    n = read(p->fd, &u, sizeof(u));
+    if (n == (ssize_t)sizeof(u.cfd)) {
+        out_frame->can_id = (uint32_t)(u.cfd.can_id & CAN_EFF_MASK);
+        out_frame->is_extended = ((u.cfd.can_id & CAN_EFF_FLAG) != 0) ? 1 : 0;
+        out_frame->is_fd = 1;
+        out_frame->data_len = u.cfd.len;
         if (out_frame->data_len > 0) {
-            memcpy(out_frame->data, cf.data, out_frame->data_len);
+            memcpy(out_frame->data, u.cfd.data, out_frame->data_len);
         }
         return OE_OK;
     }
+    if (n == (ssize_t)sizeof(u.cf)) {
+        out_frame->can_id = (uint32_t)(u.cf.can_id & CAN_EFF_MASK);
+        out_frame->is_extended = ((u.cf.can_id & CAN_EFF_FLAG) != 0) ? 1 : 0;
+        out_frame->is_fd = 0;
+        out_frame->data_len = u.cf.can_dlc;
+        if (out_frame->data_len > 0) {
+            memcpy(out_frame->data, u.cf.data, out_frame->data_len);
+        }
+        return OE_OK;
+    }
+
+    return OE_ERR_INTERNAL;
 }
 
