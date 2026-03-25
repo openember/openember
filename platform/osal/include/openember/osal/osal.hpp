@@ -7,6 +7,7 @@
 #include "openember/osal/mutex.hpp"
 #include "openember/osal/thread.hpp"
 #include "openember/osal/time.hpp"
+#include "openember/osal/shm.hpp"
 
 #endif /* OPENEMBER_OSAL_HPP_ */
 

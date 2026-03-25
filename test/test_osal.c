@@ -4,11 +4,14 @@
 #include "openember/osal/cond.h"
 #include "openember/osal/event.h"
 #include "openember/osal/sem.h"
+#include "openember/osal/shm.h"
 #include "openember/osal/thread.h"
 #include "openember/osal/time.h"
 #include "openember/osal/types.h"
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 static volatile int g_counter;
 
@@ -141,6 +144,50 @@ MU_TEST(test_sem_trywait_timeout_and_post)
     mu_assert(r == OE_OK, "sem destroy");
 }
 
+MU_TEST(test_shm_create_open_ptr_unlink)
+{
+    oe_shm_t shm1;
+    oe_shm_t shm2;
+    oe_result_t r;
+    char name[128];
+    void *addr = NULL;
+    size_t size = 0;
+
+    /* Unique name for local test */
+    snprintf(name, sizeof(name), "/oe_shm_test_%d_%u", (int)getpid(), (unsigned)rand());
+
+    r = oe_shm_unlink(name);
+    (void)r;
+
+    r = oe_shm_create(&shm1, name, 4096);
+    mu_assert(r == OE_OK, "shm create");
+
+    r = oe_shm_get_ptr(&shm1, &addr, &size);
+    mu_assert(r == OE_OK, "shm get ptr");
+    mu_assert(size >= 4096, "shm size");
+
+    /* Write value into shared memory */
+    ((volatile uint32_t *)addr)[0] = 0xA5A5A5A5u;
+
+    r = oe_shm_close(&shm1);
+    mu_assert(r == OE_OK, "shm close 1");
+
+    r = oe_shm_open(&shm2, name);
+    mu_assert(r == OE_OK, "shm open");
+
+    addr = NULL;
+    size = 0;
+    r = oe_shm_get_ptr(&shm2, &addr, &size);
+    mu_assert(r == OE_OK, "shm get ptr 2");
+    mu_assert(((volatile uint32_t *)addr)[0] == 0xA5A5A5A5u, "shm value preserved");
+
+    r = oe_shm_close(&shm2);
+    mu_assert(r == OE_OK, "shm close 2");
+
+    r = oe_shm_unlink(name);
+    mu_assert(r == OE_OK, "shm unlink");
+}
+
 MU_TEST_SUITE(osal_suite)
 {
     MU_SUITE_CONFIGURE(NULL, NULL);
@@ -150,6 +197,7 @@ MU_TEST_SUITE(osal_suite)
     MU_RUN_TEST(test_cond_timeout);
     MU_RUN_TEST(test_event_timeout_and_set);
     MU_RUN_TEST(test_sem_trywait_timeout_and_post);
+    MU_RUN_TEST(test_shm_create_open_ptr_unlink);
 }
 
 int main(void)
