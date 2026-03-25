@@ -4,6 +4,8 @@ if(NOT DEFINED OPENEMBER_MODULE_TEMPLATE OR OPENEMBER_MODULE_TEMPLATE)
     add_subdirectory(hello_node)
 endif()
 
+add_subdirectory(network_sockets)
+
 # pub/sub 双节点演示（依赖当前选择的 pubsub transport）
 if(OPENEMBER_PUBSUB_BACKEND STREQUAL "zmq")
     set(OPENEMBER_PUBSUB_DEMO_PUB_URL "tcp://*:5560")
