@@ -224,3 +224,29 @@ oe_result_t oe_uart_write(oe_uart_t *u, const void *buf, size_t len, size_t *out
     }
     return OE_OK;
 }
+
+oe_result_t oe_uart_query_caps(oe_uart_caps_t *out_caps)
+{
+    uint32_t i;
+    static const uint32_t rates[] = {9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600};
+
+    if (!out_caps) {
+        return OE_ERR_INVALID_ARG;
+    }
+
+    out_caps->baud_rate_count = (uint32_t)(sizeof(rates) / sizeof(rates[0]));
+    if (out_caps->baud_rate_count > OE_UART_CAPS_MAX_BAUD_RATES) {
+        out_caps->baud_rate_count = OE_UART_CAPS_MAX_BAUD_RATES;
+    }
+
+    for (i = 0; i < out_caps->baud_rate_count; i++) {
+        out_caps->baud_rates[i] = rates[i];
+    }
+
+    out_caps->parity_mask = OE_UART_PARITY_MASK_NONE | OE_UART_PARITY_MASK_EVEN | OE_UART_PARITY_MASK_ODD;
+    out_caps->data_bits_min = 7;
+    out_caps->data_bits_max = 8;
+    out_caps->stop_bits_min = 1;
+    out_caps->stop_bits_max = 2;
+    return OE_OK;
+}

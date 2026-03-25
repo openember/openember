@@ -173,3 +173,16 @@ oe_result_t oe_file_seek(oe_file_t *f, int64_t offset, oe_file_whence_t whence,
     }
     return OE_OK;
 }
+
+oe_result_t oe_file_query_caps(oe_file_caps_t *out_caps)
+{
+    if (!out_caps) {
+        return OE_ERR_INVALID_ARG;
+    }
+
+    out_caps->flags = OE_FILE_CAPS_CAN_READ | OE_FILE_CAPS_CAN_WRITE | OE_FILE_CAPS_CAN_SEEK |
+                      OE_FILE_CAPS_CAN_FLUSH;
+    out_caps->max_read_bytes = 0;  /* unknown / unlimited */
+    out_caps->max_write_bytes = 0; /* unknown / unlimited */
+    return OE_OK;
+}

@@ -65,11 +65,31 @@ MU_TEST(test_hal_uart_open_invalid_path)
     mu_assert(r != OE_OK, "expect failure");
 }
 
+MU_TEST(test_hal_caps)
+{
+    oe_file_caps_t fc;
+    oe_uart_caps_t uc;
+    oe_result_t r;
+
+    memset(&fc, 0, sizeof(fc));
+    memset(&uc, 0, sizeof(uc));
+
+    r = oe_file_query_caps(&fc);
+    mu_assert(r == OE_OK, "file query caps");
+    mu_check(fc.flags != 0);
+
+    r = oe_uart_query_caps(&uc);
+    mu_assert(r == OE_OK, "uart query caps");
+    mu_check(uc.baud_rate_count > 0);
+    mu_check(uc.parity_mask != 0);
+}
+
 MU_TEST_SUITE(hal_suite)
 {
     MU_SUITE_CONFIGURE(NULL, NULL);
     MU_RUN_TEST(test_hal_file_roundtrip);
     MU_RUN_TEST(test_hal_uart_open_invalid_path);
+    MU_RUN_TEST(test_hal_caps);
 }
 
 int main(void)
