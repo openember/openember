@@ -45,7 +45,7 @@
 - [x] **P1**：`socket`（至少 Unix domain socket；可选 TCP/UDP；支持超时与 poll/wait）
 - [x] **P1**：`pipe` / `fifo`（匿名管道 + 有名管道，适合控制通道/日志/小数据流）
 - [x] **P2（谨慎）**：`signals`（薄封装：屏蔽/解除/同步等待；不做复杂分发）
-- [ ] **P2（可选）**：POSIX `mq_*`（评估必要性；优先使用现有 msgbus/pubsub 体系）
+- [x] **P2（可选）**：POSIX `mq_*`（评估必要性；优先使用现有 msgbus/pubsub 体系）
 
 C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal/*.hpp`）：
 

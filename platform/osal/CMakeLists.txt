@@ -11,6 +11,7 @@ add_library(openember_osal STATIC
     src/linux/oe_pipe.c
     src/linux/oe_fifo.c
     src/linux/oe_signals.c
+    src/linux/oe_mq.c
 )
 
 target_include_directories(openember_osal PUBLIC
@@ -25,3 +26,6 @@ set_target_properties(openember_osal PROPERTIES
 
 find_package(Threads REQUIRED)
 target_link_libraries(openember_osal PUBLIC Threads::Threads)
+
+# POSIX message queues may require librt on some systems.
+target_link_libraries(openember_osal PUBLIC rt)

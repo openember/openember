@@ -9,6 +9,7 @@
 #include "openember/osal/pipe.h"
 #include "openember/osal/fifo.h"
 #include "openember/osal/signals.h"
+#include "openember/osal/mq.h"
 #include "openember/osal/thread.h"
 #include "openember/osal/time.h"
 #include "openember/osal/types.h"
@@ -458,6 +459,51 @@ MU_TEST(test_signals_wait_timeout_and_ok)
     mu_assert(r == OE_OK, "signals close");
 }
 
+MU_TEST(test_mq_send_recv_optional)
+{
+    oe_mq_t mq;
+    oe_result_t r;
+    oe_mq_caps_t caps;
+    char name[128];
+    char send_buf[32];
+    char recv_buf[32];
+    size_t recv_len = 0;
+    const char *msg = "oe_mq_test";
+    size_t msg_len = strlen(msg);
+
+    snprintf(name, sizeof(name), "/oe_mq_test_%d_%u", (int)getpid(), (unsigned)rand());
+    (void)oe_mq_unlink(name);
+
+    r = oe_mq_query_caps(&caps);
+    mu_assert(r == OE_OK, "mq query caps");
+    mu_check(caps.supports_message_queue == 1u);
+
+    memset(&mq, 0, sizeof(mq));
+    r = oe_mq_create(&mq, name, 10, sizeof(send_buf));
+    if (r == OE_ERR_UNSUPPORTED) {
+        /* Environment may not support POSIX mqueue (e.g. /dev/mqueue not available) */
+        return;
+    }
+    mu_assert(r == OE_OK, "mq create");
+
+    memset(send_buf, 0, sizeof(send_buf));
+    memcpy(send_buf, msg, msg_len);
+
+    r = oe_mq_send(&mq, send_buf, msg_len, 1000);
+    mu_assert(r == OE_OK, "mq send");
+
+    memset(recv_buf, 0, sizeof(recv_buf));
+    r = oe_mq_recv(&mq, recv_buf, sizeof(recv_buf), &recv_len, 1000);
+    mu_assert(r == OE_OK, "mq recv");
+    mu_assert(recv_len == msg_len, "mq recv length match");
+    mu_assert(memcmp(recv_buf, msg, msg_len) == 0, "mq message match");
+
+    r = oe_mq_close(&mq);
+    mu_assert(r == OE_OK, "mq close");
+    r = oe_mq_unlink(name);
+    mu_assert(r == OE_OK, "mq unlink");
+}
+
 MU_TEST_SUITE(osal_suite)
 {
     MU_SUITE_CONFIGURE(NULL, NULL);
@@ -473,6 +519,7 @@ MU_TEST_SUITE(osal_suite)
     MU_RUN_TEST(test_pipe_read_write);
     MU_RUN_TEST(test_fifo_read_write);
     MU_RUN_TEST(test_signals_wait_timeout_and_ok);
+    MU_RUN_TEST(test_mq_send_recv_optional);
 }
 
 int main(void)
