@@ -119,7 +119,8 @@ oe_result_t oe_uart_open(oe_uart_t *u, const char *path, const oe_uart_config_t 
         return r;
     }
 
-    {
+    /* Keep or clear O_NONBLOCK based on config */
+    if (cfg->nonblocking == 0) {
         int fl = fcntl(fd, F_GETFL, 0);
         if (fl >= 0) {
             (void)fcntl(fd, F_SETFL, fl & ~O_NONBLOCK);

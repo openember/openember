@@ -7,6 +7,7 @@
 #include "openember/hal/i2c.h"
 #include "openember/hal/spi.h"
 #include "openember/hal/can.h"
+#include "openember/hal/sbus.h"
 #include "openember/hal/uart.h"
 
 #endif /* OPENEMBER_HAL_H_ */

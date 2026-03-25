@@ -6,6 +6,7 @@ add_library(openember_hal STATIC
     src/linux/oe_i2c.c
     src/linux/oe_spi.c
     src/linux/oe_can.c
+    src/linux/oe_sbus.c
 )
 
 target_include_directories(openember_hal PUBLIC

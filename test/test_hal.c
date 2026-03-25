@@ -8,6 +8,7 @@
 #include "openember/hal/i2c.h"
 #include "openember/hal/spi.h"
 #include "openember/hal/can.h"
+#include "openember/hal/sbus.h"
 #include "openember/osal/types.h"
 
 #include <stdio.h>
@@ -116,6 +117,17 @@ MU_TEST(test_hal_caps)
         mu_assert(r == OE_OK, "can query caps");
         mu_check(cc.max_data_len_can == 8u);
         mu_check(cc.max_data_len_can_fd <= 64u);
+    }
+
+    {
+        oe_sbus_caps_t sc;
+        memset(&sc, 0, sizeof(sc));
+        r = oe_sbus_query_caps(&sc);
+        mu_assert(r == OE_OK, "sbus query caps");
+        mu_check(sc.channels_count == 16u);
+        mu_check(sc.switches_count == 2u);
+        mu_check(sc.frame_len_bytes == 25u);
+        mu_check(sc.baud_rate == 100000u);
     }
 }
 

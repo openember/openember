@@ -47,6 +47,10 @@ typedef struct oe_uart_config {
     uint8_t data_bits; /* 通常为 8 */
     uint8_t stop_bits; /* 1 或 2 */
     oe_uart_parity_t parity;
+    /* When nonblocking=1, keep O_NONBLOCK on the FD.
+     * Useful for protocols that need user-space timeout loops (e.g. SBUS).
+     */
+    uint8_t nonblocking;
 } oe_uart_config_t;
 
 /** path 如 /dev/ttyUSB0、/dev/ttyS0 */
