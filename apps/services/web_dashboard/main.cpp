@@ -16,8 +16,6 @@
 
 static msg_node_t client;
 
-#define WEB_PORT    "0.0.0.0:8000"
-
 static const char *s_debug_level = "2";    // debug level, from 0 to 4
 static const char *s_root_dir =
 #ifdef OPENEMBER_WEB_DASHBOARD_ROOT_DIR
@@ -25,7 +23,6 @@ static const char *s_root_dir =
 #else
     "apps/services/web_dashboard/web_root";
 #endif
-static const char *s_listening_address = WEB_PORT;
 static const char *s_enable_hexdump = "no";
 static const char *s_ssi_pattern = "#.html";
 
@@ -83,6 +80,13 @@ int main()
 {
     int rc;
     struct mg_mgr mgr;
+    char listening_addr[64];
+    unsigned port = 8000;
+#ifdef OPENEMBER_WEB_DASHBOARD_PORT
+    port = (unsigned)OPENEMBER_WEB_DASHBOARD_PORT;
+#endif
+    (void)snprintf(listening_addr, sizeof(listening_addr), "0.0.0.0:%u", port);
+    const char *s_listening_address = listening_addr;
 
     sayHello(MODULE_NAME);
     

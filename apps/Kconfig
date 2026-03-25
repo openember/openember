@@ -45,6 +45,13 @@ config OPENEMBER_WEB_DASHBOARD_ROOT_DIR
       Default web root directory for web_dashboard.
       If a relative path is used, CMake will treat it as relative to the repository root.
 
+config OPENEMBER_WEB_DASHBOARD_PORT
+    int "web_dashboard HTTP port"
+    default 8000
+    range 1 65535
+    help
+      HTTP listen port for web_dashboard. Server binds to 0.0.0.0:<port>.
+
 endmenu
 
 menu "tools"
