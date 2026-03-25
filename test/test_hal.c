@@ -9,6 +9,7 @@
 #include "openember/hal/spi.h"
 #include "openember/hal/can.h"
 #include "openember/hal/sbus.h"
+#include "openember/hal/onewire.h"
 #include "openember/osal/types.h"
 
 #include <stdio.h>
@@ -128,6 +129,15 @@ MU_TEST(test_hal_caps)
         mu_check(sc.switches_count == 2u);
         mu_check(sc.frame_len_bytes == 25u);
         mu_check(sc.baud_rate == 100000u);
+    }
+
+    {
+        oe_onewire_caps_t oc;
+        memset(&oc, 0, sizeof(oc));
+        r = oe_onewire_query_caps(&oc);
+        mu_assert(r == OE_OK, "onewire query caps");
+        mu_check(oc.supports_temperature == 1u);
+        mu_check(oc.supports_raw_read == 1u);
     }
 }
 

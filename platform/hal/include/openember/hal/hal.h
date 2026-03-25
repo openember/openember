@@ -9,5 +9,6 @@
 #include "openember/hal/can.h"
 #include "openember/hal/sbus.h"
 #include "openember/hal/uart.h"
+#include "openember/hal/onewire.h"
 
 #endif /* OPENEMBER_HAL_H_ */

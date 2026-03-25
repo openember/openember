@@ -7,6 +7,7 @@ add_library(openember_hal STATIC
     src/linux/oe_spi.c
     src/linux/oe_can.c
     src/linux/oe_sbus.c
+    src/linux/oe_onewire.c
 )
 
 target_include_directories(openember_hal PUBLIC

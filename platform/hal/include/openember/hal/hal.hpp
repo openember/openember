@@ -11,6 +11,7 @@
 #include "openember/hal/can.hpp"
 #include "openember/hal/sbus.hpp"
 #include "openember/hal/uart.hpp"
+#include "openember/hal/onewire.hpp"
 
 #endif /* OPENEMBER_HAL_HPP_ */
 
