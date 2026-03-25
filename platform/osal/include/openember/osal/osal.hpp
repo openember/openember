@@ -11,6 +11,9 @@
 #include "openember/osal/socket.hpp"
 #include "openember/osal/pipe.hpp"
 #include "openember/osal/fifo.hpp"
+#include "openember/osal/cond.hpp"
+#include "openember/osal/event.hpp"
+#include "openember/osal/sem.hpp"
 #include "openember/osal/signals.hpp"
 #include "openember/osal/mq.hpp"
 

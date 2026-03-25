@@ -49,4 +49,4 @@
 
 C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal/*.hpp`）：
 
-- [ ] 为 `cond/event/sem/shm/socket/pipe` 补齐对应的 C++ RAII 封装（不引入新链接依赖）
+- [x] 为 `cond/event/sem/shm/socket/pipe` 补齐对应的 C++ RAII 封装（不引入新链接依赖）
