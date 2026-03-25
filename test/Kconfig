@@ -1,0 +1,11 @@
+menu "Tests"
+
+config OPENEMBER_ENABLE_TESTS
+    bool "Build and register unit tests (test/)"
+    default n
+    help
+      When enabled, CMake sets TESTS_ENABLED and builds executables under test/,
+      registers them with CTest (ctest / make test).
+      Disable for production or embedded images where tests are not needed.
+
+endmenu

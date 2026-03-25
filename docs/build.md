@@ -137,7 +137,7 @@ source <(ember completion bash)
 `menuconfig` 已支持以下关键配置（无需再手工 `-D`）：
 
 - **Build Options**
-  - `TESTS_ENABLED`
+  - 单元测试：`test/Kconfig` → `CONFIG_OPENEMBER_ENABLE_TESTS` → `TESTS_ENABLED`（默认关）
   - `EXAMPLES_ENABLED`
   - `OPENMP_ENABLED`
   - `DEBUG_ENABLED`

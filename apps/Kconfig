@@ -1,9 +1,5 @@
 menu "Application"
 
-config OPENEMBER_ENABLE_TESTS
-    bool "Build unit tests"
-    default y
-
 config OPENEMBER_ENABLE_EXAMPLES
     bool "Build examples"
     default y

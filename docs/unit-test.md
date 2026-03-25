@@ -21,4 +21,4 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-单元测试由 CMake 选项开关 `TESTS_ENABLED` 控制，默认开启。执行 `make test` 将会编译并运行 test 目录下的所有测试程序（实际上是使用 `add_test` 函数添加的测试程序）。
+单元测试由 Kconfig `test/Kconfig` 中的 `CONFIG_OPENEMBER_ENABLE_TESTS`（映射为 CMake `TESTS_ENABLED`）或直接使用 `-DTESTS_ENABLED=ON` 控制，**默认关闭**（正式产物通常不需要编测试）。开启后执行 `cmake --build …` 会编译测试程序，`ctest` 或 `make test` 会运行 `add_test` 注册用例。
