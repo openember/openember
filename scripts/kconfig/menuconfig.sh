@@ -7,10 +7,19 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 KCONFIG_FRONTENDS_DIR="$(bash "${ROOT_DIR}/scripts/kconfig/ensure-kconfig-frontends-nox.sh")"
 
 mkdir -p "${BUILD_DIR}"
-for kf in "${ROOT_DIR}"/Kconfig*; do
-  if [[ -f "${kf}" ]]; then
-    cp -f "${kf}" "${BUILD_DIR}/$(basename "${kf}")"
-  fi
+
+# 顶层 Kconfig + 各层分文件（与仓库根目录相对路径一致，便于 kconfig 解析 source）
+cp -f "${ROOT_DIR}/Kconfig" "${BUILD_DIR}/Kconfig"
+_layer_kconfigs=(
+  "apps/Kconfig.application"
+  "modules/Kconfig.module"
+  "components/Kconfig.component"
+  "core/Kconfig.core"
+  "platform/Kconfig.platform"
+)
+for rel in "${_layer_kconfigs[@]}"; do
+  mkdir -p "${BUILD_DIR}/$(dirname "${rel}")"
+  cp -f "${ROOT_DIR}/${rel}" "${BUILD_DIR}/${rel}"
 done
 
 # kconfig-frontends-nox 提供了 kconfig-mconf/c f 等可执行文件，这些可执行文件依赖动态库，
@@ -44,4 +53,3 @@ else
 fi
 
 echo "Config generated: ${BUILD_DIR}/.config" >&2
-
