@@ -240,6 +240,11 @@ if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
     message(STATUS "├── log backend: spdlog (target spdlog::spdlog)")
 endif()
 
+# Mongoose (embedded web server) is used by apps/services/web_dashboard.
+openember_third_party_resolve_mongoose()
+message(STATUS "├── mongoose: ${MONGOOSE_LIBRARIES}")
+message(STATUS "└── mongoose include: ${MONGOOSE_INCLUDE_DIRS}")
+
 if(OPENEMBER_PUBSUB_BACKEND STREQUAL "zmq")
     openember_transport_resolve_libzmq()
     message(STATUS "├── libzmq: ${OPENEMBER_LIBZMQ_LIBRARIES}")

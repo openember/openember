@@ -39,6 +39,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/GetNlohmannJson.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetYamlCpp.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetAsio.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetSpdlog.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/GetMongoose.cmake)
 
 # ------------------------------------------------------------
 # Transport dependencies (nng / lcm / libzmq / cppzmq)
@@ -68,6 +69,11 @@ include(${CMAKE_SOURCE_DIR}/cmake/GetCppZmq.cmake)
 set(OPENEMBER_PAHO_MQTT_C_VERSION "1.3.13")
 set(OPENEMBER_PAHO_MQTT_C_URL
     "https://github.com/eclipse-paho/paho.mqtt.c/archive/v${OPENEMBER_PAHO_MQTT_C_VERSION}.tar.gz")
+
+# Mongoose embedded web server (used by apps/services/web_dashboard)
+set(OPENEMBER_MONGOOSE_VERSION "7.20")
+set(OPENEMBER_MONGOOSE_URL
+    "https://github.com/cesanta/mongoose/archive/refs/tags/${OPENEMBER_MONGOOSE_VERSION}.tar.gz")
 
 function(openember_third_party_resolve_zlog)
     # 仅当 OPENEMBER_LOG_BACKEND=ZLOG 时解析 zlog（由根 CMakeLists 在 include 本文件前设置）
@@ -246,6 +252,33 @@ function(openember_third_party_resolve_sqlite)
     openember_get_sqlite()
     set(SQLITE_INCLUDE_DIRS ${SQLITE_INCLUDE_DIRS} PARENT_SCOPE)
     set(SQLITE_LIBRARIES ${SQLITE_LIBRARIES} PARENT_SCOPE)
+endfunction()
+
+function(openember_third_party_resolve_mongoose)
+    # SYSTEM: require system-installed mongoose lib/header
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
+        find_path(MONGOOSE_INCLUDE_DIRS NAMES mongoose.h)
+        find_library(_mongoose_lib NAMES mongoose)
+        if(NOT MONGOOSE_INCLUDE_DIRS OR NOT _mongoose_lib)
+            message(FATAL_ERROR "mongoose not found but OPENEMBER_THIRD_PARTY_MODE=SYSTEM")
+        endif()
+        set(MONGOOSE_INCLUDE_DIRS ${MONGOOSE_INCLUDE_DIRS} PARENT_SCOPE)
+        set(MONGOOSE_LIBRARIES ${_mongoose_lib} PARENT_SCOPE)
+        return()
+    endif()
+
+    # VENDOR: use local extracted sources if not set
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        if(NOT OPENEMBER_MONGOOSE_LOCAL_SOURCE)
+            set(OPENEMBER_MONGOOSE_LOCAL_SOURCE
+                "${CMAKE_SOURCE_DIR}/download/_extracted/mongoose-${OPENEMBER_MONGOOSE_VERSION}"
+                CACHE PATH "Local source override for mongoose (VENDOR mode)" FORCE)
+        endif()
+    endif()
+
+    openember_get_mongoose()
+    set(MONGOOSE_INCLUDE_DIRS ${MONGOOSE_INCLUDE_DIRS} PARENT_SCOPE)
+    set(MONGOOSE_LIBRARIES ${MONGOOSE_LIBRARIES} PARENT_SCOPE)
 endfunction()
 
 ################################################################################

@@ -8,7 +8,7 @@
  * 2022-07-21     luhuadong    the first version
  */
 
-#include "mongoose.h"
+#include <mongoose.h>
 
 #define MODULE_NAME            "web_dashboard"
 #define LOG_TAG                MODULE_NAME
@@ -34,8 +34,10 @@ static void signal_handler(int signo)
     s_signo = signo;
 }
 
-static void fn(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
+static void fn(struct mg_connection *c, int ev, void *ev_data)
 {
+    (void)c;
+    (void)ev_data;
     struct mg_http_serve_opts opts = {.root_dir = s_root_dir};   // Serve local dir
 
     if (ev == MG_EV_HTTP_MSG) {
