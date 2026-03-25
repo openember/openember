@@ -43,7 +43,7 @@
 - [x] **P1**：`semaphore`（进程内为主；后续视需要扩展命名信号量）
 - [x] **P1**：`shm`（共享内存 create/open/map/unmap/close/unlink + `*_query_caps()`）
 - [x] **P1**：`socket`（至少 Unix domain socket；可选 TCP/UDP；支持超时与 poll/wait）
-- [ ] **P1**：`pipe` / `fifo`（匿名管道 + 有名管道，适合控制通道/日志/小数据流）
+- [x] **P1**：`pipe` / `fifo`（匿名管道 + 有名管道，适合控制通道/日志/小数据流）
 - [ ] **P2（谨慎）**：`signals`（薄封装：屏蔽/解除/同步等待；不做复杂分发）
 - [ ] **P2（可选）**：POSIX `mq_*`（评估必要性；优先使用现有 msgbus/pubsub 体系）
 

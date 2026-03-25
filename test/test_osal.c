@@ -6,6 +6,8 @@
 #include "openember/osal/sem.h"
 #include "openember/osal/shm.h"
 #include "openember/osal/socket.h"
+#include "openember/osal/pipe.h"
+#include "openember/osal/fifo.h"
 #include "openember/osal/thread.h"
 #include "openember/osal/time.h"
 #include "openember/osal/types.h"
@@ -291,6 +293,117 @@ MU_TEST(test_socket_unix_send_recv)
     mu_assert(r == OE_OK, "socket close server");
 }
 
+typedef struct {
+    oe_pipe_t pipe;
+    uint32_t expected;
+    oe_result_t read_res;
+    uint32_t read_value;
+} pipe_test_ctx_t;
+
+static void pipe_reader_worker(void *arg)
+{
+    pipe_test_ctx_t *ctx = (pipe_test_ctx_t *)arg;
+    oe_result_t r;
+    size_t got = 0;
+    uint32_t v = 0;
+
+    r = oe_pipe_read(&ctx->pipe, &v, sizeof(v), &got, -1);
+    ctx->read_res = r;
+    ctx->read_value = v;
+}
+
+MU_TEST(test_pipe_read_write)
+{
+    pipe_test_ctx_t ctx;
+    oe_result_t r;
+    oe_thread_t th;
+
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.expected = 0xCAFEBABEu;
+
+    r = oe_pipe_create(&ctx.pipe);
+    mu_assert(r == OE_OK, "pipe create");
+
+    r = oe_thread_create(&th, pipe_reader_worker, &ctx);
+    mu_assert(r == OE_OK, "pipe reader thread create");
+
+    size_t sent = 0;
+    r = oe_pipe_write(&ctx.pipe, &ctx.expected, sizeof(ctx.expected), &sent, 1000);
+    mu_assert(r == OE_OK, "pipe write");
+
+    r = oe_thread_join(&th);
+    mu_assert(r == OE_OK, "pipe reader thread join");
+    mu_assert(ctx.read_res == OE_OK, "pipe read ok");
+    mu_assert(ctx.read_value == ctx.expected, "pipe read value match");
+
+    r = oe_pipe_close(&ctx.pipe);
+    mu_assert(r == OE_OK, "pipe close");
+}
+
+typedef struct {
+    oe_fifo_t fifo;
+    uint32_t expected;
+    oe_result_t read_res;
+    uint32_t read_value;
+} fifo_test_ctx_t;
+
+static void fifo_reader_worker(void *arg)
+{
+    fifo_test_ctx_t *ctx = (fifo_test_ctx_t *)arg;
+    oe_result_t r;
+    size_t got = 0;
+    uint32_t v = 0;
+
+    r = oe_fifo_read(&ctx->fifo, &v, sizeof(v), &got, -1);
+    ctx->read_res = r;
+    ctx->read_value = v;
+}
+
+MU_TEST(test_fifo_read_write)
+{
+    fifo_test_ctx_t ctx;
+    oe_result_t r;
+    oe_thread_t th;
+    char path[128];
+
+    snprintf(path, sizeof(path), "/tmp/oe_fifo_test_%d_%u.fifo", (int)getpid(), (unsigned)rand());
+    (void)oe_fifo_unlink(path);
+
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.expected = 0x12345678u;
+
+    /* Open fifo for reading inside worker thread context */
+    r = oe_fifo_open(&ctx.fifo, path, OE_FIFO_MODE_READ);
+    mu_assert(r == OE_OK, "fifo open read");
+
+    r = oe_thread_create(&th, fifo_reader_worker, &ctx);
+    mu_assert(r == OE_OK, "fifo reader thread create");
+
+    oe_fifo_t writer;
+    memset(&writer, 0, sizeof(writer));
+    r = oe_fifo_open(&writer, path, OE_FIFO_MODE_WRITE);
+    mu_assert(r == OE_OK, "fifo open write");
+
+    size_t sent = 0;
+    r = oe_fifo_write(&writer, &ctx.expected, sizeof(ctx.expected), &sent, 1000);
+    mu_assert(r == OE_OK, "fifo write");
+
+    r = oe_thread_join(&th);
+    mu_assert(r == OE_OK, "fifo reader thread join");
+
+    mu_assert(ctx.read_res == OE_OK, "fifo read ok");
+    mu_assert(ctx.read_value == ctx.expected, "fifo read value match");
+
+    r = oe_fifo_close(&writer);
+    mu_assert(r == OE_OK, "fifo writer close");
+
+    r = oe_fifo_close(&ctx.fifo);
+    mu_assert(r == OE_OK, "fifo reader close");
+
+    r = oe_fifo_unlink(path);
+    mu_assert(r == OE_OK, "fifo unlink");
+}
+
 MU_TEST_SUITE(osal_suite)
 {
     MU_SUITE_CONFIGURE(NULL, NULL);
@@ -303,6 +416,8 @@ MU_TEST_SUITE(osal_suite)
     MU_RUN_TEST(test_shm_create_open_ptr_unlink);
     MU_RUN_TEST(test_socket_accept_timeout);
     MU_RUN_TEST(test_socket_unix_send_recv);
+    MU_RUN_TEST(test_pipe_read_write);
+    MU_RUN_TEST(test_fifo_read_write);
 }
 
 int main(void)

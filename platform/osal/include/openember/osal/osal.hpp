@@ -9,6 +9,8 @@
 #include "openember/osal/time.hpp"
 #include "openember/osal/shm.hpp"
 #include "openember/osal/socket.hpp"
+#include "openember/osal/pipe.hpp"
+#include "openember/osal/fifo.hpp"
 
 #endif /* OPENEMBER_OSAL_HPP_ */
 
