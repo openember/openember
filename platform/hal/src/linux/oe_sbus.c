@@ -142,6 +142,21 @@ oe_result_t oe_sbus_recv_frame(oe_sbus_t *s, oe_sbus_frame_t *out_frame, int tim
         size_t rd = 0;
         r = oe_uart_read(&p->uart, raw + got, want, &rd);
         if (r == OE_OK) {
+            if (rd == 0) {
+                /* Nonblocking read may return OK with 0 bytes (no progress). */
+                if (timeout_ms == 0) {
+                    return OE_ERR_TIMEOUT;
+                }
+                if (timeout_ms > 0) {
+                    uint64_t now_ns = 0;
+                    (void)oe_clock_monotonic_ns(&now_ns);
+                    if (now_ns >= deadline_ns) {
+                        return OE_ERR_TIMEOUT;
+                    }
+                }
+                (void)oe_sleep_ms(1);
+                continue;
+            }
             got += rd;
             continue;
         }
