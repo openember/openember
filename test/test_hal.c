@@ -5,6 +5,7 @@
 #include "openember/hal/file.h"
 #include "openember/hal/uart.h"
 #include "openember/hal/gpio.h"
+#include "openember/hal/i2c.h"
 #include "openember/osal/types.h"
 
 #include <stdio.h>
@@ -89,6 +90,14 @@ MU_TEST(test_hal_caps)
     r = oe_gpio_query_caps(&gc);
     mu_assert(r == OE_OK, "gpio query caps");
     mu_check(gc.direction_mask != 0);
+
+    {
+        oe_i2c_caps_t ic;
+        memset(&ic, 0, sizeof(ic));
+        r = oe_i2c_query_caps(&ic);
+        mu_assert(r == OE_OK, "i2c query caps");
+        mu_check(ic.supports_write_read == 1u);
+    }
 }
 
 MU_TEST_SUITE(hal_suite)
