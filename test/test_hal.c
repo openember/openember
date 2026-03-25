@@ -6,6 +6,7 @@
 #include "openember/hal/uart.h"
 #include "openember/hal/gpio.h"
 #include "openember/hal/i2c.h"
+#include "openember/hal/spi.h"
 #include "openember/osal/types.h"
 
 #include <stdio.h>
@@ -97,6 +98,14 @@ MU_TEST(test_hal_caps)
         r = oe_i2c_query_caps(&ic);
         mu_assert(r == OE_OK, "i2c query caps");
         mu_check(ic.supports_write_read == 1u);
+    }
+
+    {
+        oe_spi_caps_t sc;
+        memset(&sc, 0, sizeof(sc));
+        r = oe_spi_query_caps(&sc);
+        mu_assert(r == OE_OK, "spi query caps");
+        mu_check(sc.supports_full_duplex == 1u);
     }
 }
 

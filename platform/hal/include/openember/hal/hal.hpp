@@ -7,6 +7,7 @@
 #include "openember/hal/file.hpp"
 #include "openember/hal/gpio.hpp"
 #include "openember/hal/i2c.hpp"
+#include "openember/hal/spi.hpp"
 #include "openember/hal/uart.hpp"
 
 #endif /* OPENEMBER_HAL_HPP_ */
