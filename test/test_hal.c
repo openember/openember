@@ -4,6 +4,7 @@
 
 #include "openember/hal/file.h"
 #include "openember/hal/uart.h"
+#include "openember/hal/gpio.h"
 #include "openember/osal/types.h"
 
 #include <stdio.h>
@@ -69,10 +70,12 @@ MU_TEST(test_hal_caps)
 {
     oe_file_caps_t fc;
     oe_uart_caps_t uc;
+    oe_gpio_caps_t gc;
     oe_result_t r;
 
     memset(&fc, 0, sizeof(fc));
     memset(&uc, 0, sizeof(uc));
+    memset(&gc, 0, sizeof(gc));
 
     r = oe_file_query_caps(&fc);
     mu_assert(r == OE_OK, "file query caps");
@@ -82,6 +85,10 @@ MU_TEST(test_hal_caps)
     mu_assert(r == OE_OK, "uart query caps");
     mu_check(uc.baud_rate_count > 0);
     mu_check(uc.parity_mask != 0);
+
+    r = oe_gpio_query_caps(&gc);
+    mu_assert(r == OE_OK, "gpio query caps");
+    mu_check(gc.direction_mask != 0);
 }
 
 MU_TEST_SUITE(hal_suite)
