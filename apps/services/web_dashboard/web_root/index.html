@@ -64,6 +64,19 @@
         background-color: rgba(255, 122, 0, 0.12) !important;
         color: #fff !important;
       }
+
+      /* Multi-page panels (single HTML shell) */
+      .oe-page { display: none; }
+      .oe-page.oe-page-active { display: block; }
+      .oe-page-title { margin: 0 0 12px 0; font-size: 18px; font-weight: 600; color: rgba(0,0,0,.85); }
+      .oe-placeholder {
+        border: 1px dashed rgba(255, 122, 0, 0.35);
+        border-radius: 8px;
+        padding: 24px;
+        text-align: center;
+        color: rgba(0,0,0,.45);
+        background: rgba(255, 122, 0, 0.04);
+      }
     </style>
   </head>
   <body>
@@ -92,72 +105,267 @@
         <div class="layui-side-scroll">
           <ul class="layui-nav layui-nav-tree" lay-filter="nav">
             <li class="layui-nav-item layui-this"><a href="javascript:;" data-page="overview">概览</a></li>
+            <li class="layui-nav-item"><a href="javascript:;" data-page="control">控制</a></li>
+            <li class="layui-nav-item"><a href="javascript:;" data-page="settings">设置</a></li>
             <li class="layui-nav-item"><a href="javascript:;" data-page="logs">日志</a></li>
+            <li class="layui-nav-item"><a href="javascript:;" data-page="update">更新</a></li>
             <li class="layui-nav-item"><a href="javascript:;" data-page="about">关于</a></li>
           </ul>
         </div>
       </div>
 
       <div class="layui-body" style="padding: 16px;">
-        <div class="layui-row layui-col-space16">
-          <div class="layui-col-md8">
-            <div class="layui-card">
-              <div class="layui-card-header">
-                <div class="oe-card-title">
-                  <span>设备概览</span>
-                  <div>
-                    <button class="layui-btn layui-btn-sm" id="btnRefresh">刷新</button>
-                    <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnToggleTheme">切换浅/深</button>
+        <!-- 概览：Dashboard -->
+        <div id="page-overview" class="oe-page oe-page-active" data-oe-page="overview">
+          <p class="oe-page-title">设备概览</p>
+          <div class="layui-row layui-col-space16">
+            <div class="layui-col-md8">
+              <div class="layui-card">
+                <div class="layui-card-header">
+                  <div class="oe-card-title">
+                    <span>系统信息</span>
+                    <div>
+                      <button type="button" class="layui-btn layui-btn-sm" id="btnRefresh">刷新</button>
+                      <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" id="btnToggleTheme">切换浅/深</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="layui-card-body">
+                  <div class="oe-kv">
+                    <div class="oe-muted">OS</div><div class="oe-mono" id="kvOS">--</div>
+                    <div class="oe-muted">Host</div><div class="oe-mono" id="kvHost">--</div>
+                    <div class="oe-muted">Kernel</div><div class="oe-mono" id="kvKernel">--</div>
+                    <div class="oe-muted">Uptime</div><div class="oe-mono" id="kvUptime">--</div>
+                    <div class="oe-muted">CPU</div><div class="oe-mono" id="kvCPU">--</div>
+                    <div class="oe-muted">GPU</div><div class="oe-mono" id="kvGPU">--</div>
+                    <div class="oe-muted">Memory</div><div class="oe-mono" id="kvMem">--</div>
+                    <div class="oe-muted">Web root</div><div class="oe-mono" id="kvWebRoot">/</div>
+                    <div class="oe-muted">HTTP</div><div class="oe-mono" id="kvHttp">0.0.0.0:8000</div>
+                  </div>
+                  <hr class="layui-border-blue" />
+                  <div class="layui-progress layui-progress-big" lay-showpercent="true">
+                    <div class="layui-progress-bar" lay-percent="0%" id="barCpu"></div>
+                  </div>
+                  <div class="layui-progress layui-progress-big" lay-showpercent="true" style="margin-top: 10px;">
+                    <div class="layui-progress-bar layui-bg-orange" lay-percent="0%" id="barMem"></div>
                   </div>
                 </div>
               </div>
-              <div class="layui-card-body">
-                <div class="oe-kv">
-                  <div class="oe-muted">OS</div><div class="oe-mono" id="kvOS">--</div>
-                  <div class="oe-muted">Host</div><div class="oe-mono" id="kvHost">--</div>
-                  <div class="oe-muted">Kernel</div><div class="oe-mono" id="kvKernel">--</div>
-                  <div class="oe-muted">Uptime</div><div class="oe-mono" id="kvUptime">--</div>
-                  <div class="oe-muted">CPU</div><div class="oe-mono" id="kvCPU">--</div>
-                  <div class="oe-muted">GPU</div><div class="oe-mono" id="kvGPU">--</div>
-                  <div class="oe-muted">Memory</div><div class="oe-mono" id="kvMem">--</div>
-                  <div class="oe-muted">Web root</div><div class="oe-mono" id="kvWebRoot">/</div>
-                  <div class="oe-muted">HTTP</div><div class="oe-mono" id="kvHttp">0.0.0.0:8000</div>
+            </div>
+
+            <div class="layui-col-md4">
+              <div class="layui-card">
+                <div class="layui-card-header">模块状态（示例）</div>
+                <div class="layui-card-body">
+                  <table class="layui-table" lay-size="sm">
+                    <thead>
+                      <tr>
+                        <th>模块</th>
+                        <th>状态</th>
+                        <th class="layui-hide-xs">PID</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tblMods"></tbody>
+                  </table>
+                  <div class="oe-muted">说明：当前为前端 mock 数据，后续可接 `/api/*` 或消息总线桥接。</div>
                 </div>
-                <hr class="layui-border-blue" />
-                <div class="layui-progress layui-progress-big" lay-showpercent="true">
-                  <div class="layui-progress-bar" lay-percent="0%" id="barCpu"></div>
-                </div>
-                <div class="layui-progress layui-progress-big" lay-showpercent="true" style="margin-top: 10px;">
-                  <div class="layui-progress-bar layui-bg-orange" lay-percent="0%" id="barMem"></div>
+              </div>
+            </div>
+
+            <div class="layui-col-md12">
+              <div class="layui-card">
+                <div class="layui-card-header">运行日志（示例）</div>
+                <div class="layui-card-body">
+                  <div class="oe-log oe-mono" id="logBox"></div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="layui-col-md4">
-            <div class="layui-card">
-              <div class="layui-card-header">模块状态（示例）</div>
-              <div class="layui-card-body">
-                <table class="layui-table" lay-size="sm">
-                  <thead>
-                    <tr>
-                      <th>模块</th>
-                      <th>状态</th>
-                      <th class="layui-hide-xs">PID</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tblMods"></tbody>
-                </table>
-                <div class="oe-muted">说明：当前为前端 mock 数据，后续可接 `/api/*` 或消息总线桥接。</div>
+        <!-- 控制：开关 / 摇杆 / 图传 / 点云 / 位姿 -->
+        <div id="page-control" class="oe-page" data-oe-page="control">
+          <p class="oe-page-title">设备控制</p>
+          <div class="layui-row layui-col-space16">
+            <div class="layui-col-md6 layui-col-lg4">
+              <div class="layui-card">
+                <div class="layui-card-header">数字量 / 开关</div>
+                <div class="layui-card-body">
+                  <p class="oe-muted" style="margin-bottom:12px;">继电器、灯光、电机使能等（占位）</p>
+                  <button type="button" class="layui-btn layui-btn-sm" disabled>输出 A</button>
+                  <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" disabled>输出 B</button>
+                </div>
+              </div>
+            </div>
+            <div class="layui-col-md6 layui-col-lg4">
+              <div class="layui-card">
+                <div class="layui-card-header">摇杆 / 速度指令</div>
+                <div class="layui-card-body">
+                  <div class="oe-placeholder">二维摇杆 UI 占位<br /><span class="oe-muted">后续映射到底盘或云台</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="layui-col-md6 layui-col-lg4">
+              <div class="layui-card">
+                <div class="layui-card-header">视频 / 图传</div>
+                <div class="layui-card-body">
+                  <div class="oe-placeholder" style="min-height:120px;">视频流占位（WebRTC / MJPEG / HLS）</div>
+                </div>
+              </div>
+            </div>
+            <div class="layui-col-md6">
+              <div class="layui-card">
+                <div class="layui-card-header">点云</div>
+                <div class="layui-card-body">
+                  <div class="oe-placeholder" style="min-height:140px;">点云可视化占位（WebGL / 三方控件可选）</div>
+                </div>
+              </div>
+            </div>
+            <div class="layui-col-md6">
+              <div class="layui-card">
+                <div class="layui-card-header">IMU / 三维位姿</div>
+                <div class="layui-card-body">
+                  <div class="oe-kv" style="max-width:420px;">
+                    <div class="oe-muted">Roll</div><div class="oe-mono">--</div>
+                    <div class="oe-muted">Pitch</div><div class="oe-mono">--</div>
+                    <div class="oe-muted">Yaw</div><div class="oe-mono">--</div>
+                  </div>
+                  <div class="oe-placeholder" style="margin-top:12px; min-height:100px;">3D 姿态预览占位</div>
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="layui-col-md12">
-            <div class="layui-card">
-              <div class="layui-card-header">运行日志（示例）</div>
-              <div class="layui-card-body">
-                <div class="oe-log oe-mono" id="logBox"></div>
+        <!-- 设置 -->
+        <div id="page-settings" class="oe-page" data-oe-page="settings">
+          <p class="oe-page-title">设备设置</p>
+          <div class="layui-card">
+            <div class="layui-card-header">网络与设备身份（占位表单）</div>
+            <div class="layui-card-body">
+              <form class="layui-form" lay-filter="formSettings" onsubmit="return false;">
+                <div class="layui-form-item">
+                  <label class="layui-form-label">设备名称</label>
+                  <div class="layui-input-block">
+                    <input type="text" name="device_name" placeholder="例如 OpenEmber-Bot-01" autocomplete="off" class="layui-input" disabled />
+                  </div>
+                </div>
+                <div class="layui-form-item">
+                  <label class="layui-form-label">Wi‑Fi SSID</label>
+                  <div class="layui-input-block">
+                    <input type="text" name="wifi_ssid" placeholder="未连接 / 待配置" autocomplete="off" class="layui-input" disabled />
+                  </div>
+                </div>
+                <div class="layui-form-item">
+                  <label class="layui-form-label">IP 地址</label>
+                  <div class="layui-input-block">
+                    <input type="text" name="ip" placeholder="DHCP 或静态 IP" autocomplete="off" class="layui-input" disabled />
+                  </div>
+                </div>
+                <div class="layui-form-item">
+                  <div class="layui-input-block">
+                    <button type="button" class="layui-btn" disabled>保存（待对接后端）</button>
+                    <button type="button" class="layui-btn layui-btn-primary" disabled>应用并重启</button>
+                  </div>
+                </div>
+                <div class="oe-muted">后续对接配置持久化与网络栈；当前控件为布局演示。</div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- 日志 -->
+        <div id="page-logs" class="oe-page" data-oe-page="logs">
+          <p class="oe-page-title">日志中心</p>
+          <div class="layui-card">
+            <div class="layui-card-header">
+              <div class="oe-card-title">
+                <span>汇聚日志</span>
+                <div>
+                  <select id="logLevelFilter" disabled style="max-width:140px; height:32px; border-radius:4px; border:1px solid #eee;">
+                    <option>全部等级</option>
+                    <option>DEBUG</option>
+                    <option>INFO</option>
+                    <option>WARN</option>
+                    <option>ERROR</option>
+                  </select>
+                  <button type="button" class="layui-btn layui-btn-sm" id="btnLogDownload" disabled>下载当前视图</button>
+                </div>
+              </div>
+            </div>
+            <div class="layui-card-body">
+              <div class="oe-log oe-mono" id="logCenterBox" style="height:320px;">
+                [占位] 后续接入 SSE / WebSocket 或 `/api/logs` 轮询；支持等级筛选与导出。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OTA / 更新 -->
+        <div id="page-update" class="oe-page" data-oe-page="update">
+          <p class="oe-page-title">软件与固件更新</p>
+          <div class="layui-row layui-col-space16">
+            <div class="layui-col-md6">
+              <div class="layui-card">
+                <div class="layui-card-header">OpenEmber 应用</div>
+                <div class="layui-card-body">
+                  <p><span class="oe-muted">当前版本：</span><span class="oe-mono" id="oeAppVersion">--</span></p>
+                  <p class="oe-muted" style="margin:12px 0;">检查更新与安装包下载（占位）</p>
+                  <button type="button" class="layui-btn layui-btn-sm" disabled>检查更新</button>
+                  <div class="layui-progress layui-progress-big" style="margin-top:16px;" lay-showpercent="true">
+                    <div class="layui-progress-bar layui-bg-orange" lay-percent="0%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="layui-col-md6">
+              <div class="layui-card">
+                <div class="layui-card-header">系统 / 固件</div>
+                <div class="layui-card-body">
+                  <p class="oe-muted">系统镜像或 BSP 升级、回滚策略说明（占位）</p>
+                  <button type="button" class="layui-btn layui-btn-sm" disabled>选择镜像</button>
+                  <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" disabled>开始升级</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 关于 -->
+        <div id="page-about" class="oe-page" data-oe-page="about">
+          <p class="oe-page-title">关于 OpenEmber</p>
+          <div class="layui-row layui-col-space16">
+            <div class="layui-col-md12">
+              <div class="layui-card">
+                <div class="layui-card-header">项目简介</div>
+                <div class="layui-card-body">
+                  <p>OpenEmber 面向模块化机器人与边缘设备软件栈；web_dashboard 提供本地 Web 管理界面。</p>
+                  <p class="oe-muted" style="margin-top:8px;">详细架构见仓库 <span class="oe-mono">docs/architecture/</span>。</p>
+                </div>
+              </div>
+            </div>
+            <div class="layui-col-md6">
+              <div class="layui-card">
+                <div class="layui-card-header">条款与合规</div>
+                <div class="layui-card-body">
+                  <p class="oe-muted">用户条款、隐私政策链接（占位）</p>
+                  <a href="javascript:;" class="layui-btn layui-btn-primary layui-btn-sm" style="pointer-events:none; opacity:.6;">查看条款（待配置 URL）</a>
+                </div>
+              </div>
+            </div>
+            <div class="layui-col-md6">
+              <div class="layui-card">
+                <div class="layui-card-header">开源软件（SBOM 摘要）</div>
+                <div class="layui-card-body">
+                  <table class="layui-table" lay-size="sm">
+                    <thead><tr><th>组件</th><th>许可证（占位）</th></tr></thead>
+                    <tbody>
+                      <tr><td>Mongoose</td><td>GPL / 商业许可（以实际为准）</td></tr>
+                      <tr><td>Layui</td><td>MIT</td></tr>
+                    </tbody>
+                  </table>
+                  <p class="oe-muted">完整清单可与构建产物或 <span class="oe-mono">third_party</span> 同步生成。</p>
+                </div>
               </div>
             </div>
           </div>
@@ -189,6 +397,28 @@
         }
 
         var isDark = false;
+        var currentPage = 'overview';
+
+        function showPage(page) {
+          currentPage = page;
+          var pages = document.querySelectorAll('.oe-page');
+          for (var i = 0; i < pages.length; i++) {
+            var p = pages[i].getAttribute('data-oe-page');
+            pages[i].classList.toggle('oe-page-active', p === page);
+          }
+          var navItems = document.querySelectorAll('.layui-side-scroll .layui-nav-item');
+          for (var j = 0; j < navItems.length; j++) {
+            var a = navItems[j].querySelector('a[data-page]');
+            if (!a) continue;
+            navItems[j].classList.toggle('layui-this', a.getAttribute('data-page') === page);
+          }
+          if (page === 'overview') {
+            refresh();
+          }
+          if (hasLayui() && window.layui.element && typeof window.layui.element.render === 'function') {
+            window.layui.element.render('progress');
+          }
+        }
 
         function setConn(ok) {
           var dot = document.getElementById('dotConn');
@@ -271,7 +501,8 @@
             document.getElementById('kvKernel').textContent = j.kernel || '--';
             document.getElementById('kvUptime').textContent = j.uptime || '--';
             document.getElementById('kvCPU').textContent = j.cpu || '--';
-            document.getElementById('kvGPU').textContent = j.gpu || '--';
+            var gpuEl = document.getElementById('kvGPU');
+            if (gpuEl) gpuEl.textContent = j.gpu || '--';
             document.getElementById('kvMem').textContent = j.memory || '--';
             setConn(true);
             log('system ok: ' + (j.os || 'unknown') + ' | ' + (j.kernel || 'unknown'));
@@ -314,11 +545,25 @@
           }
         });
 
+        var sideScroll = document.querySelector('.layui-side-scroll');
+        if (sideScroll) {
+          sideScroll.addEventListener('click', function (e) {
+            var a = e.target && e.target.closest ? e.target.closest('a[data-page]') : null;
+            if (!a) return;
+            e.preventDefault();
+            showPage(a.getAttribute('data-page'));
+          });
+        }
+
         function start() {
           setConn(false);
+          var verEl = document.getElementById('oeAppVersion');
+          if (verEl) verEl.textContent = 'web_dashboard（构建版本待 CMake 注入）';
           log('dashboard loaded (Layui ' + (hasLayui() ? 'available' : 'missing') + ')');
           refresh();
-          setInterval(refresh, 2000);
+          setInterval(function () {
+            if (currentPage === 'overview') refresh();
+          }, 2000);
         }
 
         if (document.readyState === 'loading') {
