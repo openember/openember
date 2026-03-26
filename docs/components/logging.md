@@ -148,6 +148,18 @@
 - 文档约定：**systemd journal**、**rsyslog**、**文件路径**、**logrotate**。
 - 可选：向 **MQTT/HTTP** 上报关键级别（与 `web_dashboard` 日志页对接）。
 
+### 6.0 syslog / journald / syslog-ng：`OPENEMBER_SPDLOG_ENABLE_SYSLOG` 的作用
+
+当 `OPENEMBER_SPDLOG_ENABLE_SYSLOG=y` 时，spdlog 会启用 **syslog sink**，把日志写入系统的 syslog 设施（facility 默认为 `LOG_USER`）。
+
+- **它本身不是服务**：它只是把日志“交给系统日志通道”。\n
+- **是否能对接 syslog？** 可以。syslog sink 输出的内容会被系统的日志栈接收：\n
+  - 在不少发行版中，**journald** 会收集 syslog 消息；\n
+  - 若系统启用了 **rsyslog** 或 **syslog-ng**，它们可以从 `/dev/log`（Unix socket）接收并按规则落盘、转发、过滤、聚合。\n
+- **为什么要这个选项**：在“多进程、多节点”场景下，syslog/journald/syslog-ng 能提供**统一采集、统一落盘、统一轮转、统一转发**，比每个进程各写一套文件更利于运维与审计。
+
+注意：是否真的“进 journald”取决于目标系统的日志栈配置；OpenEmber 只负责把消息写到 syslog 通道。
+
 ### 6.1 spdlog 落盘目录与权限（运维必读）
 
 当启用 spdlog 文件 sink（`OPENEMBER_SPDLOG_ENABLE_FILE=y`）时，日志将写入：
@@ -166,6 +178,58 @@
     - 使用 systemd unit 配置 `User=` 并配合 `LogsDirectory=` / `RuntimeDirectory=`（systemd 负责创建并赋权），或
     - 通过 `tmpfiles.d` / 部署脚本提前 `mkdir -p` 并 `chown/chmod` 到运行用户，或
     - 将目录设置到设备可写分区（例如 `/data/log/openember`、`/mnt/data/log/openember`），并确保该分区在服务启动前挂载完成。
+
+### 6.2 我们是否需要“自己的 logger 服务”？（建议与边界）
+
+你提到的 **syslog-ng** 本质上就是“日志服务/管道”的一种成熟实现：集中收集、多源输入、过滤、落盘、转发与检索对接。\n
+因此是否需要 OpenEmber 自己再做一个 `logger` 进程，取决于我们想补齐哪些能力（以及是否愿意重复造轮子）。
+
+#### 6.2.1 不做自研 logger 的推荐路径（更工程化）
+
+- **落盘**：用本项目内置的 **rotating file sink**（每进程一个文件）或直接走 **syslog sink**。\n
+- **集中采集/转发**：交给系统侧（journald / rsyslog / syslog-ng / Fluent Bit / Vector）。\n
+- **Web 展示**：web_dashboard 不直接去“尾读文件”，而是读取**聚合后的流**（见下一节）。
+
+优点：少维护一个守护进程，可靠性与生态更好；缺点：依赖目标系统具备/配置好日志栈。
+
+#### 6.2.2 什么时候需要自研 logger 服务（可选，后期再做）
+
+当你需要下面这些“设备级”能力，而且目标系统无法方便配置现成日志栈时，可以考虑自研：
+
+- **统一的跨进程 ring buffer**：限制磁盘写放大，支持断网/离线缓存。\n
+- **设备侧“日志策略”**：按模块/级别动态下发（运行时变更级别、采样、限速）。\n
+- **统一的 Web/SSE/WebSocket 日志流**：把多进程日志汇聚成一个可订阅流。\n
+- **签名/审计/防篡改**：运维合规需求（可选）。\n
+
+但它的代价也很真实：需要处理输入协议、背压、丢弃策略、磁盘满、重启恢复、性能与安全等。
+
+#### 6.2.3 “写到一个文件”是不是必须？
+
+不必须。**每进程一个文件**往往更易定位（配合进程名/PID），也更少争用。\n
+如果确实要“一个文件”，更推荐用系统日志栈（syslog-ng/rsyslog）做聚合写入，或用一个专门的 logger 服务做“单写者”。
+
+### 6.3 日志发送到 Web：各节点直发 vs 发布订阅聚合
+
+你提到的两种方式都可行，但建议明确边界与扩展方向：
+
+#### 6.3.1 各节点直接发送到 web_dashboard（不推荐作为默认）
+
+- **缺点**：每个进程都要实现网络协议/重试/鉴权；web_dashboard 一挂，全栈都要处理失败；运维策略分散。\n
+- **适用**：极少量关键事件上报（例如告警），而不是全量日志流。
+
+#### 6.3.2 发布订阅聚合（推荐作为默认演进方向）
+
+建议引入一个逻辑概念：**log topic**（例如 `openember/log/<level>` 或 `openember/log`），由日志模块提供一个“可选 sink”把日志条目发布到 msgbus/pubsub。\n
+
+- **logger 服务（可选）**：订阅 log topic，负责落盘/转发/过滤。\n
+- **web_dashboard（可选）**：也订阅同一个 log topic，通过 SSE/WebSocket 推送到前端 logs 页面。\n
+
+这样做的好处是：
+- 生产者（各节点）只需“写日志”，不关心日志去哪。\n
+- 消费者（logger/web）可插拔并可扩展多个。\n
+- 可在 msgbus 层做背压/限速/采样策略（视具体实现）。\n
+
+**注意**：不要用 msgbus 转发“全量 debug 日志”作为默认，建议只推 `INFO+` 或可配置阈值，避免占用总线带宽。
 
 ---
 
