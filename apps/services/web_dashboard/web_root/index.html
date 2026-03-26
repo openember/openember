@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>OpenEmber Dashboard (Layui Demo)</title>
+    <link rel="icon" href="assets/openember_logo.svg" type="image/svg+xml" />
 
     <!--
       Layui 适合嵌入式场景的原因：
@@ -15,6 +16,11 @@
     -->
     <link href="https://unpkg.com/layui@2.13.5/dist/css/layui.css" rel="stylesheet" />
     <style>
+      :root {
+        --oe-primary: #ff7a00;
+        --oe-primary-2: #ffb703;
+      }
+
       body { background: #f6f7fb; }
       .oe-card-title { display: flex; justify-content: space-between; align-items: center; }
       .oe-muted { color: rgba(0,0,0,.55); }
@@ -22,12 +28,27 @@
       .oe-kv { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; }
       .oe-log { height: 220px; overflow: auto; background: #0b1020; color: #d6e0ff; padding: 12px; border-radius: 8px; }
       .oe-badge-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:8px; vertical-align:middle; }
+
+      /* Orange theme overrides (minimal, no rebuild toolchain) */
+      .layui-header { background: var(--oe-primary); }
+      .layui-layout-admin .layui-logo { color: #fff; font-weight: 600; }
+      .layui-nav .layui-nav-item a { color: #fff; }
+      .layui-nav .layui-nav-item a:hover { color: #fff; }
+      .layui-nav .layui-this:after, .layui-nav-bar { background-color: var(--oe-primary-2) !important; }
+      .layui-btn { background-color: var(--oe-primary); }
+      .layui-btn:hover { background-color: #ff8f2b; }
+      .layui-btn-primary { background-color: transparent; border-color: rgba(255,255,255,.55); color: #fff; }
+      .layui-btn-primary:hover { border-color: #fff; color: #fff; }
+      .layui-border-blue { border-color: var(--oe-primary) !important; }
     </style>
   </head>
   <body>
     <div class="layui-layout layui-layout-admin">
       <div class="layui-header">
-        <div class="layui-logo">OpenEmber</div>
+        <div class="layui-logo" style="display:flex; align-items:center; gap:10px;">
+          <img src="assets/openember_logo.svg" alt="OpenEmber" style="width:26px; height:26px;" />
+          <span>OpenEmber</span>
+        </div>
         <ul class="layui-nav layui-layout-left">
           <li class="layui-nav-item layui-this"><a href="javascript:;">Dashboard</a></li>
           <li class="layui-nav-item"><a href="javascript:;">System</a></li>
@@ -179,8 +200,10 @@
             document.getElementById('kvGPU').textContent = j.gpu || '--';
             document.getElementById('kvMem').textContent = j.memory || '--';
             setConn(true);
+            log('system ok: ' + (j.os || 'unknown') + ' | ' + (j.kernel || 'unknown'));
           } catch (e) {
             setConn(false);
+            log('system fetch failed: ' + (e && e.message ? e.message : e));
           }
         }
 
