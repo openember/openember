@@ -70,7 +70,7 @@
     <div class="layui-layout layui-layout-admin">
       <div class="layui-header">
         <div class="layui-logo" style="display:flex; align-items:center; gap:10px;">
-          <img src="assets/logo.png" alt="OpenEmber" style="width:26px; height:26px;" />
+          <img src="assets/logo.png" alt="OpenEmber" style="width:26px; height:26px; margin-left:10px;" />
           <span>OpenEmber</span>
         </div>
         <ul class="layui-nav layui-layout-left">
@@ -169,12 +169,26 @@
 
     <script src="https://unpkg.com/layui@2.13.5/dist/layui.js"></script>
     <script>
-      layui.use(function () {
-        var element = layui.element;
-        var layer = layui.layer;
+      (function () {
+        // IMPORTANT:
+        // Do not depend on Layui initialization for core data fetching.
+        // If CDN is blocked/offline, layui.use() won't run and the page would never request /api/system.
+
+        function hasLayui() {
+          return typeof window.layui !== 'undefined' && window.layui && typeof window.layui.use === 'function';
+        }
+
+        var element = null;
+        var layer = null;
+
+        if (hasLayui()) {
+          window.layui.use(function () {
+            element = window.layui.element || null;
+            layer = window.layui.layer || null;
+          });
+        }
 
         var isDark = false;
-        var startMs = Date.now();
 
         function setConn(ok) {
           var dot = document.getElementById('dotConn');
@@ -188,6 +202,39 @@
           var ts = new Date().toISOString().replace('T', ' ').replace('Z', '');
           box.textContent += '[' + ts + '] ' + line + '\n';
           box.scrollTop = box.scrollHeight;
+        }
+
+        function httpGetJson(url, cb) {
+          if (typeof fetch === 'function') {
+            fetch(url, { cache: 'no-store' })
+              .then(function (resp) {
+                if (!resp.ok) throw new Error('http ' + resp.status);
+                return resp.json();
+              })
+              .then(function (j) { cb(null, j); })
+              .catch(function (e) { cb(e, null); });
+            return;
+          }
+          // Fallback for very old browsers
+          try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = function () {
+              if (xhr.readyState !== 4) return;
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                  cb(null, JSON.parse(xhr.responseText));
+                } catch (e) {
+                  cb(e, null);
+                }
+              } else {
+                cb(new Error('http ' + xhr.status), null);
+              }
+            };
+            xhr.send();
+          } catch (e) {
+            cb(e, null);
+          }
         }
 
         function rand(min, max) {
@@ -211,11 +258,14 @@
           document.getElementById('tblMods').innerHTML = html;
         }
 
-        async function refreshSystem() {
-          try {
-            var resp = await fetch('/api/system', { cache: 'no-store' });
-            if (!resp.ok) throw new Error('http ' + resp.status);
-            var j = await resp.json();
+        function refreshSystem(done) {
+          httpGetJson('/api/system', function (err, j) {
+            if (err) {
+              setConn(false);
+              log('system fetch failed: ' + (err && err.message ? err.message : err));
+              if (done) done(err);
+              return;
+            }
             document.getElementById('kvOS').textContent = (j.os || '--') + (j.arch ? (' ' + j.arch) : '');
             document.getElementById('kvHost').textContent = j.host || '--';
             document.getElementById('kvKernel').textContent = j.kernel || '--';
@@ -225,10 +275,8 @@
             document.getElementById('kvMem').textContent = j.memory || '--';
             setConn(true);
             log('system ok: ' + (j.os || 'unknown') + ' | ' + (j.kernel || 'unknown'));
-          } catch (e) {
-            setConn(false);
-            log('system fetch failed: ' + (e && e.message ? e.message : e));
-          }
+            if (done) done(null);
+          });
         }
 
         function refreshMockMeters() {
@@ -236,35 +284,49 @@
           var mem = rand(8, 84);
           document.getElementById('barCpu').setAttribute('lay-percent', cpu + '%');
           document.getElementById('barMem').setAttribute('lay-percent', mem + '%');
-          element.render('progress');
+          if (element && typeof element.render === 'function') {
+            element.render('progress');
+          }
           log('refresh cpu=' + cpu + '% mem=' + mem + '%');
         }
 
-        async function refresh() {
-          document.getElementById('kvWebRoot').textContent = location.pathname.replace(/\\/[^\\/]*$/, '/') || '/';
+        function refresh() {
+          document.getElementById('kvWebRoot').textContent = location.pathname.replace(/\/[^\/]*$/, '/') || '/';
           document.getElementById('kvHttp').textContent = location.host || '0.0.0.0:8000';
-          await refreshSystem();
-          renderModules();
-          refreshMockMeters();
+          refreshSystem(function () {
+            renderModules();
+            refreshMockMeters();
+          });
         }
 
         document.getElementById('btnRefresh').addEventListener('click', function () {
           refresh();
-          layer.msg('已刷新', { icon: 1, time: 800 });
+          if (layer && typeof layer.msg === 'function') {
+            layer.msg('已刷新', { icon: 1, time: 800 });
+          }
         });
 
         document.getElementById('btnToggleTheme').addEventListener('click', function () {
           isDark = !isDark;
           document.body.style.background = isDark ? '#0f1226' : '#f6f7fb';
-          layer.msg(isDark ? '深色背景（示例）' : '浅色背景（示例）', { time: 900 });
+          if (layer && typeof layer.msg === 'function') {
+            layer.msg(isDark ? '深色背景（示例）' : '浅色背景（示例）', { time: 900 });
+          }
         });
 
-        // 这里先展示“无后端连接”，后续如果你们添加 /api/health，可在此做 fetch 探测并切换状态。
-        setConn(false);
-        log('Layui dashboard loaded (CDN mode)');
-        refresh();
-        setInterval(refresh, 2000);
-      });
+        function start() {
+          setConn(false);
+          log('dashboard loaded (Layui ' + (hasLayui() ? 'available' : 'missing') + ')');
+          refresh();
+          setInterval(refresh, 2000);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', start);
+        } else {
+          start();
+        }
+      })();
     </script>
   </body>
 </html>
