@@ -76,6 +76,7 @@ static void tcp_server_thread(std::string uri)
 
 int main(int argc, char **argv)
 {
+    oe_log_init(LOG_TAG);
     std::string uri = "tcp://127.0.0.1:5566";
     if (argc > 1) {
         uri = argv[1];

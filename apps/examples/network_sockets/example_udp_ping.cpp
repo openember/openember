@@ -37,6 +37,7 @@ static void udp_server_thread(uint16_t port)
 
 int main(int argc, char **argv)
 {
+    oe_log_init(LOG_TAG);
     uint16_t port = 5567;
     if (argc > 1) {
         port = static_cast<uint16_t>(std::stoi(argv[1]));

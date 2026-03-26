@@ -112,6 +112,13 @@
 2. 调用 `oe_log_init(...)` 或 `openember::log::Init(...)`，注册 sink、设置级别。
 3. 之后各模块直接使用 `LOG_*`，**无需**再 init。
 
+### 5.2.1 重要注意：未初始化不会落盘
+
+- **必须先初始化**（`oe_log_init(<process_name>)` 或 legacy `log_init(<process_name>)`），spdlog 后端才会创建并注册 sinks（stdout / file / syslog）。
+- 若只调用 `LOG_I/LOG_E` 而 **没有**调用初始化：
+  - 可能仍能在 stdout 看到输出（取决于默认 logger 是否存在），但 **文件落盘/轮转很可能不会生效**。
+  - 因此对所有可执行节点（`apps/**`）建议在 `main()` 的早期统一加一行初始化。
+
 ### 5.3 库代码（OSAL/HAL）
 
 - **禁止**在库的任意函数里隐式 `init`（避免重复与顺序问题）。
@@ -140,6 +147,25 @@
 
 - 文档约定：**systemd journal**、**rsyslog**、**文件路径**、**logrotate**。
 - 可选：向 **MQTT/HTTP** 上报关键级别（与 `web_dashboard` 日志页对接）。
+
+### 6.1 spdlog 落盘目录与权限（运维必读）
+
+当启用 spdlog 文件 sink（`OPENEMBER_SPDLOG_ENABLE_FILE=y`）时，日志将写入：
+
+- **目录**：`OPENEMBER_SPDLOG_FILE_DIR`
+- **文件名**：`<process_name>.log`（`process_name` 来自 `oe_log_init()`/`log_init()` 参数）
+- **轮转**：按大小轮转（`OPENEMBER_SPDLOG_ROTATE_MAX_MB` / `OPENEMBER_SPDLOG_ROTATE_MAX_FILES`）
+
+常见问题与处理建议：
+
+- **目录不存在**：
+  - 程序会尝试创建目录；但若父目录不存在或不可创建（例如 `/data` 未挂载/不存在），则无法落盘。
+- **没有写权限**：
+  - 以普通用户运行时，写 `/var/log/openember` 通常需要 root 权限或预先授权。
+  - 你可以临时用 `sudo` 验证，但量产/运维更推荐：
+    - 使用 systemd unit 配置 `User=` 并配合 `LogsDirectory=` / `RuntimeDirectory=`（systemd 负责创建并赋权），或
+    - 通过 `tmpfiles.d` / 部署脚本提前 `mkdir -p` 并 `chown/chmod` 到运行用户，或
+    - 将目录设置到设备可写分区（例如 `/data/log/openember`、`/mnt/data/log/openember`），并确保该分区在服务启动前挂载完成。
 
 ---
 

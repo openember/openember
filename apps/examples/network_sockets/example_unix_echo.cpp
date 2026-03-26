@@ -76,6 +76,7 @@ static void server_thread(std::string uri)
 
 int main(int argc, char **argv)
 {
+    oe_log_init(LOG_TAG);
     std::string uri = "unix:///tmp/openember_unix_echo.sock";
     if (argc > 1) {
         uri = argv[1];
