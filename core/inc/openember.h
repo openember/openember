@@ -17,7 +17,8 @@
 
 #include "list.h"
 
-#include "log_wrapper.h"
+#include "openember/log.h"
+#include "log_wrapper.h" /* legacy include: prefer openember/log.h */
 #include "message.h"
 #include "common.h"
 

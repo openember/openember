@@ -1,6 +1,9 @@
 project(Log VERSION 1.0.0)
 
-set(LIB_LOG_SRCS log_wrapper.c)
+set(LIB_LOG_SRCS
+    log_wrapper.c
+    oe_log_c.c
+)
 if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
     list(APPEND LIB_LOG_SRCS log_spdlog.cpp)
 endif()
