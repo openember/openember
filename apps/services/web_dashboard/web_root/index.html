@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>OpenEmber Dashboard (Layui Demo)</title>
-    <link rel="icon" href="assets/openember_logo.svg" type="image/svg+xml" />
+    <link rel="icon" href="assets/logo.png" type="image/png" />
 
     <!--
       Layui 适合嵌入式场景的原因：
@@ -40,13 +40,28 @@
       .layui-btn-primary { background-color: transparent; border-color: rgba(255,255,255,.55); color: #fff; }
       .layui-btn-primary:hover { border-color: #fff; color: #fff; }
       .layui-border-blue { border-color: var(--oe-primary) !important; }
+
+      /* Side nav selected item (layui-nav-tree) */
+      .layui-nav-tree .layui-this > a,
+      .layui-nav-tree .layui-this > a:hover {
+        background-color: var(--oe-primary) !important;
+        color: #fff !important;
+      }
+      .layui-nav-tree .layui-nav-bar {
+        background-color: var(--oe-primary-2) !important;
+      }
+      .layui-nav-tree .layui-nav-itemed > a,
+      .layui-nav-tree .layui-nav-itemed > a:hover {
+        background-color: rgba(255, 122, 0, 0.12) !important;
+        color: #fff !important;
+      }
     </style>
   </head>
   <body>
     <div class="layui-layout layui-layout-admin">
       <div class="layui-header">
         <div class="layui-logo" style="display:flex; align-items:center; gap:10px;">
-          <img src="assets/openember_logo.svg" alt="OpenEmber" style="width:26px; height:26px;" />
+          <img src="assets/logo.png" alt="OpenEmber" style="width:26px; height:26px;" />
           <span>OpenEmber</span>
         </div>
         <ul class="layui-nav layui-layout-left">
