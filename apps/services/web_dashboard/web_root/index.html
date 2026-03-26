@@ -19,6 +19,8 @@
       :root {
         --oe-primary: #ff7a00;
         --oe-primary-2: #ffb703;
+        /* Layui global primary color (avoid default teal flash) */
+        --layui-color-primary: var(--oe-primary);
       }
 
       body { background: #f6f7fb; }
@@ -42,13 +44,20 @@
       .layui-border-blue { border-color: var(--oe-primary) !important; }
 
       /* Side nav selected item (layui-nav-tree) */
+      .layui-nav-tree .layui-nav-item a {
+        transition: none !important;
+      }
+      .layui-nav-tree .layui-nav-item a:hover {
+        background-color: rgba(255, 122, 0, 0.12) !important;
+        color: #fff !important;
+      }
       .layui-nav-tree .layui-this > a,
       .layui-nav-tree .layui-this > a:hover {
         background-color: var(--oe-primary) !important;
         color: #fff !important;
       }
       .layui-nav-tree .layui-nav-bar {
-        background-color: var(--oe-primary-2) !important;
+        background-color: var(--oe-primary) !important;
       }
       .layui-nav-tree .layui-nav-itemed > a,
       .layui-nav-tree .layui-nav-itemed > a:hover {
