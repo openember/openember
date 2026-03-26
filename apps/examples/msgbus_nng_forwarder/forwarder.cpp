@@ -19,6 +19,9 @@
 #include <string.h>
 #include <unistd.h>
 
+#define LOG_TAG "msgbus_nng_forwarder"
+#include "openember/log.h"
+
 static volatile int g_running = 1;
 
 static void _on_signal(int sig)
@@ -39,7 +42,7 @@ int main(int argc, char *argv[])
     nng_init_params params = {0};
     int rc = nng_init(&params);
     if (rc != 0) {
-        fprintf(stderr, "msgbus_nng_forwarder: nng_init failed: %d\n", rc);
+        LOG_E("nng_init failed: %d", rc);
         return 1;
     }
 
@@ -48,13 +51,13 @@ int main(int argc, char *argv[])
 
     int rv = nng_sub0_open(&sub_sock);
     if (rv != 0) {
-        fprintf(stderr, "nng_sub0_open failed: %d\n", rv);
+        LOG_E("nng_sub0_open failed: %d", rv);
         return 1;
     }
 
     rv = nng_sub0_socket_subscribe(sub_sock, "", 0u);
     if (rv != 0) {
-        fprintf(stderr, "nng_sub0_socket_subscribe failed: %d\n", rv);
+        LOG_E("nng_sub0_socket_subscribe failed: %d", rv);
         nng_socket_close(sub_sock);
         return 1;
     }
@@ -65,9 +68,7 @@ int main(int argc, char *argv[])
         if (rv == 0) {
             break;
         }
-        fprintf(stderr,
-                "msgbus_nng_forwarder: waiting for publisher listener: rc=%d url=%s\n",
-                rv, in_url);
+        LOG_W("waiting for publisher listener: rc=%d url=%s", rv, in_url);
         sleep(1);
     }
     if (!g_running) {
@@ -77,7 +78,7 @@ int main(int argc, char *argv[])
 
     rv = nng_pub0_open(&pub_sock);
     if (rv != 0) {
-        fprintf(stderr, "nng_pub0_open failed: %d\n", rv);
+        LOG_E("nng_pub0_open failed: %d", rv);
         nng_socket_close(sub_sock);
         return 1;
     }
@@ -101,13 +102,12 @@ int main(int argc, char *argv[])
         }
 
         if (rv == NNG_EADDRINUSE && listen_try < max_listen_tries) {
-            fprintf(stderr,
-                    "msgbus_nng_forwarder: out_url in use, retry listen (%d/%d) rc=%d url=%s\n",
-                    listen_try + 1, max_listen_tries, rv, out_url);
+            LOG_W("out_url in use, retry listen (%d/%d) rc=%d url=%s",
+                  listen_try + 1, max_listen_tries, rv, out_url);
             nng_socket_close(pub_sock);
             rv = nng_pub0_open(&pub_sock);
             if (rv != 0) {
-                fprintf(stderr, "nng_pub0_open failed after retry: %d\n", rv);
+                LOG_E("nng_pub0_open failed after retry: %d", rv);
                 nng_socket_close(sub_sock);
                 return 1;
             }
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        fprintf(stderr, "nng_listen(pub) failed: %d url=%s\n", rv, out_url);
+        LOG_E("nng_listen(pub) failed: %d url=%s", rv, out_url);
         nng_socket_close(sub_sock);
         nng_socket_close(pub_sock);
         return 1;
@@ -127,10 +127,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    printf("msgbus_nng_forwarder running\n");
-    printf("  IN  (modules PUB listen -> forwarder SUB dial): %s\n", in_url);
-    printf("  OUT (forwarder PUB -> subscribers): %s\n", out_url);
-    fflush(stdout);
+    oe_log_init(LOG_TAG);
+    LOG_I("running");
+    LOG_I("IN  (modules PUB listen -> forwarder SUB dial): %s", in_url);
+    LOG_I("OUT (forwarder PUB -> subscribers): %s", out_url);
 
     while (g_running) {
         nng_msg *msg = NULL;

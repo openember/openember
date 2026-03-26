@@ -298,7 +298,7 @@ static int msg_init(void)
 
     rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb);
     if (rc != EMBER_EOK) {
-        printf("Message bus init failed.\n");
+        LOG_E("Message bus init failed.");
         return -1;
     }
 
@@ -312,7 +312,7 @@ static int msg_init(void)
 
     if (cn != 0) {
         msg_bus_deinit(client);
-        printf("Message bus subscribe failed.\n");
+        LOG_E("Message bus subscribe failed.");
         return -EMBER_ERROR;
     }
 

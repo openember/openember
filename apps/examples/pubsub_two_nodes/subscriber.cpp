@@ -15,6 +15,8 @@
 #include <unistd.h>
 
 #include "ember_pubsub.h"
+#define LOG_TAG "pubsub_subscriber"
+#include "openember/log.h"
 
 #ifndef OPENEMBER_PUBSUB_DEFAULT_SUB_URL
 #define OPENEMBER_PUBSUB_DEFAULT_SUB_URL "udp://127.0.0.1:7560"
@@ -28,8 +30,7 @@
 static void on_message(const char *topic, const void *payload, size_t payload_len, void *user_data)
 {
     (void)user_data;
-    printf("[subscriber] topic=%s payload=%.*s\n", topic, (int)payload_len, (const char *)payload);
-    fflush(stdout);
+    LOG_I("[subscriber] topic=%s payload=%.*s", topic, (int)payload_len, (const char *)payload);
 }
 
 int main(int argc, char **argv)
@@ -37,21 +38,22 @@ int main(int argc, char **argv)
     const char *connect_url = (argc > 1) ? argv[1] : SUB_CONNECT_DEFAULT;
     ember_pubsub_t *sub = NULL;
 
+    oe_log_init(LOG_TAG);
+
     int rc = ember_pubsub_create_subscriber(&sub, connect_url, on_message, NULL);
     if (rc != 0) {
-        fprintf(stderr, "ember_pubsub_create_subscriber(%s) failed rc=%d\n", connect_url, rc);
+        LOG_E("ember_pubsub_create_subscriber(%s) failed rc=%d", connect_url, rc);
         return 1;
     }
 
     if (ember_pubsub_subscribe(sub, DEMO_TOPIC_PREFIX) != 0) {
-        fprintf(stderr, "ember_pubsub_subscribe failed\n");
+        LOG_E("ember_pubsub_subscribe failed");
         ember_pubsub_destroy(sub);
         return 1;
     }
 
-    printf("subscriber: connected to %s, filter prefix \"%s\"\n", connect_url, DEMO_TOPIC_PREFIX);
-    printf("waiting for messages (run pubsub_publisher in another terminal)...\n");
-    fflush(stdout);
+    LOG_I("connected to %s, filter prefix \"%s\"", connect_url, DEMO_TOPIC_PREFIX);
+    LOG_I("waiting for messages (run pubsub_publisher in another terminal)...");
 
     /* 保持进程存活以便持续收消息；示例 publisher 只发 5 条，可多次运行 publisher 测试 */
     while (1) {

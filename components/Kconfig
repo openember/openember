@@ -61,6 +61,38 @@ config OPENEMBER_SPDLOG_PATTERN
     depends on OPENEMBER_LOG_BACKEND_SPDLOG
     default "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v"
 
+config OPENEMBER_SPDLOG_ENABLE_STDOUT
+    bool "spdlog: enable stdout sink"
+    depends on OPENEMBER_LOG_BACKEND_SPDLOG
+    default y
+
+config OPENEMBER_SPDLOG_ENABLE_FILE
+    bool "spdlog: enable file sink (rotating)"
+    depends on OPENEMBER_LOG_BACKEND_SPDLOG
+    default y
+
+config OPENEMBER_SPDLOG_FILE_DIR
+    string "spdlog: file directory"
+    depends on OPENEMBER_SPDLOG_ENABLE_FILE
+    default "/var/log/openember"
+
+config OPENEMBER_SPDLOG_ROTATE_MAX_MB
+    int "spdlog: rotate max size (MiB)"
+    depends on OPENEMBER_SPDLOG_ENABLE_FILE
+    default 10
+    range 1 1024
+
+config OPENEMBER_SPDLOG_ROTATE_MAX_FILES
+    int "spdlog: rotate max files"
+    depends on OPENEMBER_SPDLOG_ENABLE_FILE
+    default 5
+    range 1 100
+
+config OPENEMBER_SPDLOG_ENABLE_SYSLOG
+    bool "spdlog: enable syslog sink (journald can collect)"
+    depends on OPENEMBER_LOG_BACKEND_SPDLOG
+    default n
+
 endmenu
 
 menu "Serialization / Config"

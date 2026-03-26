@@ -59,7 +59,7 @@ static void task_entry(void *args)
     if (json) {
         char *printed = cJSON_Print(json);
         if (printed) {
-            printf("%s\n", printed);
+            LOG_I("%s", printed);
             free(printed);
         }
         cJSON_Delete(json);
@@ -67,7 +67,7 @@ static void task_entry(void *args)
 #elif OPENEMBER_JSON_USE_NLOHMANN_JSON
     try {
         nlohmann::json j = nlohmann::json::parse(std::string(static_cast<char *>(args)));
-        printf("%s\n", j.dump(4).c_str());
+        LOG_I("%s", j.dump(4).c_str());
     } catch (const std::exception &e) {
         LOG_E("JSON: %s", e.what());
     }
@@ -79,7 +79,7 @@ static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
 {
 #ifdef TEMPLATE_RAW_MSG
     test_msg_t *test_msg = (test_msg_t *)payload;
-    printf("Payload len = %lu >> id: %d, msg: %s\n", payloadlen, test_msg->id, test_msg->msg);
+    LOG_I("Payload len = %lu >> id: %d, msg: %s", payloadlen, test_msg->id, test_msg->msg);
 #else
     LOG_D("[%s] %s", topic, (char *)payload);
 
@@ -142,9 +142,9 @@ void yaml_test(void)
     LOG_I("libyaml version %s", buf);
 
     /* Print structure sizes. */
-    printf("sizeof(token) = %ld\n", (long)sizeof(yaml_token_t));
-    printf("sizeof(event) = %ld\n", (long)sizeof(yaml_event_t));
-    printf("sizeof(parser) = %ld\n", (long)sizeof(yaml_parser_t));
+    LOG_I("sizeof(token) = %ld", (long)sizeof(yaml_token_t));
+    LOG_I("sizeof(event) = %ld", (long)sizeof(yaml_event_t));
+    LOG_I("sizeof(parser) = %ld", (long)sizeof(yaml_parser_t));
 }
 
 int main(void)

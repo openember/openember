@@ -34,7 +34,7 @@ static int msg_init(void)
 
     rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb);
     if (rc != EMBER_EOK) {
-        printf("Message bus init failed.\n");
+        LOG_E("Message bus init failed.");
         return -1;
     }
 
@@ -48,7 +48,7 @@ static int msg_init(void)
 
     if (cn != 0) {
         msg_bus_deinit(client);
-        printf("Message bus subscribe failed.\n");
+        LOG_E("Message bus subscribe failed.");
         return -EMBER_ERROR;
     }
 
@@ -62,7 +62,7 @@ static void Create(int rc,sqlite3 *db,char *sql,sqlite3_stmt *stmt)
 	rc=sqlite3_prepare_v2(db,sql,strlen(sql),&stmt,0);
 	if (rc)
 	{
-		fprintf(stderr,"对象转换失败:%s\n",sqlite3_errmsg(db));
+		LOG_E("对象转换失败:%s", sqlite3_errmsg(db));
 		return;
 	}
 	//执行stmt(执行SQL语句)
@@ -77,7 +77,7 @@ static void Insert(int rc,char *sql,sqlite3 *db,sqlite3_stmt *stmt,char name[])
 	rc=sqlite3_prepare_v2(db,sql,strlen(sql),&stmt,0);
 	if (rc)
 	{
-		fprintf(stderr,"对象转换失败:%s\n",sqlite3_errmsg(db));
+		LOG_E("对象转换失败:%s", sqlite3_errmsg(db));
 		return;
 	}
 	sqlite3_step(stmt);

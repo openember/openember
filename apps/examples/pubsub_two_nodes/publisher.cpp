@@ -15,6 +15,8 @@
 #include <unistd.h>
 
 #include "ember_pubsub.h"
+#define LOG_TAG "pubsub_publisher"
+#include "openember/log.h"
 
 #ifndef OPENEMBER_PUBSUB_DEFAULT_PUB_URL
 #define OPENEMBER_PUBSUB_DEFAULT_PUB_URL "udp://127.0.0.1:7560"
@@ -30,9 +32,11 @@ int main(int argc, char **argv)
     const char *bind_url = (argc > 1) ? argv[1] : PUB_BIND_DEFAULT;
     ember_pubsub_t *pub = NULL;
 
+    oe_log_init(LOG_TAG);
+
     int rc = ember_pubsub_create_publisher(&pub, bind_url);
     if (rc != 0) {
-        fprintf(stderr, "ember_pubsub_create_publisher(%s) failed rc=%d\n", bind_url, rc);
+        LOG_E("ember_pubsub_create_publisher(%s) failed rc=%d", bind_url, rc);
         return 1;
     }
 
@@ -44,9 +48,9 @@ int main(int argc, char **argv)
         char buf[160];
         snprintf(buf, sizeof(buf), "[%d] %s", i, base);
         if (ember_pubsub_publish(pub, DEMO_TOPIC, buf, strlen(buf)) != 0) {
-            fprintf(stderr, "ember_pubsub_publish failed\n");
+            LOG_E("ember_pubsub_publish failed");
         } else {
-            printf("published topic=%s body=%s\n", DEMO_TOPIC, buf);
+            LOG_I("published topic=%s body=%s", DEMO_TOPIC, buf);
         }
         sleep(1);
     }

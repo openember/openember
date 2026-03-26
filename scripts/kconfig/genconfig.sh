@@ -143,6 +143,50 @@ if [[ -z "${spdlog_pattern}" ]]; then
   spdlog_pattern="[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v"
 fi
 
+spdlog_stdout="$(onoff CONFIG_OPENEMBER_SPDLOG_ENABLE_STDOUT)"
+spdlog_file="$(onoff CONFIG_OPENEMBER_SPDLOG_ENABLE_FILE)"
+spdlog_syslog="$(onoff CONFIG_OPENEMBER_SPDLOG_ENABLE_SYSLOG)"
+
+spdlog_file_dir="/var/log/openember"
+spdlog_file_dir="$(awk '
+  /^CONFIG_OPENEMBER_SPDLOG_FILE_DIR=/ {
+    v=$0
+    sub(/^CONFIG_OPENEMBER_SPDLOG_FILE_DIR=/,"",v)
+    gsub(/^"/,"",v); gsub(/"$/,"",v)
+    print v
+    exit
+  }
+' "${CONFIG_FILE}")"
+if [[ -z "${spdlog_file_dir}" ]]; then
+  spdlog_file_dir="/var/log/openember"
+fi
+
+spdlog_rotate_max_mb="10"
+spdlog_rotate_max_mb="$(awk '
+  /^CONFIG_OPENEMBER_SPDLOG_ROTATE_MAX_MB=/ {
+    v=$0
+    sub(/^CONFIG_OPENEMBER_SPDLOG_ROTATE_MAX_MB=/,"",v)
+    print v
+    exit
+  }
+' "${CONFIG_FILE}")"
+if [[ -z "${spdlog_rotate_max_mb}" ]]; then
+  spdlog_rotate_max_mb="10"
+fi
+
+spdlog_rotate_max_files="5"
+spdlog_rotate_max_files="$(awk '
+  /^CONFIG_OPENEMBER_SPDLOG_ROTATE_MAX_FILES=/ {
+    v=$0
+    sub(/^CONFIG_OPENEMBER_SPDLOG_ROTATE_MAX_FILES=/,"",v)
+    print v
+    exit
+  }
+' "${CONFIG_FILE}")"
+if [[ -z "${spdlog_rotate_max_files}" ]]; then
+  spdlog_rotate_max_files="5"
+fi
+
 web_root_dir="apps/services/web_dashboard/web_root"
 web_root_dir="$(awk '
   /^CONFIG_OPENEMBER_WEB_DASHBOARD_ROOT_DIR=/ {
@@ -180,6 +224,12 @@ set(OPENEMBER_LOG_FILE "${log_file}" CACHE STRING "zlog.conf path" FORCE)
 set(OPENEMBER_SPDLOG_LEVEL "${spdlog_level}" CACHE STRING "spdlog log level (debug/info/warn/error)" FORCE)
 set(OPENEMBER_SPDLOG_FLUSH_LEVEL "${spdlog_flush_level}" CACHE STRING "spdlog flush on level (info/warn/error)" FORCE)
 set(OPENEMBER_SPDLOG_PATTERN "${spdlog_pattern}" CACHE STRING "spdlog pattern" FORCE)
+set(OPENEMBER_SPDLOG_ENABLE_STDOUT ${spdlog_stdout} CACHE BOOL "Enable spdlog stdout sink" FORCE)
+set(OPENEMBER_SPDLOG_ENABLE_FILE ${spdlog_file} CACHE BOOL "Enable spdlog rotating file sink" FORCE)
+set(OPENEMBER_SPDLOG_FILE_DIR "${spdlog_file_dir}" CACHE STRING "spdlog file directory" FORCE)
+set(OPENEMBER_SPDLOG_ROTATE_MAX_MB ${spdlog_rotate_max_mb} CACHE STRING "spdlog rotate max MiB" FORCE)
+set(OPENEMBER_SPDLOG_ROTATE_MAX_FILES ${spdlog_rotate_max_files} CACHE STRING "spdlog rotate max files" FORCE)
+set(OPENEMBER_SPDLOG_ENABLE_SYSLOG ${spdlog_syslog} CACHE BOOL "Enable spdlog syslog sink" FORCE)
 set(OPENEMBER_WEB_DASHBOARD_ROOT_DIR "${web_root_dir}" CACHE STRING "web_dashboard web root directory" FORCE)
 set(OPENEMBER_WEB_DASHBOARD_PORT ${web_port} CACHE STRING "web_dashboard HTTP port" FORCE)
 set(OPENEMBER_THIRD_PARTY_MODE "${tp_mode}" CACHE STRING "Third-party source mode: FETCH/VENDOR/SYSTEM" FORCE)

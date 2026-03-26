@@ -122,7 +122,7 @@ static int get_instance_pid(const char *lockfile)
 
     ret = read(lock_fd, buf, sizeof(buf));
     if(ret == -1) {
-        printf("read Error\n");
+        LOG_E("read Error");
         close(lock_fd);
         return -EMBER_EIO;
     }
@@ -155,7 +155,7 @@ static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
 {
     if (0 == strncmp(SYS_EVENT_TOPIC, topic, strlen(topic))) {
         event_msg_t *e = (event_msg_t *)payload;
-        printf("Payload len = %lu >> event: [%d] %s\n", payloadlen, e->event_id, e->event_data.event_str);
+        LOG_I("Payload len = %lu >> event: [%d] %s", payloadlen, e->event_id, e->event_data.event_str);
 
         if (EMBER_EVENT_EXCEPTION == e->event_id) {
             context.goWrong();
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
     {
         if (0 == strncmp("stop", argv[1], strlen("stop")))
         {
-            printf("** Stop %s\n", APPLICATION_NAME);
+            LOG_I("** Stop %s", APPLICATION_NAME);
 
             rc = create_lock_file(DEFAULT_FILE);
             if (rc == EMBER_EOK) {

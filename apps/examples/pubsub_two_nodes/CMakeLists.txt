@@ -2,8 +2,8 @@ set(_ps_inc ${CMAKE_SOURCE_DIR}/components/pubsub)
 
 OPENEMBER_ADD_EXECUTABLE(TARGET pubsub_publisher
     SRCS     publisher.cpp
-    LIBS     ember_pubsub pthread
-    INCLUDES ${_ps_inc}
+    LIBS     ember_pubsub pthread ${OPENEMBER_LIBRARIES}
+    INCLUDES ${_ps_inc} ${OPENEMBER_INCLUDE_DIRS}
     DESTINATION bin
 )
 target_compile_definitions(pubsub_publisher PRIVATE
@@ -12,8 +12,8 @@ target_compile_definitions(pubsub_publisher PRIVATE
 
 OPENEMBER_ADD_EXECUTABLE(TARGET pubsub_subscriber
     SRCS     subscriber.cpp
-    LIBS     ember_pubsub pthread
-    INCLUDES ${_ps_inc}
+    LIBS     ember_pubsub pthread ${OPENEMBER_LIBRARIES}
+    INCLUDES ${_ps_inc} ${OPENEMBER_INCLUDE_DIRS}
     DESTINATION bin
 )
 target_compile_definitions(pubsub_subscriber PRIVATE

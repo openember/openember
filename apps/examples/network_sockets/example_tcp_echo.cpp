@@ -1,8 +1,10 @@
 #include "socket_uri.h"
 
 #include <cstring>
-#include <iostream>
 #include <thread>
+
+#define LOG_TAG "example_tcp_echo"
+#include "openember.h"
 
 using openember::network::Socket;
 
@@ -36,40 +38,40 @@ static oe_result_t send_exact(Socket &s, const void *buf, size_t len, int timeou
 
 static void tcp_server_thread(std::string uri)
 {
-    std::cout << "[server] start, uri=" << uri << "\n";
+    LOG_I("[server] start, uri=%s", uri.c_str());
     Socket server;
     if (server.listen(uri, 8) != OE_OK) {
-        std::cerr << "tcp server.listen failed\n";
+        LOG_E("tcp server.listen failed");
         return;
     }
 
-    std::cout << "[server] listening, waiting for client...\n";
+    LOG_I("[server] listening, waiting for client...");
     Socket client;
     if (server.accept(client, 5000) != OE_OK) {
-        std::cerr << "tcp server.accept failed\n";
+        LOG_E("tcp server.accept failed");
         return;
     }
-    std::cout << "[server] client accepted\n";
+    LOG_I("[server] client accepted");
 
     uint32_t n = 0;
     if (recv_exact(client, &n, sizeof(n), 5000) != OE_OK) {
-        std::cerr << "tcp server.recv(len) failed\n";
+        LOG_E("tcp server.recv(len) failed");
         return;
     }
     if (n > 1024) {
-        std::cerr << "tcp server: message too large\n";
+        LOG_E("tcp server: message too large");
         return;
     }
     std::string msg;
     msg.resize(n);
     if (recv_exact(client, msg.data(), msg.size(), 5000) != OE_OK) {
-        std::cerr << "tcp server.recv failed\n";
+        LOG_E("tcp server.recv failed");
         return;
     }
-    std::cout << "[server] received " << msg.size() << " bytes, echo back\n";
+    LOG_I("[server] received %zu bytes, echo back", msg.size());
     (void)send_exact(client, &n, sizeof(n), 5000);
     (void)send_exact(client, msg.data(), msg.size(), 5000);
-    std::cout << "[server] done\n";
+    LOG_I("[server] done");
 }
 
 int main(int argc, char **argv)
@@ -79,45 +81,45 @@ int main(int argc, char **argv)
         uri = argv[1];
     }
 
-    std::cout << "[main] starting server thread...\n";
+    LOG_I("[main] starting server thread...");
     std::thread th(tcp_server_thread, uri);
     std::this_thread::sleep_for(std::chrono::milliseconds(80));
 
-    std::cout << "[client] connect to " << uri << "\n";
+    LOG_I("[client] connect to %s", uri.c_str());
     Socket c;
     if (c.connect(uri) != OE_OK) {
-        std::cerr << "tcp client.connect failed\n";
+        LOG_E("tcp client.connect failed");
         th.join();
         return 1;
     }
-    std::cout << "[client] connected\n";
+    LOG_I("[client] connected");
 
     const std::string msg = "hello-tcp";
     const uint32_t n = static_cast<uint32_t>(msg.size());
-    std::cout << "[client] send: \"" << msg << "\"\n";
+    LOG_I("[client] send: \"%s\"", msg.c_str());
     if (send_exact(c, &n, sizeof(n), 5000) != OE_OK || send_exact(c, msg.data(), msg.size(), 5000) != OE_OK) {
-        std::cerr << "tcp client.send failed\n";
+        LOG_E("tcp client.send failed");
         th.join();
         return 1;
     }
 
     uint32_t rn = 0;
     if (recv_exact(c, &rn, sizeof(rn), 5000) != OE_OK) {
-        std::cerr << "tcp client.recv(len) failed\n";
+        LOG_E("tcp client.recv(len) failed");
         th.join();
         return 1;
     }
     std::string rmsg;
     rmsg.resize(rn);
     if (recv_exact(c, rmsg.data(), rmsg.size(), 5000) != OE_OK) {
-        std::cerr << "tcp client.recv failed\n";
+        LOG_E("tcp client.recv failed");
         th.join();
         return 1;
     }
 
-    std::cout << "[client] echo: \"" << rmsg << "\"\n";
+    LOG_I("[client] echo: \"%s\"", rmsg.c_str());
     th.join();
-    std::cout << "[main] exit\n";
+    LOG_I("[main] exit");
     return 0;
 }
 

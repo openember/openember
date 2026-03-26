@@ -62,28 +62,28 @@ static void ignore()
 
 static void _init()
 {
-    printf("LiDAR %s", g_StateText[pCurrentState->state]);
+    LOG_I("LiDAR %s", g_StateText[pCurrentState->state]);
     pCurrentState = &stateTable[EMBER_SYSTEM_NORMAL];
-    printf(" --> %s\n", g_StateText[pCurrentState->state]);
+    LOG_I(" --> %s", g_StateText[pCurrentState->state]);
 }
 
 static void _sleep()
 {
-    printf("LiDAR %s", g_StateText[pCurrentState->state]);
+    LOG_I("LiDAR %s", g_StateText[pCurrentState->state]);
     pCurrentState = &stateTable[EMBER_SYSTEM_SLEEP];
-    printf(" --> %s\n", g_StateText[pCurrentState->state]);
+    LOG_I(" --> %s", g_StateText[pCurrentState->state]);
 }
 
 static void _wakeup()
 {
-    printf("LiDAR %s", g_StateText[pCurrentState->state]);
+    LOG_I("LiDAR %s", g_StateText[pCurrentState->state]);
     pCurrentState = &stateTable[EMBER_SYSTEM_INIT];
-    printf(" --> %s\n", g_StateText[pCurrentState->state]);
+    LOG_I(" --> %s", g_StateText[pCurrentState->state]);
 }
 
 static void _gowrong()
 {
-    printf("LiDAR %s", g_StateText[pCurrentState->state]);
+    LOG_I("LiDAR %s", g_StateText[pCurrentState->state]);
 
     if (EMBER_SYSTEM_NORMAL == pCurrentState->state) {
         pCurrentState = &stateTable[EMBER_SYSTEM_DEGRADE];
@@ -93,21 +93,21 @@ static void _gowrong()
         pCurrentState = &stateTable[EMBER_SYSTEM_ERROR];
     }
 
-    printf(" --> %s\n", g_StateText[pCurrentState->state]);
+    LOG_I(" --> %s", g_StateText[pCurrentState->state]);
 }
 
 static void _recovery()
 {
-    printf("LiDAR %s", g_StateText[pCurrentState->state]);
+    LOG_I("LiDAR %s", g_StateText[pCurrentState->state]);
     pCurrentState = &stateTable[EMBER_SYSTEM_INIT];
-    printf(" --> %s\n", g_StateText[pCurrentState->state]);
+    LOG_I(" --> %s", g_StateText[pCurrentState->state]);
 }
 
 static void _poweroff()
 {
-    printf("LiDAR %s", g_StateText[pCurrentState->state]);
+    LOG_I("LiDAR %s", g_StateText[pCurrentState->state]);
     pCurrentState = &stateTable[EMBER_SYSTEM_POWEROFF];
-    printf(" --> %s\n", g_StateText[pCurrentState->state]);
+    LOG_I(" --> %s", g_StateText[pCurrentState->state]);
 }
 
 static void onPowerOn()
