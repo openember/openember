@@ -86,11 +86,8 @@
           <img src="assets/logo.png" alt="OpenEmber" style="width:26px; height:26px; margin-left:10px;" />
           <span>OpenEmber</span>
         </div>
-        <ul class="layui-nav layui-layout-left">
-          <li class="layui-nav-item layui-this"><a href="javascript:;">Dashboard</a></li>
-          <li class="layui-nav-item"><a href="javascript:;">System</a></li>
-          <li class="layui-nav-item"><a href="javascript:;">Modules</a></li>
-        </ul>
+        <!-- 上下文导航：随左侧主栏目变化，见脚本 TOP_NAV_BY_PAGE -->
+        <ul id="topNavContext" class="layui-nav layui-layout-left" aria-label="当前页面快捷操作"></ul>
         <ul class="layui-nav layui-layout-right">
           <li class="layui-nav-item">
             <a href="javascript:;">
@@ -104,12 +101,12 @@
       <div class="layui-side layui-bg-black">
         <div class="layui-side-scroll">
           <ul class="layui-nav layui-nav-tree" lay-filter="nav">
-            <li class="layui-nav-item layui-this"><a href="javascript:;" data-page="overview">概览</a></li>
-            <li class="layui-nav-item"><a href="javascript:;" data-page="control">控制</a></li>
-            <li class="layui-nav-item"><a href="javascript:;" data-page="settings">设置</a></li>
-            <li class="layui-nav-item"><a href="javascript:;" data-page="logs">日志</a></li>
-            <li class="layui-nav-item"><a href="javascript:;" data-page="update">更新</a></li>
-            <li class="layui-nav-item"><a href="javascript:;" data-page="about">关于</a></li>
+            <li class="layui-nav-item layui-this"><a href="#/overview" data-page="overview">概览</a></li>
+            <li class="layui-nav-item"><a href="#/control" data-page="control">控制</a></li>
+            <li class="layui-nav-item"><a href="#/settings" data-page="settings">设置</a></li>
+            <li class="layui-nav-item"><a href="#/logs" data-page="logs">日志</a></li>
+            <li class="layui-nav-item"><a href="#/update" data-page="update">更新</a></li>
+            <li class="layui-nav-item"><a href="#/about" data-page="about">关于</a></li>
           </ul>
         </div>
       </div>
@@ -399,7 +396,67 @@
         var isDark = false;
         var currentPage = 'overview';
 
-        function showPage(page) {
+        var VALID_PAGES = ['overview', 'control', 'settings', 'logs', 'update', 'about'];
+        var PAGE_TITLES = {
+          overview: '概览',
+          control: '控制',
+          settings: '设置',
+          logs: '日志',
+          update: '更新',
+          about: '关于'
+        };
+
+        /** 与 URL 片段同步，例如 http://host:8000/#/control */
+        function pageFromHash() {
+          var h = (location.hash || '').replace(/^#/, '').replace(/^\/+/, '');
+          var part = (h.split('/')[0] || 'overview').trim();
+          if (VALID_PAGES.indexOf(part) < 0) return 'overview';
+          return part;
+        }
+
+        /** 顶部栏：当前主栏目下的快捷操作（与侧栏「模块」不同，见设计文档） */
+        var TOP_NAV_BY_PAGE = {
+          overview: [
+            { label: '刷新', action: 'refresh-overview' },
+            { label: '导出报告', action: 'export-report' }
+          ],
+          control: [
+            { label: '急停', action: 'estop' },
+            { label: '校准', action: 'calibrate' }
+          ],
+          settings: [
+            { label: '应用', action: 'settings-apply' },
+            { label: '恢复默认', action: 'settings-reset' }
+          ],
+          logs: [
+            { label: '清空视图', action: 'logs-clear' },
+            { label: '下载', action: 'logs-download' }
+          ],
+          update: [
+            { label: '检查更新', action: 'update-check' },
+            { label: '更新记录', action: 'update-history' }
+          ],
+          about: [
+            { label: '文档', action: 'about-docs' },
+            { label: '许可证', action: 'about-license' }
+          ]
+        };
+
+        function renderTopNav(page) {
+          var items = TOP_NAV_BY_PAGE[page] || TOP_NAV_BY_PAGE.overview;
+          var ul = document.getElementById('topNavContext');
+          if (!ul) return;
+          var html = '';
+          for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            var active = i === 0 ? ' layui-this' : '';
+            html += '<li class="layui-nav-item' + active + '"><a href="javascript:;" data-top-action="' + it.action + '">' + it.label + '</a></li>';
+          }
+          ul.innerHTML = html;
+        }
+
+        function applyRoute(page) {
+          if (VALID_PAGES.indexOf(page) < 0) page = 'overview';
           currentPage = page;
           var pages = document.querySelectorAll('.oe-page');
           for (var i = 0; i < pages.length; i++) {
@@ -412,6 +469,8 @@
             if (!a) continue;
             navItems[j].classList.toggle('layui-this', a.getAttribute('data-page') === page);
           }
+          renderTopNav(page);
+          document.title = 'OpenEmber · ' + (PAGE_TITLES[page] || 'Dashboard');
           if (page === 'overview') {
             refresh();
           }
@@ -522,7 +581,8 @@
         }
 
         function refresh() {
-          document.getElementById('kvWebRoot').textContent = location.pathname.replace(/\/[^\/]*$/, '/') || '/';
+          var path = location.pathname.replace(/\/[^\/]*$/, '/') || '/';
+          document.getElementById('kvWebRoot').textContent = path + (location.hash || '');
           document.getElementById('kvHttp').textContent = location.host || '0.0.0.0:8000';
           refreshSystem(function () {
             renderModules();
@@ -545,22 +605,49 @@
           }
         });
 
-        var sideScroll = document.querySelector('.layui-side-scroll');
-        if (sideScroll) {
-          sideScroll.addEventListener('click', function (e) {
-            var a = e.target && e.target.closest ? e.target.closest('a[data-page]') : null;
-            if (!a) return;
-            e.preventDefault();
-            showPage(a.getAttribute('data-page'));
-          });
-        }
+        document.querySelector('.layui-header').addEventListener('click', function (e) {
+          var a = e.target && e.target.closest ? e.target.closest('a[data-top-action]') : null;
+          if (!a) return;
+          e.preventDefault();
+          var act = a.getAttribute('data-top-action');
+          if (act === 'refresh-overview' && currentPage === 'overview') {
+            refresh();
+            if (layer && typeof layer.msg === 'function') layer.msg('已刷新', { icon: 1, time: 800 });
+            return;
+          }
+          var msg = {
+            'export-report': '导出报告（占位）',
+            'estop': '急停（占位）',
+            'calibrate': '校准（占位）',
+            'settings-apply': '保存设置（占位）',
+            'settings-reset': '恢复默认（占位）',
+            'logs-clear': '清空视图（占位）',
+            'logs-download': '下载日志（占位）',
+            'update-check': '检查更新（占位）',
+            'update-history': '更新记录（占位）',
+            'about-docs': '文档（占位）',
+            'about-license': '许可证（占位）'
+          }[act] || '（占位）';
+          if (layer && typeof layer.msg === 'function') {
+            layer.msg(msg, { time: 1200 });
+          } else {
+            window.alert(msg);
+          }
+        });
 
         function start() {
           setConn(false);
           var verEl = document.getElementById('oeAppVersion');
           if (verEl) verEl.textContent = 'web_dashboard（构建版本待 CMake 注入）';
           log('dashboard loaded (Layui ' + (hasLayui() ? 'available' : 'missing') + ')');
-          refresh();
+          window.addEventListener('hashchange', function () {
+            applyRoute(pageFromHash());
+          });
+          if (!location.hash || location.hash === '#') {
+            location.hash = '#/overview';
+          } else {
+            applyRoute(pageFromHash());
+          }
           setInterval(function () {
             if (currentPage === 'overview') refresh();
           }, 2000);
