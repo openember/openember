@@ -18,6 +18,23 @@ backend="$(awk '
   END { print b }
 ' "${CONFIG_FILE}")"
 
+spdlog_level="$(awk '
+  BEGIN { l="info" }
+  /^CONFIG_OPENEMBER_SPDLOG_LEVEL_DEBUG=y/ { l="debug" }
+  /^CONFIG_OPENEMBER_SPDLOG_LEVEL_INFO=y/ { l="info" }
+  /^CONFIG_OPENEMBER_SPDLOG_LEVEL_WARN=y/ { l="warn" }
+  /^CONFIG_OPENEMBER_SPDLOG_LEVEL_ERROR=y/ { l="error" }
+  END { print l }
+' "${CONFIG_FILE}")"
+
+spdlog_flush_level="$(awk '
+  BEGIN { l="info" }
+  /^CONFIG_OPENEMBER_SPDLOG_FLUSH_INFO=y/ { l="info" }
+  /^CONFIG_OPENEMBER_SPDLOG_FLUSH_WARN=y/ { l="warn" }
+  /^CONFIG_OPENEMBER_SPDLOG_FLUSH_ERROR=y/ { l="error" }
+  END { print l }
+' "${CONFIG_FILE}")"
+
 tp_mode="$(awk '
   BEGIN { m="FETCH" }
   /^CONFIG_OPENEMBER_TP_MODE_VENDOR=y/ { m="VENDOR" }
@@ -112,6 +129,20 @@ if [[ -z "${log_file}" ]]; then
   log_file="/etc/openember/zlog.conf"
 fi
 
+spdlog_pattern="[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v"
+spdlog_pattern="$(awk '
+  /^CONFIG_OPENEMBER_SPDLOG_PATTERN=/ {
+    v=$0
+    sub(/^CONFIG_OPENEMBER_SPDLOG_PATTERN=/,"",v)
+    gsub(/^"/,"",v); gsub(/"$/,"",v)
+    print v
+    exit
+  }
+' "${CONFIG_FILE}")"
+if [[ -z "${spdlog_pattern}" ]]; then
+  spdlog_pattern="[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v"
+fi
+
 web_root_dir="apps/services/web_dashboard/web_root"
 web_root_dir="$(awk '
   /^CONFIG_OPENEMBER_WEB_DASHBOARD_ROOT_DIR=/ {
@@ -146,6 +177,9 @@ cat > "${out_cmake}" <<EOF
 
 set(OPENEMBER_LOG_BACKEND "${backend}" CACHE STRING "OpenEmber logging backend" FORCE)
 set(OPENEMBER_LOG_FILE "${log_file}" CACHE STRING "zlog.conf path" FORCE)
+set(OPENEMBER_SPDLOG_LEVEL "${spdlog_level}" CACHE STRING "spdlog log level (debug/info/warn/error)" FORCE)
+set(OPENEMBER_SPDLOG_FLUSH_LEVEL "${spdlog_flush_level}" CACHE STRING "spdlog flush on level (info/warn/error)" FORCE)
+set(OPENEMBER_SPDLOG_PATTERN "${spdlog_pattern}" CACHE STRING "spdlog pattern" FORCE)
 set(OPENEMBER_WEB_DASHBOARD_ROOT_DIR "${web_root_dir}" CACHE STRING "web_dashboard web root directory" FORCE)
 set(OPENEMBER_WEB_DASHBOARD_PORT ${web_port} CACHE STRING "web_dashboard HTTP port" FORCE)
 set(OPENEMBER_THIRD_PARTY_MODE "${tp_mode}" CACHE STRING "Third-party source mode: FETCH/VENDOR/SYSTEM" FORCE)

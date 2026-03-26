@@ -10,8 +10,31 @@
 #include <cstdarg>
 #include <cstdio>
 #include <memory>
+#include <string_view>
+
+#ifndef OPENEMBER_SPDLOG_LEVEL
+#define OPENEMBER_SPDLOG_LEVEL "info"
+#endif
+#ifndef OPENEMBER_SPDLOG_FLUSH_LEVEL
+#define OPENEMBER_SPDLOG_FLUSH_LEVEL "info"
+#endif
+#ifndef OPENEMBER_SPDLOG_PATTERN
+#define OPENEMBER_SPDLOG_PATTERN "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v"
+#endif
 
 static std::shared_ptr<spdlog::logger> g_ember_logger;
+
+static spdlog::level::level_enum em_level_from(std::string_view s, spdlog::level::level_enum def)
+{
+    if (s == "trace") return spdlog::level::trace;
+    if (s == "debug") return spdlog::level::debug;
+    if (s == "info") return spdlog::level::info;
+    if (s == "warn" || s == "warning") return spdlog::level::warn;
+    if (s == "error" || s == "err") return spdlog::level::err;
+    if (s == "critical") return spdlog::level::critical;
+    if (s == "off") return spdlog::level::off;
+    return def;
+}
 
 extern "C" int log_spdlog_init(const char *name)
 {
@@ -19,9 +42,9 @@ extern "C" int log_spdlog_init(const char *name)
         const char *n = (name && name[0]) ? name : "openember";
         g_ember_logger = spdlog::stdout_color_mt(n);
         spdlog::set_default_logger(g_ember_logger);
-        spdlog::set_level(spdlog::level::debug);
-        spdlog::flush_on(spdlog::level::info);
-        spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+        spdlog::set_level(em_level_from(OPENEMBER_SPDLOG_LEVEL, spdlog::level::info));
+        spdlog::flush_on(em_level_from(OPENEMBER_SPDLOG_FLUSH_LEVEL, spdlog::level::info));
+        spdlog::set_pattern(OPENEMBER_SPDLOG_PATTERN);
         return 0;
     } catch (...) {
         return -1;

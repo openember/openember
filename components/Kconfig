@@ -21,6 +21,46 @@ config OPENEMBER_LOG_FILE
     string "zlog.conf path"
     default "/etc/openember/zlog.conf" if OPENEMBER_LOG_BACKEND_ZLOG
 
+choice OPENEMBER_SPDLOG_LEVEL_CHOICE
+    prompt "spdlog: log level"
+    depends on OPENEMBER_LOG_BACKEND_SPDLOG
+    default OPENEMBER_SPDLOG_LEVEL_INFO
+
+config OPENEMBER_SPDLOG_LEVEL_DEBUG
+    bool "debug"
+
+config OPENEMBER_SPDLOG_LEVEL_INFO
+    bool "info"
+
+config OPENEMBER_SPDLOG_LEVEL_WARN
+    bool "warn"
+
+config OPENEMBER_SPDLOG_LEVEL_ERROR
+    bool "error"
+
+endchoice
+
+choice OPENEMBER_SPDLOG_FLUSH_LEVEL_CHOICE
+    prompt "spdlog: flush on level"
+    depends on OPENEMBER_LOG_BACKEND_SPDLOG
+    default OPENEMBER_SPDLOG_FLUSH_INFO
+
+config OPENEMBER_SPDLOG_FLUSH_INFO
+    bool "info"
+
+config OPENEMBER_SPDLOG_FLUSH_WARN
+    bool "warn"
+
+config OPENEMBER_SPDLOG_FLUSH_ERROR
+    bool "error"
+
+endchoice
+
+config OPENEMBER_SPDLOG_PATTERN
+    string "spdlog: pattern"
+    depends on OPENEMBER_LOG_BACKEND_SPDLOG
+    default "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v"
+
 endmenu
 
 menu "Serialization / Config"
