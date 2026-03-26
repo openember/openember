@@ -19,6 +19,7 @@ endchoice
 
 config OPENEMBER_LOG_FILE
     string "zlog.conf path"
+    depends on OPENEMBER_LOG_BACKEND_ZLOG
     default "/etc/openember/zlog.conf" if OPENEMBER_LOG_BACKEND_ZLOG
 
 choice OPENEMBER_SPDLOG_LEVEL_CHOICE
