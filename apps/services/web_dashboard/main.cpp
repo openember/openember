@@ -10,6 +10,15 @@
 
 #include <mongoose.h>
 
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <vector>
+
+#include <sys/utsname.h>
+
 #define MODULE_NAME            "web_dashboard"
 #define LOG_TAG                MODULE_NAME
 #include "openember.h"
@@ -26,6 +35,232 @@ static const char *s_root_dir =
 static const char *s_enable_hexdump = "no";
 static const char *s_ssi_pattern = "#.html";
 
+static std::string read_file_trim(const char *path)
+{
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        return {};
+    }
+    std::string s;
+    char buf[256];
+    size_t n = 0;
+    while ((n = fread(buf, 1, sizeof(buf), f)) > 0) {
+        s.append(buf, buf + n);
+    }
+    fclose(f);
+
+    while (!s.empty() && (s.back() == '\n' || s.back() == '\r' || s.back() == ' ' || s.back() == '\t')) {
+        s.pop_back();
+    }
+    size_t i = 0;
+    while (i < s.size() && (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r')) {
+        i++;
+    }
+    if (i > 0) {
+        s.erase(0, i);
+    }
+    return s;
+}
+
+static std::string json_escape(std::string_view v)
+{
+    std::string out;
+    out.reserve(v.size() + 16);
+    for (char ch : v) {
+        switch (ch) {
+        case '\\': out += "\\\\"; break;
+        case '"': out += "\\\""; break;
+        case '\n': out += "\\n"; break;
+        case '\r': out += "\\r"; break;
+        case '\t': out += "\\t"; break;
+        default:
+            if (static_cast<unsigned char>(ch) < 0x20) {
+                char tmp[8];
+                snprintf(tmp, sizeof(tmp), "\\u%04x", (unsigned)static_cast<unsigned char>(ch));
+                out += tmp;
+            } else {
+                out += ch;
+            }
+            break;
+        }
+    }
+    return out;
+}
+
+static std::string os_pretty_name()
+{
+    FILE *f = fopen("/etc/os-release", "rb");
+    if (!f) {
+        return {};
+    }
+    char line[512];
+    std::string pretty;
+    while (fgets(line, (int)sizeof(line), f)) {
+        const char *k = "PRETTY_NAME=";
+        if (strncmp(line, k, strlen(k)) == 0) {
+            std::string v = line + strlen(k);
+            while (!v.empty() && (v.back() == '\n' || v.back() == '\r')) v.pop_back();
+            if (!v.empty() && v.front() == '"') v.erase(0, 1);
+            if (!v.empty() && v.back() == '"') v.pop_back();
+            pretty = v;
+            break;
+        }
+    }
+    fclose(f);
+    return pretty;
+}
+
+static std::string uptime_pretty()
+{
+    FILE *f = fopen("/proc/uptime", "rb");
+    if (!f) return {};
+    double up = 0.0;
+    (void)fscanf(f, "%lf", &up);
+    fclose(f);
+    long sec = (long)up;
+    long days = sec / 86400;
+    sec %= 86400;
+    long hours = sec / 3600;
+    sec %= 3600;
+    long mins = sec / 60;
+    char buf[128];
+    if (days > 0) {
+        snprintf(buf, sizeof(buf), "%ld days, %ld hrs, %ld mins", days, hours, mins);
+    } else if (hours > 0) {
+        snprintf(buf, sizeof(buf), "%ld hrs, %ld mins", hours, mins);
+    } else {
+        snprintf(buf, sizeof(buf), "%ld mins", mins);
+    }
+    return buf;
+}
+
+static bool mem_info_mib(long &used_mib, long &total_mib)
+{
+    FILE *f = fopen("/proc/meminfo", "rb");
+    if (!f) return false;
+    long mem_total_kib = 0;
+    long mem_avail_kib = 0;
+    char key[64];
+    long val = 0;
+    char unit[32];
+    while (fscanf(f, "%63s %ld %31s", key, &val, unit) == 3) {
+        if (strcmp(key, "MemTotal:") == 0) mem_total_kib = val;
+        if (strcmp(key, "MemAvailable:") == 0) mem_avail_kib = val;
+        if (mem_total_kib && mem_avail_kib) break;
+    }
+    fclose(f);
+    if (!mem_total_kib) return false;
+    long used_kib = mem_total_kib - mem_avail_kib;
+    used_mib = used_kib / 1024;
+    total_mib = mem_total_kib / 1024;
+    return true;
+}
+
+static std::string cpu_pretty()
+{
+    FILE *f = fopen("/proc/cpuinfo", "rb");
+    if (!f) return {};
+    char line[512];
+    std::string model;
+    int processors = 0;
+    while (fgets(line, (int)sizeof(line), f)) {
+        if (strncmp(line, "model name", 10) == 0) {
+            const char *p = strchr(line, ':');
+            if (p) {
+                model = p + 1;
+                while (!model.empty() && (model.back() == '\n' || model.back() == '\r')) model.pop_back();
+                while (!model.empty() && (model.front() == ' ' || model.front() == '\t')) model.erase(0, 1);
+            }
+        } else if (strncmp(line, "processor", 9) == 0) {
+            processors++;
+        }
+    }
+    fclose(f);
+
+    // Best-effort max frequency
+    std::string mhz_str;
+    std::string max_khz = read_file_trim("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq");
+    if (!max_khz.empty()) {
+        long khz = strtol(max_khz.c_str(), nullptr, 10);
+        if (khz > 0) {
+            char b[64];
+            snprintf(b, sizeof(b), "@ %.3fGHz", (double)khz / 1000000.0);
+            mhz_str = b;
+        }
+    }
+
+    if (model.empty()) return {};
+    char buf[512];
+    if (processors > 0) {
+        snprintf(buf, sizeof(buf), "%s (%d) %s", model.c_str(), processors, mhz_str.c_str());
+    } else {
+        snprintf(buf, sizeof(buf), "%s %s", model.c_str(), mhz_str.c_str());
+    }
+    return buf;
+}
+
+static std::vector<std::string> gpu_list()
+{
+    // Best-effort: list PCI display controllers via sysfs, without external tools.
+    std::vector<std::string> out;
+    // We can't easily enumerate directories without dirent here; use glob via popen is not desired.
+    // Provide a minimal fallback from lspci if available is intentionally avoided.
+    // Return empty -> frontend can show "unknown".
+    return out;
+}
+
+static std::string host_product()
+{
+    std::string vendor = read_file_trim("/sys/class/dmi/id/sys_vendor");
+    std::string name = read_file_trim("/sys/class/dmi/id/product_name");
+    std::string ver = read_file_trim("/sys/class/dmi/id/product_version");
+    std::string s;
+    if (!vendor.empty()) s += vendor;
+    if (!name.empty()) {
+        if (!s.empty()) s += " ";
+        s += name;
+    }
+    if (!ver.empty() && ver != "None") {
+        if (!s.empty()) s += " ";
+        s += ver;
+    }
+    return s;
+}
+
+static std::string system_info_json()
+{
+    struct utsname u {};
+    std::string kernel;
+    std::string arch;
+    if (uname(&u) == 0) {
+        kernel = u.release;
+        arch = u.machine;
+    }
+
+    std::string os = os_pretty_name();
+    std::string host = host_product();
+    std::string uptime = uptime_pretty();
+    std::string cpu = cpu_pretty();
+    long used_mib = 0, total_mib = 0;
+    std::string mem;
+    if (mem_info_mib(used_mib, total_mib)) {
+        char b[128];
+        snprintf(b, sizeof(b), "%ldMiB / %ldMiB", used_mib, total_mib);
+        mem = b;
+    }
+
+    std::string json = "{";
+    json += "\"os\":\"" + json_escape(os) + "\",";
+    json += "\"arch\":\"" + json_escape(arch) + "\",";
+    json += "\"host\":\"" + json_escape(host) + "\",";
+    json += "\"kernel\":\"" + json_escape(kernel) + "\",";
+    json += "\"uptime\":\"" + json_escape(uptime) + "\",";
+    json += "\"cpu\":\"" + json_escape(cpu) + "\",";
+    json += "\"memory\":\"" + json_escape(mem) + "\"";
+    json += "}";
+    return json;
+}
+
 // Handle interrupts, like Ctrl-C
 static int s_signo;
 static void signal_handler(int signo)
@@ -35,12 +270,20 @@ static void signal_handler(int signo)
 
 static void fn(struct mg_connection *c, int ev, void *ev_data)
 {
-    (void)c;
-    (void)ev_data;
     struct mg_http_serve_opts opts = {.root_dir = s_root_dir};   // Serve local dir
 
     if (ev == MG_EV_HTTP_MSG) {
-        mg_http_serve_dir(c, (mg_http_message *)ev_data, &opts);
+        struct mg_http_message *hm = (struct mg_http_message *)ev_data;
+        if (mg_strcmp(hm->uri, mg_str("/api/system")) == 0) {
+            std::string body = system_info_json();
+            mg_http_reply(c,
+                          200,
+                          "Content-Type: application/json\r\nCache-Control: no-store\r\n",
+                          "%s",
+                          body.c_str());
+            return;
+        }
+        mg_http_serve_dir(c, hm, &opts);
     }
 }
 

@@ -68,10 +68,14 @@
               </div>
               <div class="layui-card-body">
                 <div class="oe-kv">
-                  <div class="oe-muted">设备</div><div id="kvDevice">OpenEmber Target</div>
-                  <div class="oe-muted">版本</div><div class="oe-mono" id="kvVersion">unknown</div>
-                  <div class="oe-muted">运行时间</div><div class="oe-mono" id="kvUptime">--</div>
-                  <div class="oe-muted">Web 根目录</div><div class="oe-mono" id="kvWebRoot">/</div>
+                  <div class="oe-muted">OS</div><div class="oe-mono" id="kvOS">--</div>
+                  <div class="oe-muted">Host</div><div class="oe-mono" id="kvHost">--</div>
+                  <div class="oe-muted">Kernel</div><div class="oe-mono" id="kvKernel">--</div>
+                  <div class="oe-muted">Uptime</div><div class="oe-mono" id="kvUptime">--</div>
+                  <div class="oe-muted">CPU</div><div class="oe-mono" id="kvCPU">--</div>
+                  <div class="oe-muted">GPU</div><div class="oe-mono" id="kvGPU">--</div>
+                  <div class="oe-muted">Memory</div><div class="oe-mono" id="kvMem">--</div>
+                  <div class="oe-muted">Web root</div><div class="oe-mono" id="kvWebRoot">/</div>
                   <div class="oe-muted">HTTP</div><div class="oe-mono" id="kvHttp">0.0.0.0:8000</div>
                 </div>
                 <hr class="layui-border-blue" />
@@ -162,22 +166,39 @@
           document.getElementById('tblMods').innerHTML = html;
         }
 
-        function refresh() {
-          // 目前后端只做静态目录服务；这里用 mock 数据先把 dashboard 结构搭起来。
+        async function refreshSystem() {
+          try {
+            var resp = await fetch('/api/system', { cache: 'no-store' });
+            if (!resp.ok) throw new Error('http ' + resp.status);
+            var j = await resp.json();
+            document.getElementById('kvOS').textContent = (j.os || '--') + (j.arch ? (' ' + j.arch) : '');
+            document.getElementById('kvHost').textContent = j.host || '--';
+            document.getElementById('kvKernel').textContent = j.kernel || '--';
+            document.getElementById('kvUptime').textContent = j.uptime || '--';
+            document.getElementById('kvCPU').textContent = j.cpu || '--';
+            document.getElementById('kvGPU').textContent = j.gpu || '--';
+            document.getElementById('kvMem').textContent = j.memory || '--';
+            setConn(true);
+          } catch (e) {
+            setConn(false);
+          }
+        }
+
+        function refreshMockMeters() {
           var cpu = rand(3, 68);
           var mem = rand(8, 84);
           document.getElementById('barCpu').setAttribute('lay-percent', cpu + '%');
           document.getElementById('barMem').setAttribute('lay-percent', mem + '%');
           element.render('progress');
+          log('refresh cpu=' + cpu + '% mem=' + mem + '%');
+        }
 
-          var uptimeSec = Math.floor((Date.now() - startMs) / 1000);
-          document.getElementById('kvUptime').textContent = uptimeSec + 's';
-          document.getElementById('kvVersion').textContent = 'OpenEmber (demo)';
+        async function refresh() {
           document.getElementById('kvWebRoot').textContent = location.pathname.replace(/\\/[^\\/]*$/, '/') || '/';
           document.getElementById('kvHttp').textContent = location.host || '0.0.0.0:8000';
-
+          await refreshSystem();
           renderModules();
-          log('refresh cpu=' + cpu + '% mem=' + mem + '%');
+          refreshMockMeters();
         }
 
         document.getElementById('btnRefresh').addEventListener('click', function () {
