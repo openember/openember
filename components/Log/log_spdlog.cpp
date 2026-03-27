@@ -8,14 +8,20 @@
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/syslog_sink.h>
+#include <spdlog/sinks/base_sink.h>
 
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <mutex>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <chrono>
+
+#include "ember_pubsub.h"
+#include <unistd.h>
 
 #ifndef OPENEMBER_SPDLOG_LEVEL
 #define OPENEMBER_SPDLOG_LEVEL "info"
@@ -45,6 +51,22 @@
 #define OPENEMBER_SPDLOG_ENABLE_SYSLOG 0
 #endif
 
+#ifndef OPENEMBER_SPDLOG_ENABLE_TOPIC
+#define OPENEMBER_SPDLOG_ENABLE_TOPIC 0
+#endif
+#ifndef OPENEMBER_SPDLOG_TOPIC_NAME
+#define OPENEMBER_SPDLOG_TOPIC_NAME "/openember/log"
+#endif
+#ifndef OPENEMBER_SPDLOG_TOPIC_PUB_URL
+#define OPENEMBER_SPDLOG_TOPIC_PUB_URL "tcp://*:7561"
+#endif
+#ifndef OPENEMBER_SPDLOG_TOPIC_LEVEL
+#define OPENEMBER_SPDLOG_TOPIC_LEVEL "info"
+#endif
+#ifndef OPENEMBER_SPDLOG_TOPIC_RATE_LIMIT
+#define OPENEMBER_SPDLOG_TOPIC_RATE_LIMIT 0
+#endif
+
 static std::shared_ptr<spdlog::logger> g_ember_logger;
 
 static spdlog::level::level_enum em_level_from(std::string_view s, spdlog::level::level_enum def)
@@ -58,6 +80,109 @@ static spdlog::level::level_enum em_level_from(std::string_view s, spdlog::level
     if (s == "off") return spdlog::level::off;
     return def;
 }
+
+static std::string json_escape(std::string_view v)
+{
+    std::string out;
+    out.reserve(v.size() + 16);
+    for (char ch : v) {
+        switch (ch) {
+        case '\\': out += "\\\\"; break;
+        case '"': out += "\\\""; break;
+        case '\n': out += "\\n"; break;
+        case '\r': out += "\\r"; break;
+        case '\t': out += "\\t"; break;
+        default:
+            if ((unsigned char)ch < 0x20) {
+                char tmp[8];
+                std::snprintf(tmp, sizeof(tmp), "\\u%04x", (unsigned)(unsigned char)ch);
+                out += tmp;
+            } else {
+                out += ch;
+            }
+            break;
+        }
+    }
+    return out;
+}
+
+class oe_topic_sink final : public spdlog::sinks::base_sink<std::mutex> {
+public:
+    oe_topic_sink(const char *pub_url, const char *topic, spdlog::level::level_enum threshold, int rate_limit_lps)
+        : pub_url_(pub_url ? pub_url : ""), topic_(topic ? topic : ""), threshold_(threshold),
+          rate_limit_lps_(rate_limit_lps)
+    {
+    }
+
+    ~oe_topic_sink() override
+    {
+        if (pub_) {
+            ember_pubsub_destroy(pub_);
+            pub_ = nullptr;
+        }
+    }
+
+protected:
+    void sink_it_(const spdlog::details::log_msg &msg) override
+    {
+        if (msg.level < threshold_) return;
+
+        if (rate_limit_lps_ > 0) {
+            using clock = std::chrono::steady_clock;
+            const auto now = clock::now();
+            if (now - rl_window_start_ >= std::chrono::seconds(1)) {
+                rl_window_start_ = now;
+                rl_count_ = 0;
+            }
+            if (rl_count_ >= rate_limit_lps_) {
+                return;
+            }
+            rl_count_++;
+        }
+
+        if (!pub_) {
+            if (ember_pubsub_create_publisher(&pub_, pub_url_.c_str()) != 0) {
+                pub_ = nullptr;
+                return;
+            }
+        }
+
+        // Payload: single-line JSON for cross-language consumers.
+        // Note: msg.payload is already formatted string from spdlog logger call.
+        const auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(msg.time.time_since_epoch()).count();
+        const int pid = (int)getpid();
+        std::string payload;
+        payload.reserve(msg.payload.size() + 128);
+        payload += "{";
+        payload += "\"ts_ms\":" + std::to_string((long long)ts) + ",";
+        const auto lvl_sv = spdlog::level::to_string_view(msg.level);
+        payload += "\"lvl\":\"" + std::string(lvl_sv.data(), lvl_sv.size()) + "\",";
+        payload += "\"pid\":" + std::to_string(pid) + ",";
+        payload += "\"proc\":\"" + json_escape(proc_) + "\",";
+        payload += "\"msg\":\"" + json_escape(std::string_view(msg.payload.data(), msg.payload.size())) + "\"";
+        payload += "}";
+
+        (void)ember_pubsub_publish(pub_, topic_.c_str(), payload.data(), payload.size());
+    }
+
+    void flush_() override {}
+
+public:
+    void set_process_name(std::string_view n) { proc_ = std::string(n); }
+
+private:
+    std::string pub_url_;
+    std::string topic_;
+    spdlog::level::level_enum threshold_{spdlog::level::info};
+    int rate_limit_lps_{0};
+
+    ember_pubsub_t *pub_{nullptr};
+    std::string proc_{"openember"};
+
+    // rate limit state (protected by base_sink mutex)
+    std::chrono::steady_clock::time_point rl_window_start_{};
+    int rl_count_{0};
+};
 
 extern "C" int log_spdlog_init(const char *name)
 {
@@ -88,6 +213,17 @@ extern "C" int log_spdlog_init(const char *name)
 #if OPENEMBER_SPDLOG_ENABLE_SYSLOG
         try {
             sinks.push_back(std::make_shared<spdlog::sinks::syslog_sink_mt>(n, 0, LOG_USER, true));
+        } catch (...) {
+        }
+#endif
+
+#if OPENEMBER_SPDLOG_ENABLE_TOPIC
+        try {
+            auto threshold = em_level_from(OPENEMBER_SPDLOG_TOPIC_LEVEL, spdlog::level::info);
+            int rl = (int)OPENEMBER_SPDLOG_TOPIC_RATE_LIMIT;
+            auto ts = std::make_shared<oe_topic_sink>(OPENEMBER_SPDLOG_TOPIC_PUB_URL, OPENEMBER_SPDLOG_TOPIC_NAME, threshold, rl);
+            ts->set_process_name(n);
+            sinks.push_back(ts);
         } catch (...) {
         }
 #endif

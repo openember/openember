@@ -61,3 +61,12 @@ C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal
 - [x] `web_dashboard` 增加 `/api/logs` 代理到 logger（本地回环）
 - [x] `web_root` logs 页面接入 `/api/logs` 并显示最近日志
 - [x] 编译验证（至少 logger + web_dashboard + 现有 apps）
+
+## Logging 阶段 1（主线）：spdlog topic sink + web_dashboard 订阅
+
+- [ ] 在 `components/Kconfig` 增加 spdlog topic sink 配置项（enable/topic/level/rate limit）
+- [ ] 在 `scripts/kconfig/genconfig.sh` 映射 topic sink 配置到 CMake cache
+- [ ] 在 `components/Log/log_spdlog.cpp` 实现 topic sink（基于现有 pub/sub 骨架发布到 `/openember/log`）
+- [ ] 在 `web_dashboard` 增加“订阅日志 topic 并缓存”的后台逻辑（内存 ring）
+- [ ] 前端 logs 页面接入（优先走 `/api/logs` 读取 ring；后续再做 SSE）
+- [ ] 编译运行验证：至少 `web_dashboard` 能实时看到 `INFO+` 日志

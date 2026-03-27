@@ -35,6 +35,15 @@ spdlog_flush_level="$(awk '
   END { print l }
 ' "${CONFIG_FILE}")"
 
+spdlog_topic_level="$(awk '
+  BEGIN { l="info" }
+  /^CONFIG_OPENEMBER_SPDLOG_TOPIC_LEVEL_DEBUG=y/ { l="debug" }
+  /^CONFIG_OPENEMBER_SPDLOG_TOPIC_LEVEL_INFO=y/ { l="info" }
+  /^CONFIG_OPENEMBER_SPDLOG_TOPIC_LEVEL_WARN=y/ { l="warn" }
+  /^CONFIG_OPENEMBER_SPDLOG_TOPIC_LEVEL_ERROR=y/ { l="error" }
+  END { print l }
+' "${CONFIG_FILE}")"
+
 tp_mode="$(awk '
   BEGIN { m="FETCH" }
   /^CONFIG_OPENEMBER_TP_MODE_VENDOR=y/ { m="VENDOR" }
@@ -50,6 +59,7 @@ json_lib="$(awk '
 
 pubsub_backend="$(awk '
   BEGIN { b="ZMQ" }
+  /^CONFIG_OPENEMBER_PUBSUB_BACKEND_UDP=y/ { b="UDP" }
   /^CONFIG_OPENEMBER_PUBSUB_BACKEND_NNG=y/ { b="NNG" }
   /^CONFIG_OPENEMBER_PUBSUB_BACKEND_LCM=y/ { b="LCM" }
   END { print b }
@@ -147,6 +157,7 @@ fi
 spdlog_stdout="$(onoff CONFIG_OPENEMBER_SPDLOG_ENABLE_STDOUT)"
 spdlog_file="$(onoff CONFIG_OPENEMBER_SPDLOG_ENABLE_FILE)"
 spdlog_syslog="$(onoff CONFIG_OPENEMBER_SPDLOG_ENABLE_SYSLOG)"
+spdlog_topic="$(onoff CONFIG_OPENEMBER_SPDLOG_ENABLE_TOPIC)"
 
 spdlog_file_dir="/var/log/openember"
 spdlog_file_dir="$(awk '
@@ -186,6 +197,61 @@ spdlog_rotate_max_files="$(awk '
 ' "${CONFIG_FILE}")"
 if [[ -z "${spdlog_rotate_max_files}" ]]; then
   spdlog_rotate_max_files="5"
+fi
+
+spdlog_topic_name="/openember/log"
+spdlog_topic_name="$(awk '
+  /^CONFIG_OPENEMBER_SPDLOG_TOPIC_NAME=/ {
+    v=$0
+    sub(/^CONFIG_OPENEMBER_SPDLOG_TOPIC_NAME=/,"",v)
+    gsub(/^"/,"",v); gsub(/"$/,"",v)
+    print v
+    exit
+  }
+' "${CONFIG_FILE}")"
+if [[ -z "${spdlog_topic_name}" ]]; then
+  spdlog_topic_name="/openember/log"
+fi
+
+spdlog_topic_pub_url="tcp://*:7561"
+spdlog_topic_pub_url="$(awk '
+  /^CONFIG_OPENEMBER_SPDLOG_TOPIC_PUB_URL=/ {
+    v=$0
+    sub(/^CONFIG_OPENEMBER_SPDLOG_TOPIC_PUB_URL=/,"",v)
+    gsub(/^"/,"",v); gsub(/"$/,"",v)
+    print v
+    exit
+  }
+' "${CONFIG_FILE}")"
+if [[ -z "${spdlog_topic_pub_url}" ]]; then
+  spdlog_topic_pub_url="tcp://*:7561"
+fi
+
+spdlog_topic_sub_url="tcp://127.0.0.1:7561"
+spdlog_topic_sub_url="$(awk '
+  /^CONFIG_OPENEMBER_SPDLOG_TOPIC_SUB_URL=/ {
+    v=$0
+    sub(/^CONFIG_OPENEMBER_SPDLOG_TOPIC_SUB_URL=/,"",v)
+    gsub(/^"/,"",v); gsub(/"$/,"",v)
+    print v
+    exit
+  }
+' "${CONFIG_FILE}")"
+if [[ -z "${spdlog_topic_sub_url}" ]]; then
+  spdlog_topic_sub_url="tcp://127.0.0.1:7561"
+fi
+
+spdlog_topic_rate_limit="0"
+spdlog_topic_rate_limit="$(awk '
+  /^CONFIG_OPENEMBER_SPDLOG_TOPIC_RATE_LIMIT=/ {
+    v=$0
+    sub(/^CONFIG_OPENEMBER_SPDLOG_TOPIC_RATE_LIMIT=/,"",v)
+    print v
+    exit
+  }
+' "${CONFIG_FILE}")"
+if [[ -z "${spdlog_topic_rate_limit}" ]]; then
+  spdlog_topic_rate_limit="0"
 fi
 
 web_root_dir="apps/services/web_dashboard/web_root"
@@ -258,6 +324,12 @@ set(OPENEMBER_SPDLOG_FILE_DIR "${spdlog_file_dir}" CACHE STRING "spdlog file dir
 set(OPENEMBER_SPDLOG_ROTATE_MAX_MB ${spdlog_rotate_max_mb} CACHE STRING "spdlog rotate max MiB" FORCE)
 set(OPENEMBER_SPDLOG_ROTATE_MAX_FILES ${spdlog_rotate_max_files} CACHE STRING "spdlog rotate max files" FORCE)
 set(OPENEMBER_SPDLOG_ENABLE_SYSLOG ${spdlog_syslog} CACHE BOOL "Enable spdlog syslog sink" FORCE)
+set(OPENEMBER_SPDLOG_ENABLE_TOPIC ${spdlog_topic} CACHE BOOL "Enable spdlog topic sink" FORCE)
+set(OPENEMBER_SPDLOG_TOPIC_NAME "${spdlog_topic_name}" CACHE STRING "spdlog log topic name" FORCE)
+set(OPENEMBER_SPDLOG_TOPIC_PUB_URL "${spdlog_topic_pub_url}" CACHE STRING "spdlog topic publisher URL" FORCE)
+set(OPENEMBER_SPDLOG_TOPIC_SUB_URL "${spdlog_topic_sub_url}" CACHE STRING "spdlog topic subscriber URL" FORCE)
+set(OPENEMBER_SPDLOG_TOPIC_LEVEL "${spdlog_topic_level}" CACHE STRING "spdlog topic publish level threshold" FORCE)
+set(OPENEMBER_SPDLOG_TOPIC_RATE_LIMIT ${spdlog_topic_rate_limit} CACHE STRING "spdlog topic rate limit (lines/sec)" FORCE)
 set(OPENEMBER_WEB_DASHBOARD_ROOT_DIR "${web_root_dir}" CACHE STRING "web_dashboard web root directory" FORCE)
 set(OPENEMBER_WEB_DASHBOARD_PORT ${web_port} CACHE STRING "web_dashboard HTTP port" FORCE)
 set(OPENEMBER_LOGGER_PORT ${logger_port} CACHE STRING "logger HTTP port" FORCE)

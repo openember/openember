@@ -14,6 +14,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
+#include <mutex>
 #include <string>
 #include <vector>
 #include <sys/socket.h>
@@ -26,8 +28,11 @@
 #define MODULE_NAME            "web_dashboard"
 #define LOG_TAG                MODULE_NAME
 #include "openember.h"
+#include "ember_pubsub.h"
 
 static msg_node_t client;
+
+static std::string json_escape(std::string_view v);
 
 static const char *s_debug_level = "2";    // debug level, from 0 to 4
 static const char *s_root_dir =
@@ -45,6 +50,45 @@ static unsigned s_logger_port =
     18081u;
 #endif
     ;
+
+static std::mutex s_log_mu;
+static std::deque<std::string> s_log_ring;
+static size_t s_log_ring_max = 2000;
+static ember_pubsub_t *s_log_sub = nullptr;
+
+static void on_log_topic(const char *topic, const void *payload, size_t payload_len, void *user_data)
+{
+    (void)user_data;
+    (void)topic;
+    if (!payload || payload_len == 0) return;
+    std::string line((const char *)payload, (const char *)payload + payload_len);
+    std::lock_guard<std::mutex> lk(s_log_mu);
+    s_log_ring.push_back(std::move(line));
+    while (s_log_ring.size() > s_log_ring_max) s_log_ring.pop_front();
+}
+
+static std::string logs_ring_json(size_t limit)
+{
+    std::lock_guard<std::mutex> lk(s_log_mu);
+    if (limit == 0) limit = 200;
+    if (limit > 5000) limit = 5000;
+    size_t n = s_log_ring.size();
+    size_t start = (n > limit) ? (n - limit) : 0;
+
+    std::string out = "{";
+    out += "\"count\":" + std::to_string(n - start) + ",";
+    out += "\"items\":[";
+    bool first = true;
+    for (size_t i = start; i < n; ++i) {
+        if (!first) out += ",";
+        first = false;
+        out += "{\"source\":\"topic\",\"line\":\"";
+        out += json_escape(s_log_ring[i]);
+        out += "\"}";
+    }
+    out += "]}";
+    return out;
+}
 
 static bool local_http_get_json(unsigned port, const std::string &path_qs, std::string &out_json)
 {
@@ -332,6 +376,18 @@ static void fn(struct mg_connection *c, int ev, void *ev_data)
             return;
         }
         if (mg_strcmp(hm->uri, mg_str("/api/logs")) == 0) {
+#if defined(OPENEMBER_SPDLOG_ENABLE_TOPIC) && OPENEMBER_SPDLOG_ENABLE_TOPIC
+            char b_limit[32] = {0};
+            mg_http_get_var(&hm->query, "limit", b_limit, sizeof(b_limit));
+            size_t limit = 200;
+            if (b_limit[0]) {
+                long v = strtol(b_limit, nullptr, 10);
+                if (v > 0) limit = (size_t)v;
+            }
+            std::string body = logs_ring_json(limit);
+            mg_http_reply(c, 200, "Content-Type: application/json\r\nCache-Control: no-store\r\n", "%s", body.c_str());
+            return;
+#else
             std::string path_qs = "/api/logs";
             if (hm->query.len > 0) {
                 path_qs += "?";
@@ -345,6 +401,7 @@ static void fn(struct mg_connection *c, int ev, void *ev_data)
                               "{\"error\":\"logger_unavailable\",\"hint\":\"start services/logger\"}");
             }
             return;
+#endif
         }
         mg_http_serve_dir(c, hm, &opts);
     }
@@ -410,6 +467,16 @@ int main()
         LOG_E("Module register failed.");
         exit(1);
     }
+
+#if defined(OPENEMBER_SPDLOG_ENABLE_TOPIC) && OPENEMBER_SPDLOG_ENABLE_TOPIC
+    // Subscribe logs from topic sink.
+    if (ember_pubsub_create_subscriber(&s_log_sub, OPENEMBER_SPDLOG_TOPIC_SUB_URL, on_log_topic, nullptr) == 0) {
+        (void)ember_pubsub_subscribe(s_log_sub, OPENEMBER_SPDLOG_TOPIC_NAME);
+        LOG_I("log topic subscribed: url=%s topic=%s", OPENEMBER_SPDLOG_TOPIC_SUB_URL, OPENEMBER_SPDLOG_TOPIC_NAME);
+    } else {
+        LOG_W("log topic subscribe failed: url=%s", OPENEMBER_SPDLOG_TOPIC_SUB_URL);
+    }
+#endif
 
     /* Run web server */
     mg_mgr_init(&mgr);

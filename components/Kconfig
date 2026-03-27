@@ -94,6 +94,65 @@ config OPENEMBER_SPDLOG_ENABLE_SYSLOG
     depends on OPENEMBER_LOG_BACKEND_SPDLOG
     default n
 
+config OPENEMBER_SPDLOG_ENABLE_TOPIC
+    bool "spdlog: enable topic sink (/openember/log)"
+    depends on OPENEMBER_LOG_BACKEND_SPDLOG
+    default y
+    help
+      Publish log entries to pub/sub topic so other nodes (web_dashboard/loggerd) can subscribe.
+
+config OPENEMBER_SPDLOG_TOPIC_NAME
+    string "spdlog: topic name"
+    depends on OPENEMBER_SPDLOG_ENABLE_TOPIC
+    default "/openember/log"
+    help
+      Pub/sub topic name for log stream.
+
+config OPENEMBER_SPDLOG_TOPIC_PUB_URL
+    string "spdlog: topic transport publish URL"
+    depends on OPENEMBER_SPDLOG_ENABLE_TOPIC
+    default "tcp://*:7561"
+    help
+      Publisher bind URL for ember_pubsub.
+      - ZMQ: tcp://*:7561
+      - NNG: tcp://127.0.0.1:7561 (or tcp://*:7561 if supported by backend)
+      - UDP: udp://127.0.0.1:7560 (sendto target)
+
+config OPENEMBER_SPDLOG_TOPIC_SUB_URL
+    string "spdlog: topic transport subscribe URL"
+    depends on OPENEMBER_SPDLOG_ENABLE_TOPIC
+    default "tcp://127.0.0.1:7561"
+    help
+      Subscriber connect/bind URL for ember_pubsub.
+      Use loopback address for local-only subscriptions.
+
+choice OPENEMBER_SPDLOG_TOPIC_LEVEL_CHOICE
+    prompt "spdlog: topic publish level threshold"
+    depends on OPENEMBER_SPDLOG_ENABLE_TOPIC
+    default OPENEMBER_SPDLOG_TOPIC_LEVEL_INFO
+
+config OPENEMBER_SPDLOG_TOPIC_LEVEL_DEBUG
+    bool "debug"
+
+config OPENEMBER_SPDLOG_TOPIC_LEVEL_INFO
+    bool "info"
+
+config OPENEMBER_SPDLOG_TOPIC_LEVEL_WARN
+    bool "warn"
+
+config OPENEMBER_SPDLOG_TOPIC_LEVEL_ERROR
+    bool "error"
+
+endchoice
+
+config OPENEMBER_SPDLOG_TOPIC_RATE_LIMIT
+    int "spdlog: topic rate limit (lines/sec, 0=unlimited)"
+    depends on OPENEMBER_SPDLOG_ENABLE_TOPIC
+    default 0
+    range 0 1000000
+    help
+      Rate limit for topic publishing to protect bus bandwidth. 0 means unlimited.
+
 endmenu
 
 menu "Serialization / Config"

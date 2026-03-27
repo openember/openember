@@ -6,6 +6,9 @@ choice OPENEMBER_PUBSUB_BACKEND_CHOICE
     prompt "Pub/Sub backend"
     default OPENEMBER_PUBSUB_BACKEND_ZMQ
 
+config OPENEMBER_PUBSUB_BACKEND_UDP
+    bool "UDP (builtin, no deps)"
+
 config OPENEMBER_PUBSUB_BACKEND_ZMQ
     bool "ZeroMQ"
 
