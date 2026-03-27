@@ -2,33 +2,21 @@ menu "Module"
 
 menu "Transport / Msgbus"
 
-choice OPENEMBER_PUBSUB_BACKEND_CHOICE
-    prompt "Pub/Sub backend"
-    default OPENEMBER_PUBSUB_BACKEND_ZMQ
-
-config OPENEMBER_PUBSUB_BACKEND_UDP
-    bool "UDP (builtin, no deps)"
-
-config OPENEMBER_PUBSUB_BACKEND_ZMQ
-    bool "ZeroMQ"
-
-config OPENEMBER_PUBSUB_BACKEND_NNG
-    bool "NNG"
-
-config OPENEMBER_PUBSUB_BACKEND_LCM
-    bool "LCM"
-
-endchoice
-
 choice OPENEMBER_MSGBUS_BACKEND_CHOICE
-    prompt "Internal msgbus backend"
-    default OPENEMBER_MSGBUS_BACKEND_NNG
+    prompt "Msgbus backend"
+    default OPENEMBER_MSGBUS_BACKEND_LCM
+
+config OPENEMBER_MSGBUS_BACKEND_LCM
+    bool "LCM"
 
 config OPENEMBER_MSGBUS_BACKEND_NNG
     bool "NNG"
 
-config OPENEMBER_MSGBUS_BACKEND_LCM
-    bool "LCM"
+config OPENEMBER_MSGBUS_BACKEND_ZMQ
+    bool "ZeroMQ"
+
+config OPENEMBER_MSGBUS_BACKEND_UDP
+    bool "UDP (builtin, no deps)"
 
 endchoice
 

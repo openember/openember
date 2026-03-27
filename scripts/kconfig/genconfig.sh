@@ -57,16 +57,11 @@ json_lib="$(awk '
   END { print j }
 ' "${CONFIG_FILE}")"
 
-pubsub_backend="$(awk '
-  BEGIN { b="ZMQ" }
-  /^CONFIG_OPENEMBER_PUBSUB_BACKEND_UDP=y/ { b="UDP" }
-  /^CONFIG_OPENEMBER_PUBSUB_BACKEND_NNG=y/ { b="NNG" }
-  /^CONFIG_OPENEMBER_PUBSUB_BACKEND_LCM=y/ { b="LCM" }
-  END { print b }
-' "${CONFIG_FILE}")"
-
 msgbus_backend="$(awk '
-  BEGIN { b="NNG" }
+  BEGIN { b="LCM" }
+  /^CONFIG_OPENEMBER_MSGBUS_BACKEND_UDP=y/ { b="UDP" }
+  /^CONFIG_OPENEMBER_MSGBUS_BACKEND_ZMQ=y/ { b="ZMQ" }
+  /^CONFIG_OPENEMBER_MSGBUS_BACKEND_NNG=y/ { b="NNG" }
   /^CONFIG_OPENEMBER_MSGBUS_BACKEND_LCM=y/ { b="LCM" }
   END { print b }
 ' "${CONFIG_FILE}")"
@@ -369,11 +364,11 @@ set(OPENEMBER_ENABLE_HAL ${enable_hal} CACHE BOOL "Build platform HAL (Linux fil
 set(BUILD_PUBSUB_ZMQ OFF CACHE BOOL "" FORCE)
 set(BUILD_PUBSUB_NNG OFF CACHE BOOL "" FORCE)
 set(BUILD_PUBSUB_LCM OFF CACHE BOOL "" FORCE)
-if("${pubsub_backend}" STREQUAL "ZMQ")
+if("${msgbus_backend}" STREQUAL "ZMQ")
   set(BUILD_PUBSUB_ZMQ ON CACHE BOOL "" FORCE)
-elseif("${pubsub_backend}" STREQUAL "NNG")
+elseif("${msgbus_backend}" STREQUAL "NNG")
   set(BUILD_PUBSUB_NNG ON CACHE BOOL "" FORCE)
-elseif("${pubsub_backend}" STREQUAL "LCM")
+elseif("${msgbus_backend}" STREQUAL "LCM")
   set(BUILD_PUBSUB_LCM ON CACHE BOOL "" FORCE)
 endif()
 
