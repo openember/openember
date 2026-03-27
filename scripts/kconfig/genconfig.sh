@@ -85,9 +85,6 @@ use_yamlcpp="$(onoff CONFIG_OPENEMBER_USE_YAMLCPP)"
 use_asio="$(onoff CONFIG_OPENEMBER_USE_ASIO)"
 component_network="$(onoff CONFIG_OPENEMBER_COMPONENT_NETWORK)"
 module_launch_manager="$(onoff CONFIG_OPENEMBER_MODULE_LAUNCH_MANAGER)"
-if ! grep -q "^CONFIG_OPENEMBER_MODULE_LAUNCH_MANAGER=" "${CONFIG_FILE}"; then
-  module_launch_manager=ON
-fi
 module_template="$(onoff CONFIG_OPENEMBER_MODULE_TEMPLATE)"
 module_alogd="$(onoff CONFIG_OPENEMBER_MODULE_ALOGD)"
 module_device_manager="$(onoff CONFIG_OPENEMBER_MODULE_DEVICE_MANAGER)"
@@ -99,13 +96,7 @@ module_web_server="$(onoff CONFIG_OPENEMBER_MODULE_WEB_SERVER)"
 module_logger="$(onoff CONFIG_OPENEMBER_MODULE_LOGGER)"
 feature_algorithm="$(onoff CONFIG_OPENEMBER_FEATURE_ALGORITHM)"
 example_pubsub_two_nodes="$(onoff CONFIG_OPENEMBER_EXAMPLE_PUBSUB_TWO_NODES)"
-if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_PUBSUB_TWO_NODES=" "${CONFIG_FILE}"; then
-  example_pubsub_two_nodes=ON
-fi
 example_msgbus_nng_forwarder="$(onoff CONFIG_OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER)"
-if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER=" "${CONFIG_FILE}"; then
-  example_msgbus_nng_forwarder=ON
-fi
 example_network_sockets="$(onoff CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS)"
 if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS=" "${CONFIG_FILE}"; then
   example_network_sockets=ON

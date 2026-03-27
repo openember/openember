@@ -1,0 +1,19 @@
+config OPENEMBER_MODULE_LAUNCH_MANAGER
+    bool "Build app: system/launch_manager"
+    default y
+
+config OPENEMBER_MODULE_ALOGD
+    bool "Build app: system/log_service"
+    default y
+
+config OPENEMBER_MODULE_DEVICE_MANAGER
+    bool "Build app: system/device_manager"
+    default y
+
+config OPENEMBER_MODULE_CONFIG_MANAGER
+    bool "Build app: system/config_service"
+    default y
+
+config OPENEMBER_MODULE_MONITOR_ALARM
+    bool "Build app: system/health_monitor"
+    default y

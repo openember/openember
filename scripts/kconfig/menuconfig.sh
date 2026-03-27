@@ -37,7 +37,6 @@ fi
 cd "${BUILD_DIR}"
 
 echo "Launching menuconfig in: ${BUILD_DIR}" >&2
-echo "Log backend choices: OPENEMBER_LOG_BACKEND_*" >&2
 
 # 非交互模式：直接生成默认配置（适合 CI / 无 TTY）
 if [[ "${OPENEMBER_KCONFIG_NONINTERACTIVE:-0}" == "1" ]]; then
