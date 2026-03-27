@@ -4,7 +4,7 @@ menu "Logging"
 
 choice OPENEMBER_LOG_BACKEND
     prompt "Log backend"
-    default OPENEMBER_LOG_BACKEND_ZLOG
+    default OPENEMBER_LOG_BACKEND_SPDLOG
 
 config OPENEMBER_LOG_BACKEND_ZLOG
     bool "zlog"
