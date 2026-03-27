@@ -16,6 +16,10 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include <sys/utsname.h>
 
@@ -34,6 +38,50 @@ static const char *s_root_dir =
 #endif
 static const char *s_enable_hexdump = "no";
 static const char *s_ssi_pattern = "#.html";
+static unsigned s_logger_port =
+#ifdef OPENEMBER_LOGGER_PORT
+    (unsigned)OPENEMBER_LOGGER_PORT;
+#else
+    18081u;
+#endif
+    ;
+
+static bool local_http_get_json(unsigned port, const std::string &path_qs, std::string &out_json)
+{
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) return false;
+
+    struct sockaddr_in addr {};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons((uint16_t)port);
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+        close(fd);
+        return false;
+    }
+
+    std::string req = "GET " + path_qs + " HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n";
+    if (send(fd, req.data(), req.size(), 0) < 0) {
+        close(fd);
+        return false;
+    }
+
+    std::string resp;
+    char buf[2048];
+    for (;;) {
+        ssize_t n = recv(fd, buf, sizeof(buf), 0);
+        if (n <= 0) break;
+        resp.append(buf, buf + n);
+    }
+    close(fd);
+
+    size_t p = resp.find("\r\n\r\n");
+    if (p == std::string::npos) return false;
+    std::string head = resp.substr(0, p);
+    if (head.find(" 200 ") == std::string::npos) return false;
+    out_json = resp.substr(p + 4);
+    return true;
+}
 
 static std::string read_file_trim(const char *path)
 {
@@ -281,6 +329,21 @@ static void fn(struct mg_connection *c, int ev, void *ev_data)
                           "Content-Type: application/json\r\nCache-Control: no-store\r\n",
                           "%s",
                           body.c_str());
+            return;
+        }
+        if (mg_strcmp(hm->uri, mg_str("/api/logs")) == 0) {
+            std::string path_qs = "/api/logs";
+            if (hm->query.len > 0) {
+                path_qs += "?";
+                path_qs.append(hm->query.buf, hm->query.buf + hm->query.len);
+            }
+            std::string body;
+            if (local_http_get_json(s_logger_port, path_qs, body)) {
+                mg_http_reply(c, 200, "Content-Type: application/json\r\nCache-Control: no-store\r\n", "%s", body.c_str());
+            } else {
+                mg_http_reply(c, 502, "Content-Type: application/json\r\nCache-Control: no-store\r\n",
+                              "{\"error\":\"logger_unavailable\",\"hint\":\"start services/logger\"}");
+            }
             return;
         }
         mg_http_serve_dir(c, hm, &opts);

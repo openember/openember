@@ -233,6 +233,262 @@
 
 ---
 
+## 6.5 重新评估（推荐主线）：spdlog + topic sink + 可选 loggerd（ROS2/rosout 风格）
+
+结合 OpenEmber 已有的通信骨架（topic/pubsub），相比“logger 读文件再转发”的路径，你提出的 **topic sink** 更符合工程直觉，也更容易形成清晰的分层：
+
+```
+spdlog
+ ↓ (topic sink)
+/openember/log
+ ↓
+├── web_dashboard（直接订阅）
+└── openember_loggerd（可选：日志控制中心/缓存/过滤/导出）
+```
+
+### 6.5.1 核心结论（策略建议）
+
+- **topic sink**：作为 OpenEmber logging 的主线能力（类比 ROS2 `rosout`）
+  - 建议 **构建层面始终具备**（不要求业务改造）
+  - 建议 **默认开启发布**，但默认只发布 `INFO+`（或可配置阈值），避免把 DEBUG 全量打到总线上
+- **openember_loggerd**：作为 **optional daemon**
+  - **启动**：自动增强日志能力（控制平面 + 数据缓存 + 导出）
+  - **不启动**：系统仍可运行（stdout/file/syslog 仍可用，dashboard 也可直接订阅 topic）
+- **web_dashboard**：
+  - 阶段 1 只做“实时日志展示”，直接订阅 `/openember/log`
+  - 回看/导出/检索属于阶段 2+（由 loggerd 提供）
+
+### 6.5.2 三阶段演进（与你的规划对齐）
+
+#### 阶段 1（当前版本，最小可上线：无需 loggerd）
+
+```
+spdlog
+ ↓ topic sink
+/openember/log
+ ↓
+web_dashboard
+```
+
+目标：
+- dashboard 可实时看到全系统 `INFO+` 的日志
+- 同时保留 stdout/file/syslog 作为运维落地与诊断兜底
+
+#### 阶段 2（增强：引入 loggerd 作为控制平面）
+
+```
+spdlog
+ ↓ topic sink
+/openember/log
+ ↓
+├── web_dashboard（订阅展示）
+└── openember_loggerd（缓存/过滤/导出/动态调级）
+```
+
+`openember_loggerd` 价值（不是“转发日志”，而是 **Log Control Plane**）：
+- **log controller**：动态调级（按模块/级别/规则），采样、限速、黑白名单
+- **log cache**：内存 ring（可选落盘索引）支持回看
+- **log filter**：level/tag/module/regex/time range
+- **log exporter**：下载导出、远端转发（后续）
+
+#### 阶段 3（产品级：loggerd 统一对外，dashboard 走 WebSocket/SSE）
+
+```
+spdlog
+ ↓ topic sink
+/openember/log
+ ↓
+openember_loggerd
+ ↓ WebSocket/SSE
+dashboard
+```
+
+并扩展：
+- syslog bridge / remote logging / fleet logging
+
+### 6.5.3 topic sink “永远开启”如何做到优雅（可控且不扰民）
+
+推荐采用“编译能力常驻 + 发布策略可控”的模式：
+
+- **编译层面**：topic sink 代码始终存在于 `components/Log`（不要求业务层改动）
+- **发布策略**（Kconfig 默认值注入，后续可由 loggerd 下发覆盖）：
+  - **阈值**：默认 `INFO+`
+  - **限速**：例如每秒 N 条（0 表示不限制）；超限丢弃并计数
+  - **采样**：阶段 2 做（对重复日志采样/合并）
+
+这样满足：
+- loggerd 未启动：topic 仍可用（dashboard 可直接订阅）
+- loggerd 启动：自动增强能力（控制/缓存/导出/对外接口）
+
+### 6.5.4 日志事件数据模型（先简单，后可扩展）
+
+建议首版 topic payload 用 **单行 JSON**（便于跨语言与调试）：
+
+```json
+{"ts":"2026-03-27T12:34:56.789Z","lvl":"info","pid":1234,"proc":"web_dashboard","tag":"apps.services.web_dashboard","msg":"Listening on 0.0.0.0:8000"}
+```
+
+字段建议：
+- `proc`：来自 `oe_log_init(process_name)`
+- `tag`：来自 `LOG_TAG`
+- `msg`：格式化后的最终字符串（首版就够用）
+- `ts/pid`：由 sink 填充（避免业务侧额外成本）
+
+### 6.5.5 Kconfig：stdout/file/syslog/topic 四 sink 的组合建议
+
+当前已有：
+- `OPENEMBER_SPDLOG_ENABLE_STDOUT`
+- `OPENEMBER_SPDLOG_ENABLE_FILE`
+- `OPENEMBER_SPDLOG_ENABLE_SYSLOG`
+
+建议补充（新增）：
+- `OPENEMBER_SPDLOG_ENABLE_TOPIC`（bool）
+- `OPENEMBER_SPDLOG_TOPIC_NAME`（string，默认 `"/openember/log"`）
+- `OPENEMBER_SPDLOG_TOPIC_LEVEL_CHOICE`（choice：debug/info/warn/error，默认 info）
+- `OPENEMBER_SPDLOG_TOPIC_RATE_LIMIT`（int，每秒最大条数；0 表示不限制）
+
+默认值建议：
+- stdout：y（开发友好）
+- file：y（运维落地）
+- syslog：n（按系统日志栈决定）
+- topic：y（主线能力），但 level 默认 `info`
+
+### 6.5.6 运行注意事项：端口 `bind: 98`（Address already in use）
+
+你遇到的：
+
+```
+mg_open_list bind: 98
+mg_listen Failed: 127.0.0.1:18081
+```
+
+说明 **端口已被占用**（同机已有进程监听 `127.0.0.1:18081`）。  
+在我们后续把 loggerd 做成可选 daemon 后，建议：
+- 端口做成 **Kconfig 可配**（并支持禁用对外监听，仅走 topic）
+- 或在同机多实例时用 `--port`/环境变量覆盖（阶段 2 再实现）
+
+### 6.4 备选方案：logger 不订阅 topic，而是“采集日志文件”再统一对外
+
+你提出的方案是可行的，核心是把 logger 当成 **collector + gateway**：
+
+1. **输入**：logger 监控各进程日志文件（tail/follow）
+2. **处理**：解析、打统一字段、过滤、缓存
+3. **输出**：统一提供给 web_dashboard（SSE/WebSocket/API），或再发布到 topic
+
+#### 6.4.1 文件采集方案的优缺点
+
+**优点**
+- 与业务进程低耦合：业务只负责写日志文件，不感知总线/网络
+- 对历史日志友好：logger 可以读取“已有文件”，支持回放
+- 与现有 spdlog 文件落盘能力直接兼容
+
+**缺点/复杂点**
+- 需要处理轮转（rename/truncate）与多文件跟随（`inotify + offset` 状态机）
+- 需要处理解析容错（多行日志、截断行、异常编码）
+- 日志实时性受文件 flush 策略影响（不是严格实时）
+- 在高吞吐下，文件 I/O + 解析会有额外开销
+
+#### 6.4.2 与“直接订阅 topic”对比结论
+
+- **实时性**：topic 通常更好
+- **实现复杂度（首版）**：文件采集更容易先跑通；topic 需要先定义日志事件协议
+- **可靠性**：文件采集天然可回放；topic 需要额外持久化策略
+- **系统耦合**：文件采集更依赖文件系统与轮转行为；topic 更依赖总线稳定性
+
+#### 6.4.3 推荐的折中架构（建议落地）
+
+建议采用 **“输入走文件，输出走流”** 的两阶段方案：
+
+- **阶段 1（先上线）**  
+  - logger 只做文件采集（每进程日志文件）
+  - 对外提供 `web_dashboard` 所需实时流（SSE）+ 最近 N 条查询 API
+  - 先不引入 topic 入站，降低改造面
+
+- **阶段 2（能力增强）**  
+  - 增加可选 topic 入站（让部分关键模块走实时 topic）
+  - logger 作为统一出口：仍对 web 提供单一流接口
+  - 最终形成“双输入”（file/topic）+“单输出”（web/api/可选再发布）
+
+##### 6.4.3.1 你问的“Web 流”到底是什么意思？
+
+这里的“Web 流”是指 **给前端页面连续推日志** 的机制（通常 SSE 或 WebSocket），并不等价于“必须再开一个对外 HTTP 端口”。
+
+有两种落地方式：
+
+- **方式 A：logger 自己提供 HTTP/SSE 接口**  
+  - logger 进程监听本地端口（例如 `127.0.0.1:18080`）或 Unix socket 对外提供 `/api/logs`、`/api/log/stream`  
+  - web_dashboard 前端直接请求 logger（同机可走反向代理或同源转发）
+
+- **方式 B（推荐首版）：web_dashboard 继续对外，logger 只做“后端数据源”**  
+  - logger 不对外暴露网页端口，只提供本地 IPC 接口（Unix socket）或内部 topic  
+  - web_dashboard 的 `main.cpp` 在 `/api/logs` / `/api/log/stream` 里转发/聚合 logger 数据  
+  - 好处是外部仍只有一个 Web 入口，部署与鉴权更简单
+
+> 结论：首版建议 **方式 B**。这样不需要再让 logger 成为“第二个 Web 服务器”，对外接口仍由 web_dashboard 统一承载。
+
+##### 6.4.3.2 阶段 1 的最小数据路径（文件采集 + Web）
+
+推荐链路：
+
+`各节点 -> spdlog 文件 -> logger tail/parse -> logger 内存环形缓冲 -> web_dashboard API/SSE -> 浏览器`
+
+其中：
+- logger 维护最近 N 条（例如 10k）内存缓冲用于低延迟查询/流推送
+- web_dashboard 负责对外 HTTP 与鉴权；logger 只负责日志数据处理
+- 历史日志分页可由 logger 从文件 + offset 读取，实时日志从内存缓冲推送
+
+#### 6.4.4 logger 与 web_dashboard 的接口建议
+
+- **推荐**：`web_dashboard` 不直接读文件，不直接订阅各模块
+- **统一由 logger 提供**：
+  - `GET /api/logs?level=&tag=&since=&limit=`（历史/分页）
+  - `GET /api/log/stream`（SSE 实时推送）
+
+这样可以把权限控制、过滤、限速、脱敏都集中在 logger。
+
+##### 6.4.4.1 阶段 2 的“双输入单输出”再解释（你问的重点）
+
+是的，含义就是在阶段 1 基础上增加一个 topic 入站：
+
+- **输入 1（已有）**：文件采集（tail 每进程日志文件）
+- **输入 2（新增，可选）**：topic 日志流（各节点发布 `openember/log`）
+- **输出（单一）**：仍由 logger 统一提供给 web_dashboard（API/SSE），可选再转发到外部系统
+
+具体方向是：
+
+`节点(可选) --topic--> logger`  
+`节点(默认) --file--> logger`  
+`logger --统一接口--> web_dashboard`
+
+不是要求“所有节点都必须 topic 化”。建议：
+- 默认仍靠文件输入（零侵入）
+- 只给少数低时延模块启用 topic sink（可配置）
+- logger 做去重/合并策略，避免 file 与 topic 双通路重复显示
+
+##### 6.4.4.2 topic 入站是否会增加节点开销？要不要改 log 组件？
+
+会增加一定开销，但可以控：
+- 网络/总线序列化开销
+- 消息队列堆积风险
+
+控制方法：
+- 默认关闭 topic sink，按模块/级别开启（例如仅 `WARN+`）
+- 采样与限速（burst 防护）
+- 背压时降级（丢 DEBUG，保 ERROR）
+
+是否要改造日志组件：**需要，但可以很小步**。  
+在 `components/Log` 增加一个“可选 sink 插件点”（file/stdout/syslog 之外的 topic sink），先不改所有节点调用方式（仍 `LOG_*`）。
+
+#### 6.4.5 socket / 共享内存作为 logger 输入是否值得？
+
+- **Unix socket**：适合本机实时输入，复杂度中等，后续可作为 file/topic 之外的第三输入
+- **共享内存 ring**：性能最好但复杂度最高（同步、丢包、恢复），建议后期再做
+
+结论：如果目标是“尽快可用 + 运维可控”，优先 **文件采集 + SSE/API 输出**；  
+若后续追求低延迟与高吞吐，再引入 **topic/socket/shm** 混合输入。
+
+---
+
 ## 7. 与现有代码的衔接
 
 - 当前工程中已有 `LOG_I` / `LOG_TAG` 用法（如 `web_dashboard/main.cpp`），迁移时：

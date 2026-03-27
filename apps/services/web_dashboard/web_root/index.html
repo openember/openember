@@ -430,6 +430,9 @@
           if (page === 'overview') {
             refresh();
           }
+          if (page === 'logs') {
+            refreshLogCenter();
+          }
           if (hasLayui() && window.layui.element && typeof window.layui.element.render === 'function') {
             window.layui.element.render('progress');
           }
@@ -536,6 +539,30 @@
           log('refresh cpu=' + cpu + '% mem=' + mem + '%');
         }
 
+        function refreshLogCenter(done) {
+          httpGetJson('/api/logs?limit=120', function (err, j) {
+            var box = document.getElementById('logCenterBox');
+            if (!box) {
+              if (done) done(err || null);
+              return;
+            }
+            if (err) {
+              box.textContent = '[logger unavailable] ' + (err && err.message ? err.message : err);
+              if (done) done(err);
+              return;
+            }
+            var items = (j && j.items) ? j.items : [];
+            var lines = items.map(function (it) {
+              var src = it.source || 'unknown';
+              var ln = it.line || '';
+              return '[' + src + '] ' + ln;
+            });
+            box.textContent = lines.join('\n');
+            box.scrollTop = box.scrollHeight;
+            if (done) done(null);
+          });
+        }
+
         function refresh() {
           var path = location.pathname.replace(/\/[^\/]*$/, '/') || '/';
           document.getElementById('kvWebRoot').textContent = path + (location.hash || '');
@@ -576,6 +603,7 @@
           }
           setInterval(function () {
             if (currentPage === 'overview') refresh();
+            if (currentPage === 'logs') refreshLogCenter();
           }, 2000);
         }
 

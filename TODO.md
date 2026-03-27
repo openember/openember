@@ -50,3 +50,14 @@
 C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal/*.hpp`）：
 
 - [x] 为 `cond/event/sem/shm/socket/pipe` 补齐对应的 C++ RAII 封装（不引入新链接依赖）
+
+## Logging 服务第一版（文件采集 + Web 展示）
+
+- [x] 形成方案：阶段 1 采用“文件采集 + Web 流（由 web_dashboard 对外）”
+- [x] 新增 `apps/services/logger` 服务（采集 `*.log`，提供本地 `/api/logs`）
+- [x] 在 `apps/Kconfig` 增加 logger 构建开关与参数（端口、日志目录）
+- [x] 更新 `scripts/kconfig/genconfig.sh` 映射 logger 相关配置到 CMake
+- [x] 在 `apps/CMakeLists.txt` 按开关编译 logger 服务
+- [x] `web_dashboard` 增加 `/api/logs` 代理到 logger（本地回环）
+- [x] `web_root` logs 页面接入 `/api/logs` 并显示最近日志
+- [x] 编译验证（至少 logger + web_dashboard + 现有 apps）
