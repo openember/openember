@@ -101,9 +101,9 @@ C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal
 
 ### 阶段 C — C++ 原生传输后端（后续）
 
-- [ ] `LcmTransportBackend`：基于 **lcm::LCM**（C++）实现 `TransportBackend`，逐步替代 `lcm_wrapper.c`
-- [ ] 若恢复 ZMQ msgbus：基于 **cppzmq** 实现 `ZmqTransportBackend`
-- [ ] `CreateDefaultTransportBackend()` 按 CMake 选择 C++ 或 legacy C 实现（过渡期可并存）
+- [x] `LcmTransportBackend`：`lcm_transport_backend.cpp` 基于 **lcm::LCM** 实现 `TransportBackend`；`lcm_wrapper.c` 保留供 `msg_bus_*` 直接调用者
+- [ ] 若恢复 ZMQ msgbus：基于 **cppzmq** 实现 `ZmqTransportBackend`（当前 `zmq_wrapper.c` 仍为占位）
+- [x] `CreateDefaultTransportBackend()`：`OPENEMBER_MSGBUS_LCM_USE_CPP`（默认 ON）选 C++ 或 legacy `ClibTransportBackend`
 
 ### 验收
 

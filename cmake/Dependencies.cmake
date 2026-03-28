@@ -65,7 +65,9 @@ include(${CMAKE_SOURCE_DIR}/cmake/GetNng.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetLcm.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetCppZmq.cmake)
 
-# paho.mqtt.c 固定版本（可按需升级）
+# Eclipse Paho MQTT C（mqtt_*_wrapper.c / Paho C API）。paho.mqtt.cpp 多为头文件封装，
+# 底层仍依赖本 C 库；若未来全面 C++ 化，可再评估是否增加 cpp 仓库并迁移 Client，
+# 非简单「删掉 wrapper」即可，需同步 CMake、回调与连接生命周期。
 set(OPENEMBER_PAHO_MQTT_C_VERSION "1.3.13")
 set(OPENEMBER_PAHO_MQTT_C_URL
     "https://github.com/eclipse-paho/paho.mqtt.c/archive/v${OPENEMBER_PAHO_MQTT_C_VERSION}.tar.gz")

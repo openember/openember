@@ -6,6 +6,10 @@
  *
  * SUBCRIPTION matches prefix against the raw message buffer, therefore
  * topic bytes must be placed at the beginning of the message.
+ *
+ * 保留原因：所有直接调用 msg_bus_* 的 C/C++ 代码（launch_manager、Log、MQTT 等）
+ * 仍链接到本实现。openember::msgbus::MsgBusNode 在 LCM 且 OPENEMBER_MSGBUS_LCM_USE_CPP=ON
+ * 时可改用 lcm_transport_backend.cpp（lcm::LCM），与本文并存，勿删本文件。
  */
 #ifndef __EMBER_LCM_WRAPPER_H__
 #define __EMBER_LCM_WRAPPER_H__

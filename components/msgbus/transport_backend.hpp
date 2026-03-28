@@ -12,11 +12,11 @@ namespace openember::msgbus {
 using MessageCallback = std::function<void(std::string_view topic, const void *payload, std::size_t payload_len)>;
 
 /**
- * C++ facade over the internal msg_bus_* C API (one backend per build).
+ * C++ 传输抽象（每进程一种 msgbus 后端）。
  *
- * Backend selection is compile-time: CMake sets OPENEMBER_MSGBUS_USE_* and
- * ember_config.h defines EMBER_LIBS_USING_*; the linker resolves msg_bus_* to
- * lcm / nng / mqtt (openember_mqtt) / … See transport_backend_factory.cpp.
+ * CreateDefaultTransportBackend()：LCM 且 OPENEMBER_MSGBUS_LCM_USE_CPP=ON 时用
+ * lcm::LCM（lcm_transport_backend.cpp）；否则用 ClibTransportBackend → msg_bus_*。
+ * 直接调用 msg_bus_* 的模块仍走各 *_wrapper.c，与上述 C++ 路径可并存。
  */
 class TransportBackend {
 public:

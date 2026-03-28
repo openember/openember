@@ -46,6 +46,8 @@ option( BUILD_EASYLOGGER "Whether compile EasyLogger (obsolete, currently disabl
 
 option( OPENEMBER_MSGBUS_USE_NNG "Use NNG backend for internal msgbus" ON)
 option( OPENEMBER_MSGBUS_USE_LCM "Use LCM backend for internal msgbus" OFF)
+# When LCM is selected: use C++ lcm::LCM for TransportBackend (MsgBusNode); C msg_bus_* still uses lcm_wrapper.c
+option( OPENEMBER_MSGBUS_LCM_USE_CPP "Use C++ lcm::LCM for TransportBackend when LCM msgbus is enabled" ON)
 
 if(OPENEMBER_MSGBUS_USE_NNG AND OPENEMBER_MSGBUS_USE_LCM)
     message(FATAL_ERROR "OPENEMBER_MSGBUS_USE_NNG and OPENEMBER_MSGBUS_USE_LCM cannot both be ON. Please select exactly one.")
