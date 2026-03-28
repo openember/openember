@@ -5,6 +5,7 @@
 
 #include <MQTTClient.h>
 
+#include <cctype>
 #include <cerrno>
 #include <cstring>
 #include <string>
@@ -12,6 +13,28 @@
 namespace openember::mqtt {
 
 namespace {
+
+bool uri_prefix_casefold(const std::string &uri, const char *prefix)
+{
+    const std::size_t n = std::strlen(prefix);
+    if (uri.size() < n) {
+        return false;
+    }
+    for (std::size_t i = 0; i < n; i++) {
+        if (std::tolower(static_cast<unsigned char>(uri[i])) !=
+            static_cast<unsigned char>(prefix[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/** Paho：ssl://、mqtts:// 与 wss:// 均需 MQTTClient_SSLOptions（WebSocket over TLS 也是 TLS） */
+bool uri_needs_ssl_options(const std::string &uri)
+{
+    return uri_prefix_casefold(uri, "ssl://") || uri_prefix_casefold(uri, "mqtts://") ||
+           uri_prefix_casefold(uri, "wss://");
+}
 
 void on_delivered(void *context, MQTTClient_deliveryToken token)
 {
@@ -138,6 +161,18 @@ int Client::connect(MessageCallback on_message)
         opts.password = p.cfg.password.c_str();
     }
 
+    MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
+    std::string trust_pem_path = p.cfg.ssl_trust_store;
+    if (uri_needs_ssl_options(uri)) {
+        if (!trust_pem_path.empty()) {
+            ssl_opts.trustStore = trust_pem_path.c_str();
+            ssl_opts.enableServerCertAuth = 1;
+        } else if (!p.cfg.ssl_verify_peer) {
+            ssl_opts.enableServerCertAuth = 0;
+        }
+        opts.ssl = &ssl_opts;
+    }
+
     if (p.callback_storage) {
         rc = MQTTClient_setCallbacks(p.client,
                                    p.callback_storage,
@@ -249,6 +284,29 @@ int Client::unsubscribe(std::string_view topic)
         return -rc;
     }
     return 0;
+}
+
+const char *connect_return_hint(int connect_ret)
+{
+    if (connect_ret == 0) {
+        return nullptr;
+    }
+    if (connect_ret == -EINVAL) {
+        return "参数无效（如重复 connect）。";
+    }
+    if (connect_ret == -EBUSY) {
+        return "已在连接中，勿重复 connect。";
+    }
+    switch (connect_ret) {
+    case 1:
+        return "MQTTCLIENT_FAILURE：通用失败；检查网络、Broker、用户名密码、TLS 与证书。";
+    case 10:
+        return "MQTTCLIENT_SSL_NOT_SUPPORTED：Paho 未带 OpenSSL 编译，不能使用 ssl://。请安装 libssl-dev（或 openssl-devel），删除构建树中 _deps/openember_paho_mqtt_c* 后重新 CMake 并全量编译。";
+    case 14:
+        return "MQTTCLIENT_BAD_PROTOCOL：URI 方案被拒绝。几乎总是 ssl:// 与未启用 OpenSSL 的 Paho 同时出现（CMake 未找到 OpenSSL 时 PAHO_WITH_SSL=OFF）。请安装 libssl-dev，清理 Paho 的 FetchContent 目录后重新配置编译。";
+    default:
+        return nullptr;
+    }
 }
 
 } // namespace openember::mqtt

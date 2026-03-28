@@ -26,7 +26,7 @@
 - `zlog`（固定到 `1.2.16`：Fetch/Vendor/System；脚本见 `cmake/GetZlog.cmake`；上游无 CMake，由 `cmake/vendor/zlog` 包装编译 `FetchContent` 拉取的 `src/`）
 - `cJSON`（固定到 `1.7.15`；Fetch/Vendor/System；`cmake/GetCjson.cmake`）— 与 **`nlohmann/json`** 二选一，由 `OPENEMBER_JSON_LIBRARY`（`CJSON` / `NLOHMANN_JSON`）控制；见 `inc/ember_json_config.h.in` 生成的 `ember_json_config.h`
 - `nlohmann/json`（默认版本 `3.11.3`；`cmake/GetNlohmannJson.cmake`；目标 `nlohmann_json::nlohmann_json`）
-- `paho.mqtt.c`（固定到 `1.3.13`；Fetch/Vendor/System；`cmake/GetPahoMqttC.cmake`）
+- `paho.mqtt.c`（版本见 `cmake/Dependencies.cmake` 中 `OPENEMBER_PAHO_MQTT_C_VERSION`；Fetch/Vendor/System；`cmake/GetPahoMqttC.cmake`）
 - `sqlite`（amalgamation，与历史 `3.39.2` 对齐；Fetch/Vendor/System；`cmake/GetSqlite.cmake`）
 - `yaml-cpp`（可选：`OPENEMBER_WITH_YAMLCPP`；默认 ON；Fetch/Vendor/System；`cmake/GetYamlCpp.cmake`；目标 `yaml-cpp::yaml-cpp`）
 - `Asio` standalone（可选：`OPENEMBER_WITH_ASIO`；默认 ON；Fetch/Vendor/System；`cmake/GetAsio.cmake`；目标 `openember::asio`）

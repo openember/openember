@@ -38,6 +38,9 @@ option( TESTS_ENABLED "Whether to build/register unit tests (test/); prefer Kcon
 option( OPENEMBER_ENABLE_OSAL "Build platform OSAL (Linux pthread)" ON)
 option( OPENEMBER_ENABLE_HAL "Build platform HAL (Linux file/uart; requires OSAL)" ON)
 option( EXAMPLES_ENABLED "Whether compile examples" ON)
+option( OPENEMBER_COMPONENT_MQTT "Build MQTT component (Paho C + openember_mqtt)" ON)
+option( OPENEMBER_MQTT_PAHO_TLS "Build Paho with OpenSSL (TLS / ssl://)" ON)
+option( OPENEMBER_MQTT_PAHO_ASYNC "Link Paho MQTTAsync in addition to MQTTClient" OFF)
 option( OPENEMBER_EXAMPLE_MQTT_EMQX "Build example mqtt_emqx_client (Paho MQTT C → broker)" OFF)
 option( BUILD_CJSON "Whether compile cJSON" OFF)
 option( BUILD_MQTT "Whether compile MQTT" OFF)
@@ -191,9 +194,15 @@ if(BUILD_EASYLOGGER)
     message(WARNING "EasyLogger 已被删除（third_party/easylogger 不再存在），将保持禁用。")
 endif()
 
-openember_third_party_resolve_paho_mqtt_c()
-message(STATUS "├── ${PAHO_MQTT_C_LIBRARIES}")
-message(STATUS "└── ${PAHO_MQTT_C_INCLUDE_DIRS}")
+if(OPENEMBER_COMPONENT_MQTT)
+    openember_third_party_resolve_paho_mqtt_c()
+    message(STATUS "├── paho: ${PAHO_MQTT_C_LIBRARIES}")
+    message(STATUS "└── paho include: ${PAHO_MQTT_C_INCLUDE_DIRS}")
+else()
+    set(PAHO_MQTT_C_INCLUDE_DIRS "")
+    set(PAHO_MQTT_C_LIBRARIES "")
+    message(STATUS "├── paho: (skipped, OPENEMBER_COMPONENT_MQTT=OFF)")
+endif()
 
 openember_third_party_resolve_sqlite()
 message(STATUS "├── sqlite: ${SQLITE_LIBRARIES}")
@@ -267,24 +276,28 @@ set( OPENEMBER_INTERNAL_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/components/Log
     ${CMAKE_SOURCE_DIR}/components/ppool
     ${CMAKE_SOURCE_DIR}/components/msgbus
-    ${CMAKE_SOURCE_DIR}/components/mqtt
     ${CMAKE_SOURCE_DIR}/components/Common
     ${CMAKE_SOURCE_DIR}/modules/Algorithm
     ${CMAKE_SOURCE_DIR}/components/libcsv
     ${CMAKE_SOURCE_DIR}/components/libyaml
 )
+if(OPENEMBER_COMPONENT_MQTT)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/mqtt)
+endif()
 
 set( OPENEMBER_INTERNAL_LIBRARIES 
     gdsl
     Log
     ppool
     msgbus
-    openember_mqtt
     Common
     Algorithm
     csv
     yaml
 )
+if(OPENEMBER_COMPONENT_MQTT)
+    list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_mqtt)
+endif()
 
 if(NOT DEFINED OPENEMBER_COMPONENT_NETWORK OR OPENEMBER_COMPONENT_NETWORK)
     list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/Network)

@@ -1,8 +1,9 @@
 /*
  * 使用 Eclipse Paho MQTT C（经 openember::mqtt::Client）连接 Broker。
- * 默认参数对齐 EMQX 文档示例：https://docs.emqx.com/zh/cloud/latest/connect_to_deployments/c_sdk.html
+ * EMQX Cloud 常见：MQTT over TLS → ssl://host:8883；WebSocket over TLS → wss://host:8084/mqtt（见 Kconfig）。
+ * 文档：https://docs.emqx.com/zh/cloud/latest/connect_to_deployments/c_sdk.html
  *
- * 构建：-DOPENEMBER_EXAMPLE_MQTT_EMQX=ON，或通过 menuconfig 打开对应选项后 genconfig。
+ * 构建：-DOPENEMBER_EXAMPLE_MQTT_EMQX=ON，或通过 menuconfig + scripts/kconfig/genconfig.sh。
  */
 
 #include <chrono>
@@ -31,6 +32,12 @@
 #ifndef OPENEMBER_MQTT_EMQX_TOPIC
 #define OPENEMBER_MQTT_EMQX_TOPIC "emqx/c-test"
 #endif
+#ifndef OPENEMBER_MQTT_EMQX_SSL_CAFILE
+#define OPENEMBER_MQTT_EMQX_SSL_CAFILE ""
+#endif
+#ifndef OPENEMBER_MQTT_EMQX_SSL_VERIFY_PEER
+#define OPENEMBER_MQTT_EMQX_SSL_VERIFY_PEER 1
+#endif
 
 int main()
 {
@@ -41,6 +48,10 @@ int main()
     cfg.client_id = OPENEMBER_MQTT_EMQX_CLIENT_ID;
     cfg.username = OPENEMBER_MQTT_EMQX_USERNAME;
     cfg.password = OPENEMBER_MQTT_EMQX_PASSWORD;
+    cfg.ssl_trust_store = OPENEMBER_MQTT_EMQX_SSL_CAFILE;
+    cfg.ssl_verify_peer = (OPENEMBER_MQTT_EMQX_SSL_VERIFY_PEER != 0);
+
+    LOG_I("MQTT effective URI: %s (from Kconfig / CMake)", OPENEMBER_MQTT_EMQX_BROKER_URI);
 
     openember::mqtt::Client client(std::move(cfg));
 
@@ -52,7 +63,12 @@ int main()
 
     int rc = client.connect(std::move(on_msg));
     if (rc != 0) {
-        LOG_E("MQTT connect failed rc=%d (check broker URI / network / TLS)", rc);
+        const char *hint = openember::mqtt::connect_return_hint(rc);
+        if (hint) {
+            LOG_E("MQTT connect failed rc=%d: %s", rc, hint);
+        } else {
+            LOG_E("MQTT connect failed rc=%d", rc);
+        }
         return 1;
     }
     LOG_I("connected to %s", OPENEMBER_MQTT_EMQX_BROKER_URI);
@@ -65,7 +81,7 @@ int main()
     }
     LOG_I("subscribed to %s", OPENEMBER_MQTT_EMQX_TOPIC);
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 30; i++) {
         char payload[64];
         std::snprintf(payload, sizeof(payload), "openember-hello-%d", i);
         rc = client.publish(OPENEMBER_MQTT_EMQX_TOPIC, payload);
@@ -74,7 +90,7 @@ int main()
         } else {
             LOG_I("published: %s", payload);
         }
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(2));
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(2));

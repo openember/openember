@@ -1,6 +1,8 @@
 set(FOLDER_NAME "components")
 
-add_subdirectory(mqtt)
+if(NOT DEFINED OPENEMBER_COMPONENT_MQTT OR OPENEMBER_COMPONENT_MQTT)
+    add_subdirectory(mqtt)
+endif()
 add_subdirectory(msgbus)
 add_subdirectory(Log)
 add_subdirectory(GDSL)

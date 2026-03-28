@@ -84,6 +84,18 @@ crosscompile_enabled="$(onoff CONFIG_OPENEMBER_CROSSCOMPILE_ENABLED)"
 use_yamlcpp="$(onoff CONFIG_OPENEMBER_USE_YAMLCPP)"
 use_asio="$(onoff CONFIG_OPENEMBER_USE_ASIO)"
 component_network="$(onoff CONFIG_OPENEMBER_COMPONENT_NETWORK)"
+component_mqtt="$(onoff CONFIG_OPENEMBER_COMPONENT_MQTT)"
+if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_MQTT=" "${CONFIG_FILE}"; then
+  component_mqtt=ON
+fi
+mqtt_paho_tls="$(onoff CONFIG_OPENEMBER_MQTT_PAHO_TLS)"
+if ! grep -q "^CONFIG_OPENEMBER_MQTT_PAHO_TLS=" "${CONFIG_FILE}"; then
+  mqtt_paho_tls=ON
+fi
+mqtt_paho_async="$(onoff CONFIG_OPENEMBER_MQTT_PAHO_ASYNC)"
+if ! grep -q "^CONFIG_OPENEMBER_MQTT_PAHO_ASYNC=" "${CONFIG_FILE}"; then
+  mqtt_paho_async=OFF
+fi
 module_launch_manager="$(onoff CONFIG_OPENEMBER_MODULE_LAUNCH_MANAGER)"
 module_template="$(onoff CONFIG_OPENEMBER_MODULE_TEMPLATE)"
 module_alogd="$(onoff CONFIG_OPENEMBER_MODULE_ALOGD)"
@@ -103,6 +115,9 @@ if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS=" "${CONFIG_FILE}"; then
 fi
 
 example_mqtt_emqx="$(onoff CONFIG_OPENEMBER_EXAMPLE_MQTT_EMQX)"
+if [[ "${component_mqtt}" == "OFF" ]]; then
+  example_mqtt_emqx=OFF
+fi
 
 enable_osal="$(onoff CONFIG_OPENEMBER_ENABLE_OSAL)"
 if ! grep -q "^CONFIG_OPENEMBER_ENABLE_OSAL=" "${CONFIG_FILE}"; then
@@ -304,8 +319,7 @@ if [[ -z "${logger_log_dir}" ]]; then
   logger_log_dir="/var/log/openember"
 fi
 
-mqtt_emqx_broker_uri="tcp://broker.emqx.io:1883"
-mqtt_emqx_broker_uri="$(awk '
+mqtt_emqx_broker_uri_override="$(awk '
   /^CONFIG_OPENEMBER_MQTT_EMQX_BROKER_URI=/ {
     v=$0
     sub(/^CONFIG_OPENEMBER_MQTT_EMQX_BROKER_URI=/,"",v)
@@ -314,8 +328,55 @@ mqtt_emqx_broker_uri="$(awk '
     exit
   }
 ' "${CONFIG_FILE}")"
-if [[ -z "${mqtt_emqx_broker_uri}" ]]; then
-  mqtt_emqx_broker_uri="tcp://broker.emqx.io:1883"
+
+mqtt_emqx_host="$(awk '
+  /^CONFIG_OPENEMBER_MQTT_EMQX_HOST=/ {
+    v=$0
+    sub(/^CONFIG_OPENEMBER_MQTT_EMQX_HOST=/,"",v)
+    gsub(/^"/,"",v); gsub(/"$/,"",v)
+    print v
+    exit
+  }
+' "${CONFIG_FILE}")"
+if [[ -z "${mqtt_emqx_host}" ]]; then
+  mqtt_emqx_host="broker.emqx.io"
+fi
+
+mqtt_emqx_port="$(awk '
+  /^CONFIG_OPENEMBER_MQTT_EMQX_PORT=/ {
+    v=$0
+    sub(/^CONFIG_OPENEMBER_MQTT_EMQX_PORT=/,"",v)
+    print v
+    exit
+  }
+' "${CONFIG_FILE}")"
+if [[ -z "${mqtt_emqx_port}" ]]; then
+  if grep -q "^CONFIG_OPENEMBER_MQTT_EMQX_TRANSPORT_WSS=y" "${CONFIG_FILE}"; then
+    mqtt_emqx_port=8084
+  else
+    mqtt_emqx_port=8883
+  fi
+fi
+
+mqtt_emqx_wss_path="$(awk '
+  /^CONFIG_OPENEMBER_MQTT_EMQX_WSS_PATH=/ {
+    v=$0
+    sub(/^CONFIG_OPENEMBER_MQTT_EMQX_WSS_PATH=/,"",v)
+    gsub(/^"/,"",v); gsub(/"$/,"",v)
+    print v
+    exit
+  }
+' "${CONFIG_FILE}")"
+if [[ -z "${mqtt_emqx_wss_path}" ]]; then
+  mqtt_emqx_wss_path="/mqtt"
+fi
+
+if [[ -n "${mqtt_emqx_broker_uri_override}" ]]; then
+  mqtt_emqx_broker_uri="${mqtt_emqx_broker_uri_override}"
+elif grep -q "^CONFIG_OPENEMBER_MQTT_EMQX_TRANSPORT_WSS=y" "${CONFIG_FILE}"; then
+  mqtt_emqx_broker_uri="wss://${mqtt_emqx_host}:${mqtt_emqx_port}${mqtt_emqx_wss_path}"
+else
+  mqtt_emqx_broker_uri="ssl://${mqtt_emqx_host}:${mqtt_emqx_port}"
 fi
 
 mqtt_emqx_client_id="openember-mqtt-example"
@@ -328,6 +389,17 @@ mqtt_emqx_client_id="$(awk '
     exit
   }
 ' "${CONFIG_FILE}")"
+if [[ -z "${mqtt_emqx_client_id}" ]]; then
+  mqtt_emqx_client_id="$(awk '
+    /^CONFIG_OPENEMBER_MQTT_CLIENT_ID=/ {
+      v=$0
+      sub(/^CONFIG_OPENEMBER_MQTT_CLIENT_ID=/,"",v)
+      gsub(/^"/,"",v); gsub(/"$/,"",v)
+      print v
+      exit
+    }
+  ' "${CONFIG_FILE}")"
+fi
 if [[ -z "${mqtt_emqx_client_id}" ]]; then
   mqtt_emqx_client_id="openember-mqtt-example"
 fi
@@ -343,6 +415,17 @@ mqtt_emqx_username="$(awk '
   }
 ' "${CONFIG_FILE}")"
 if [[ -z "${mqtt_emqx_username}" ]]; then
+  mqtt_emqx_username="$(awk '
+    /^CONFIG_OPENEMBER_MQTT_USERNAME=/ {
+      v=$0
+      sub(/^CONFIG_OPENEMBER_MQTT_USERNAME=/,"",v)
+      gsub(/^"/,"",v); gsub(/"$/,"",v)
+      print v
+      exit
+    }
+  ' "${CONFIG_FILE}")"
+fi
+if [[ -z "${mqtt_emqx_username}" ]]; then
   mqtt_emqx_username="emqx"
 fi
 
@@ -356,6 +439,17 @@ mqtt_emqx_password="$(awk '
     exit
   }
 ' "${CONFIG_FILE}")"
+if [[ -z "${mqtt_emqx_password}" ]]; then
+  mqtt_emqx_password="$(awk '
+    /^CONFIG_OPENEMBER_MQTT_PASSWORD=/ {
+      v=$0
+      sub(/^CONFIG_OPENEMBER_MQTT_PASSWORD=/,"",v)
+      gsub(/^"/,"",v); gsub(/"$/,"",v)
+      print v
+      exit
+    }
+  ' "${CONFIG_FILE}")"
+fi
 if [[ -z "${mqtt_emqx_password}" ]]; then
   mqtt_emqx_password="public"
 fi
@@ -371,7 +465,49 @@ mqtt_emqx_topic="$(awk '
   }
 ' "${CONFIG_FILE}")"
 if [[ -z "${mqtt_emqx_topic}" ]]; then
+  mqtt_emqx_topic="$(awk '
+    /^CONFIG_OPENEMBER_MQTT_TOPIC=/ {
+      v=$0
+      sub(/^CONFIG_OPENEMBER_MQTT_TOPIC=/,"",v)
+      gsub(/^"/,"",v); gsub(/"$/,"",v)
+      print v
+      exit
+    }
+  ' "${CONFIG_FILE}")"
+fi
+if [[ -z "${mqtt_emqx_topic}" ]]; then
   mqtt_emqx_topic="emqx/c-test"
+fi
+
+mqtt_emqx_ssl_cafile=""
+mqtt_emqx_ssl_cafile="$(awk '
+  /^CONFIG_OPENEMBER_MQTT_EMQX_SSL_CAFILE=/ {
+    v=$0
+    sub(/^CONFIG_OPENEMBER_MQTT_EMQX_SSL_CAFILE=/,"",v)
+    gsub(/^"/,"",v); gsub(/"$/,"",v)
+    print v
+    exit
+  }
+' "${CONFIG_FILE}")"
+if [[ -z "${mqtt_emqx_ssl_cafile}" ]]; then
+  mqtt_emqx_ssl_cafile="$(awk '
+    /^CONFIG_OPENEMBER_MQTT_SSL_CAFILE=/ {
+      v=$0
+      sub(/^CONFIG_OPENEMBER_MQTT_SSL_CAFILE=/,"",v)
+      gsub(/^"/,"",v); gsub(/"$/,"",v)
+      print v
+      exit
+    }
+  ' "${CONFIG_FILE}")"
+fi
+
+mqtt_emqx_ssl_verify=ON
+if grep -q "^CONFIG_OPENEMBER_MQTT_EMQX_SSL_VERIFY=" "${CONFIG_FILE}"; then
+  mqtt_emqx_ssl_verify="$(onoff CONFIG_OPENEMBER_MQTT_EMQX_SSL_VERIFY)"
+elif grep -q "^CONFIG_OPENEMBER_MQTT_SSL_VERIFY=" "${CONFIG_FILE}"; then
+  mqtt_emqx_ssl_verify="$(onoff CONFIG_OPENEMBER_MQTT_SSL_VERIFY)"
+else
+  mqtt_emqx_ssl_verify=ON
 fi
 
 out_cmake="${BUILD_DIR}/config.cmake"
@@ -405,6 +541,9 @@ set(OPENEMBER_JSON_LIBRARY "${json_lib}" CACHE STRING "JSON implementation for O
 set(OPENEMBER_WITH_YAMLCPP ${use_yamlcpp} CACHE BOOL "Fetch/use yaml-cpp (optional C++ dependency)" FORCE)
 set(OPENEMBER_WITH_ASIO ${use_asio} CACHE BOOL "Fetch/use standalone Asio (optional)" FORCE)
 set(OPENEMBER_COMPONENT_NETWORK ${component_network} CACHE BOOL "Build component: Network (high-level socket wrapper)" FORCE)
+set(OPENEMBER_COMPONENT_MQTT ${component_mqtt} CACHE BOOL "Build component: MQTT (Paho C)" FORCE)
+set(OPENEMBER_MQTT_PAHO_TLS ${mqtt_paho_tls} CACHE BOOL "Build Paho MQTT C with OpenSSL (TLS)" FORCE)
+set(OPENEMBER_MQTT_PAHO_ASYNC ${mqtt_paho_async} CACHE BOOL "Link Paho MQTTAsync library" FORCE)
 
 set(TESTS_ENABLED ${tests_enabled} CACHE BOOL "Whether to unit test" FORCE)
 set(EXAMPLES_ENABLED ${examples_enabled} CACHE BOOL "Whether compile examples" FORCE)
@@ -433,6 +572,8 @@ set(OPENEMBER_MQTT_EMQX_CLIENT_ID "${mqtt_emqx_client_id}" CACHE STRING "MQTT cl
 set(OPENEMBER_MQTT_EMQX_USERNAME "${mqtt_emqx_username}" CACHE STRING "MQTT username for mqtt_emqx example" FORCE)
 set(OPENEMBER_MQTT_EMQX_PASSWORD "${mqtt_emqx_password}" CACHE STRING "MQTT password for mqtt_emqx example" FORCE)
 set(OPENEMBER_MQTT_EMQX_TOPIC "${mqtt_emqx_topic}" CACHE STRING "MQTT topic for mqtt_emqx example" FORCE)
+set(OPENEMBER_MQTT_EMQX_SSL_CAFILE "${mqtt_emqx_ssl_cafile}" CACHE STRING "MQTT TLS CA PEM path for mqtt_emqx example" FORCE)
+set(OPENEMBER_MQTT_EMQX_SSL_VERIFY ${mqtt_emqx_ssl_verify} CACHE BOOL "Verify MQTT TLS server cert for mqtt_emqx example" FORCE)
 
 set(OPENEMBER_ENABLE_OSAL ${enable_osal} CACHE BOOL "Build platform OSAL (Linux pthread)" FORCE)
 set(OPENEMBER_ENABLE_HAL ${enable_hal} CACHE BOOL "Build platform HAL (Linux file/uart; requires OSAL)" FORCE)

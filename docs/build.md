@@ -13,6 +13,14 @@
 
 仓库根目录仅保留顶层 `Kconfig`；各层选项分文件位于 `apps/Kconfig`、`modules/Kconfig`、`components/Kconfig`、`core/Kconfig`、`platform/Kconfig`（`menuconfig.sh` 会按相同相对路径复制到构建目录供工具解析）。
 
+安装依赖
+
+```bash
+sudo apt install libssl-dev
+```
+
+
+
 ## 2. 一键推荐流程（不传 `-DXXX`）
 
 在工程根目录执行：

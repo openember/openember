@@ -66,7 +66,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/GetLcm.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetCppZmq.cmake)
 
 # Eclipse Paho MQTT C（components/mqtt/mqtt_client.cpp 直接使用 MQTTClient.h）。
-set(OPENEMBER_PAHO_MQTT_C_VERSION "1.3.13")
+set(OPENEMBER_PAHO_MQTT_C_VERSION "1.3.16")
 set(OPENEMBER_PAHO_MQTT_C_URL
     "https://github.com/eclipse-paho/paho.mqtt.c/archive/v${OPENEMBER_PAHO_MQTT_C_VERSION}.tar.gz")
 
@@ -194,11 +194,19 @@ function(openember_third_party_resolve_paho_mqtt_c)
     # - PAHO_MQTT_C_INCLUDE_DIRS
     # - PAHO_MQTT_C_LIBRARIES
 
-    # SYSTEM: prefer find_package
+    # SYSTEM: prefer find_package（PAHO_WITH_SSL 与 FindPahoMqttC 一致）
     if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
+        if(DEFINED OPENEMBER_MQTT_PAHO_TLS AND NOT OPENEMBER_MQTT_PAHO_TLS)
+            set(PAHO_WITH_SSL OFF)
+        else()
+            set(PAHO_WITH_SSL ON)
+        endif()
         find_package(PahoMqttC QUIET)
         if(NOT PahoMqttC_FOUND)
             message(FATAL_ERROR "PahoMqttC not found but OPENEMBER_THIRD_PARTY_MODE=SYSTEM")
+        endif()
+        if(NOT OPENEMBER_MQTT_PAHO_ASYNC)
+            set(PAHO_MQTT_C_LIBRARIES ${PAHO_MQTT_C_3C_LIBRARY})
         endif()
         set(BUILD_MQTT FALSE PARENT_SCOPE)
         set(PAHO_MQTT_C_INCLUDE_DIRS ${PAHO_MQTT_C_INCLUDE_DIRS} PARENT_SCOPE)

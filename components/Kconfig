@@ -193,5 +193,32 @@ config OPENEMBER_COMPONENT_NETWORK
 
 endmenu
 
+menu "MQTT (Eclipse Paho C)"
+
+config OPENEMBER_COMPONENT_MQTT
+    bool "Build component: MQTT client (Paho MQTT C + openember_mqtt)"
+    default y
+    help
+      Fetches/builds Eclipse paho.mqtt.c and links it into the framework. Application-level broker
+      URI and credentials belong in Application → examples (mqtt_emqx_client), not here.
+
+config OPENEMBER_MQTT_PAHO_TLS
+    bool "Build Paho with OpenSSL (TLS / ssl://)"
+    default y
+    depends on OPENEMBER_COMPONENT_MQTT
+    help
+      When enabled, CMake requires OpenSSL development packages (e.g. libssl-dev) so Paho is built
+      as paho-mqtt3cs and ssl:// URIs work. Disable only for plain tcp:// brokers without TLS.
+
+config OPENEMBER_MQTT_PAHO_ASYNC
+    bool "Link Paho MQTTAsync (async API) in addition to MQTTClient"
+    default n
+    depends on OPENEMBER_COMPONENT_MQTT
+    help
+      openember::mqtt::Client uses only the synchronous MQTTClient API. Leave disabled to link only
+      paho-mqtt3c(s) and reduce binary size. Enable if you call MQTTAsync elsewhere or need both libs.
+
+endmenu
+
 endmenu
 

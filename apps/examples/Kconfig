@@ -28,21 +28,55 @@ config OPENEMBER_EXAMPLE_MQTT_EMQX
     bool "Build example: mqtt_emqx_client (Paho C client → EMQX / MQTT broker)"
     default n
     depends on OPENEMBER_ENABLE_EXAMPLES
+    depends on OPENEMBER_COMPONENT_MQTT
     help
-      Eclipse Paho MQTT C via openember::mqtt::Client. Configure broker URI and topic below.
+      Uses openember::mqtt::Client. Configure broker URI, credentials and TLS below.
 
 if OPENEMBER_EXAMPLE_MQTT_EMQX
 
+config OPENEMBER_MQTT_EMQX_HOST
+    string "Broker hostname (FQDN, no scheme; e.g. wa366005.ala.cn-hangzhou.emqxsl.cn)"
+    default "broker.emqx.io"
+
+choice OPENEMBER_MQTT_EMQX_TRANSPORT
+    prompt "Transport (EMQX Cloud: 8883 vs 8084)"
+    default OPENEMBER_MQTT_EMQX_TRANSPORT_MQTT_TLS
+    help
+      MQTT over TLS uses ssl:// on port 8883 by default. WebSocket over TLS uses wss:// on port 8084
+      and path /mqtt by default. Use optional full URI below to override.
+
+config OPENEMBER_MQTT_EMQX_TRANSPORT_MQTT_TLS
+    bool "MQTT over TLS / SSL (ssl://, default port 8883)"
+
+config OPENEMBER_MQTT_EMQX_TRANSPORT_WSS
+    bool "WebSocket over TLS / SSL (wss://, default port 8084)"
+
+endchoice
+
+config OPENEMBER_MQTT_EMQX_PORT
+    int "Broker port"
+    range 1 65535
+    default 8883 if OPENEMBER_MQTT_EMQX_TRANSPORT_MQTT_TLS
+    default 8084 if OPENEMBER_MQTT_EMQX_TRANSPORT_WSS
+
+config OPENEMBER_MQTT_EMQX_WSS_PATH
+    string "WebSocket path (leading slash; EMQX default /mqtt)"
+    depends on OPENEMBER_MQTT_EMQX_TRANSPORT_WSS
+    default "/mqtt"
+
 config OPENEMBER_MQTT_EMQX_BROKER_URI
-    string "MQTT broker URI (e.g. tcp://broker.emqx.io:1883)"
-    default "tcp://broker.emqx.io:1883"
+    string "Optional: full broker URI (overrides host/port/transport if non-empty)"
+    default ""
+    help
+      Leave empty to build URI from hostname + port + transport (recommended).
+      Set e.g. tcp://host:1883 or a custom wss:// URL for special cases.
 
 config OPENEMBER_MQTT_EMQX_CLIENT_ID
     string "MQTT client id"
     default "openember-mqtt-example"
 
 config OPENEMBER_MQTT_EMQX_USERNAME
-    string "MQTT username (optional; e.g. emqx for public broker)"
+    string "MQTT username (optional)"
     default "emqx"
 
 config OPENEMBER_MQTT_EMQX_PASSWORD
@@ -52,5 +86,17 @@ config OPENEMBER_MQTT_EMQX_PASSWORD
 config OPENEMBER_MQTT_EMQX_TOPIC
     string "Subscribe/publish topic"
     default "emqx/c-test"
+
+config OPENEMBER_MQTT_EMQX_SSL_CAFILE
+    string "TLS CA certificate file path"
+    default ""
+    help
+      Download from EMQX console. PEM text is often stored as .crt or .pem — both work if content is PEM.
+      The process must be able to read this path (e.g. chmod a+r or run as root). Empty: use system trust
+      or disable verify below.
+
+config OPENEMBER_MQTT_EMQX_SSL_VERIFY
+    bool "Verify MQTT server TLS certificate"
+    default y
 
 endif
