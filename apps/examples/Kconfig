@@ -3,12 +3,12 @@ config OPENEMBER_MODULE_TEMPLATE
     default y
     depends on OPENEMBER_ENABLE_EXAMPLES
 
-config OPENEMBER_EXAMPLE_PUBSUB_TWO_NODES
-    bool "Build example: pubsub_two_nodes (publisher/subscriber)"
+config OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES
+    bool "Build example: msgbus_two_nodes (msg_bus publisher/subscriber)"
     default y
     depends on OPENEMBER_ENABLE_EXAMPLES
     help
-      Requires a msgbus transport backend (LCM/NNG/ZMQ/UDP); CMake skips if backend deps are unavailable.
+      Uses the same msg_bus API as framework nodes (NNG or LCM per Kconfig).
 
 config OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER
     bool "Build example: msgbus_nng_forwarder"

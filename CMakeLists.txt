@@ -43,10 +43,6 @@ option( BUILD_MQTT "Whether compile MQTT" OFF)
 option( BUILD_MD5 "Whether compile md5" OFF)
 option( BUILD_ZLOG "Whether compile zlog" OFF)
 option( BUILD_EASYLOGGER "Whether compile EasyLogger (obsolete, currently disabled)" OFF)
-option( BUILD_PUBSUB_ZMQ "Build ember_pubsub pub/sub skeleton + two-node examples" ON)
-
-option( BUILD_PUBSUB_NNG "Build ember_pubsub pub/sub skeleton with NNG transport" OFF)
-option( BUILD_PUBSUB_LCM "Build ember_pubsub pub/sub skeleton with LCM transport" OFF)
 
 option( OPENEMBER_MSGBUS_USE_NNG "Use NNG backend for internal msgbus" ON)
 option( OPENEMBER_MSGBUS_USE_LCM "Use LCM backend for internal msgbus" OFF)
@@ -55,43 +51,14 @@ if(OPENEMBER_MSGBUS_USE_NNG AND OPENEMBER_MSGBUS_USE_LCM)
     message(FATAL_ERROR "OPENEMBER_MSGBUS_USE_NNG and OPENEMBER_MSGBUS_USE_LCM cannot both be ON. Please select exactly one.")
 endif()
 
-# Transport backend selection（默认保持与旧逻辑一致：BUILD_PUBSUB_ZMQ=ON 则优先 zmq）
-set(OPENEMBER_PUBSUB_BACKEND "udp")
-if(BUILD_PUBSUB_NNG)
-    set(OPENEMBER_PUBSUB_BACKEND "nng")
-elseif(BUILD_PUBSUB_ZMQ)
-    set(OPENEMBER_PUBSUB_BACKEND "zmq")
-elseif(BUILD_PUBSUB_LCM)
-    set(OPENEMBER_PUBSUB_BACKEND "lcm")
+if(OPENEMBER_MSGBUS_USE_LCM)
+    set(_OPENEMBER_MSGBUS_HINT "lcm")
+elseif(OPENEMBER_MSGBUS_USE_NNG)
+    set(_OPENEMBER_MSGBUS_HINT "nng")
+else()
+    set(_OPENEMBER_MSGBUS_HINT "nng")
 endif()
-message(STATUS "ember_pubsub: transport backend = ${OPENEMBER_PUBSUB_BACKEND}")
-
-# Keep old behavior: in SYSTEM mode, if chosen transport isn't available,
-# fall back to built-in UDP instead of failing the build.
-if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
-    if(OPENEMBER_PUBSUB_BACKEND STREQUAL "zmq")
-        find_path(_zmq_inc NAMES zmq.h)
-        find_library(_zmq_lib NAMES zmq)
-        if(NOT _zmq_inc OR NOT _zmq_lib)
-            set(OPENEMBER_PUBSUB_BACKEND "udp")
-            message(STATUS "ember_pubsub: libzmq not found, using built-in UDP transport")
-        endif()
-    elseif(OPENEMBER_PUBSUB_BACKEND STREQUAL "nng")
-        find_path(_nng_inc NAMES nng/nng.h)
-        find_library(_nng_lib NAMES nng)
-        if(NOT _nng_inc OR NOT _nng_lib)
-            set(OPENEMBER_PUBSUB_BACKEND "udp")
-            message(STATUS "ember_pubsub: nng not found, using built-in UDP transport")
-        endif()
-    elseif(OPENEMBER_PUBSUB_BACKEND STREQUAL "lcm")
-        find_path(_lcm_inc NAMES lcm/lcm.h)
-        find_library(_lcm_lib NAMES lcm-static lcm)
-        if(NOT _lcm_inc OR NOT _lcm_lib)
-            set(OPENEMBER_PUBSUB_BACKEND "udp")
-            message(STATUS "ember_pubsub: lcm not found, using built-in UDP transport")
-        endif()
-    endif()
-endif()
+message(STATUS "msgbus: backend = ${_OPENEMBER_MSGBUS_HINT}")
 
 if (DEBUG_ENABLED)
     set(CMAKE_BUILD_TYPE "Debug")
@@ -245,30 +212,14 @@ openember_third_party_resolve_mongoose()
 message(STATUS "├── mongoose: ${MONGOOSE_LIBRARIES}")
 message(STATUS "└── mongoose include: ${MONGOOSE_INCLUDE_DIRS}")
 
-if(OPENEMBER_PUBSUB_BACKEND STREQUAL "zmq")
-    openember_transport_resolve_libzmq()
-    message(STATUS "├── libzmq: ${OPENEMBER_LIBZMQ_LIBRARIES}")
-    message(STATUS "└── libzmq include: ${OPENEMBER_LIBZMQ_INCLUDE_DIRS}")
-elseif(OPENEMBER_PUBSUB_BACKEND STREQUAL "nng")
-    openember_transport_resolve_nng()
-    message(STATUS "├── nng: ${OPENEMBER_NNG_LIBRARIES}")
-    message(STATUS "└── nng include: ${OPENEMBER_NNG_INCLUDE_DIRS}")
-elseif(OPENEMBER_PUBSUB_BACKEND STREQUAL "lcm")
+if(OPENEMBER_MSGBUS_USE_LCM)
     openember_transport_resolve_lcm()
     message(STATUS "├── lcm: ${OPENEMBER_LCM_LIBRARIES}")
     message(STATUS "└── lcm include: ${OPENEMBER_LCM_INCLUDE_DIRS}")
-endif()
-
-if(OPENEMBER_MSGBUS_USE_NNG AND NOT OPENEMBER_PUBSUB_BACKEND STREQUAL "nng")
+elseif(OPENEMBER_MSGBUS_USE_NNG)
     openember_transport_resolve_nng()
-    message(STATUS "├── nng (msgbus): ${OPENEMBER_NNG_LIBRARIES}")
-    message(STATUS "└── nng (msgbus) include: ${OPENEMBER_NNG_INCLUDE_DIRS}")
-endif()
-
-if(OPENEMBER_MSGBUS_USE_LCM AND NOT OPENEMBER_PUBSUB_BACKEND STREQUAL "lcm")
-    openember_transport_resolve_lcm()
-    message(STATUS "├── lcm (msgbus): ${OPENEMBER_LCM_LIBRARIES}")
-    message(STATUS "└── lcm (msgbus) include: ${OPENEMBER_LCM_INCLUDE_DIRS}")
+    message(STATUS "├── nng: ${OPENEMBER_NNG_LIBRARIES}")
+    message(STATUS "└── nng include: ${OPENEMBER_NNG_INCLUDE_DIRS}")
 endif()
 
 set(OPENEMBER_LOG_BACKEND_INCLUDES "")
@@ -311,7 +262,6 @@ set( OPENEMBER_INTERNAL_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/core/inc
     ${CMAKE_SOURCE_DIR}/components/GSDL/src
     ${CMAKE_SOURCE_DIR}/components/Log
-    ${CMAKE_SOURCE_DIR}/components/pubsub
     ${CMAKE_SOURCE_DIR}/components/ppool
     ${CMAKE_SOURCE_DIR}/components/msgbus
     ${CMAKE_SOURCE_DIR}/components/mqtt
@@ -324,7 +274,6 @@ set( OPENEMBER_INTERNAL_INCLUDE_DIRS
 set( OPENEMBER_INTERNAL_LIBRARIES 
     gdsl
     Log
-    ember_pubsub
     ppool
     msgbus
     openember_mqtt

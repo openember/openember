@@ -2,7 +2,7 @@
 
 - [x] 搭建 CMake 工程
 - [x] 支持消息队列中间件（Paho-MQTT、Mosquitto、ZeroMQ）
-- [x] pub/sub 通信骨架（ember_pubsub：ZMQ 或内置 UDP + 双节点示例 `pubsub_publisher` / `pubsub_subscriber`）
+- [x] ~~pub/sub 通信骨架（ember_pubsub）~~ → 已移除，统一为 **msgbus**（见下文「迁移」）
 - [ ] 支持数据库存储（SQLite、MySQL）
 - [x] 支持 HTTP 服务器（Mongoose）
 - [x] 提供前端网页模板（Bootstrap、Vue）
@@ -74,10 +74,34 @@ C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal
 ## Msgbus 插件化重构（进行中）
 
 - [x] 修复 `LCM` 默认 topic URL（避免 `LCM provider "tcp" not found`）
-- [x] spdlog topic 默认 URL 与 `OPENEMBER_PUBSUB_BACKEND`（ember_pubsub 实际传输）对齐，避免 ZMQ pubsub + LCM msgbus 混用时误用 `udpm://`
+- [x] spdlog topic 默认 URL 与 msgbus 后端（LCM/NNG）对齐
 - [x] 在 `components/msgbus` 引入 C++ 抽象层骨架（接口 + 工厂 + legacy 适配）
 - [x] 将 `components/msgbus` 旧 C wrapper 逐步迁移到 backend 类（LCM/NNG/ZMQ）：`ClibTransportBackend` + `transport_backend_factory.cpp`（仍调用统一 `msg_bus_*` C API）
 - [x] 将 `components/msgbus` 的 `mqtt_*` wrapper 迁出到 `components/mqtt`（静态库 `openember_mqtt`）
 - [x] 在 `components/mqtt` 提供独立 C++ 封装（面向 IoT 云连接）：`mqtt_client.hpp` / `mqtt_client.cpp`（`EMBER_LIBS_USING_MQTT` 时启用）
 - [x] 增加 backend 装配说明与工厂入口（`CreateDefaultTransportBackend` → `detail_create_clib_transport_backend`；动态插件仍待后续）
 - [x] 补齐回归测试：`test/test_msgbus_transport.cpp`（TransportBackend 工厂冒烟；logger/web_dashboard/topic 全链路仍建议发布前手动跑通）
+
+## 迁移：移除 ember_pubsub，统一到 msgbus + C++ 抽象
+
+目标：删除 `components/pubsub`，所有「topic 数据面」与框架总线一致，由 `msg_bus_*` / `TransportBackend` 承担；消除第二套传输选择与链接负担。
+
+### 阶段 A — 功能迁移
+
+- [x] spdlog topic sink：`log_spdlog.cpp` 使用 `TransportBackend` → `msg_bus_*`
+- [x] `web_dashboard`：同一 `msg_node_t` 上 `msg_bus_subscribe` 日志 topic + 回调写 ring
+- [x] 示例：`msgbus_two_nodes`（`msgbus_demo_publisher` / `msgbus_demo_subscriber`）
+- [x] CMake：移除 `BUILD_PUBSUB_*`、`ember_pubsub`；`msgbus` 先于 `Log` 构建；根 CMake 按 `OPENEMBER_MSGBUS_USE_*` 解析 LCM/NNG
+- [x] Kconfig / `genconfig.sh`：示例 `OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES`；spdlog URL 回退与 msgbus 一致
+- [x] `docs/build.md` 更新
+
+### 阶段 B — C++ 原生后端（后续）
+
+- [ ] 在 `components/msgbus` 增加 `LcmTransportBackend`：基于 **lcm::LCM**（C++）实现 `TransportBackend`，逐步替代 `lcm_wrapper.c` 调用路径
+- [ ] 若恢复 ZMQ 作为可选 msgbus 后端：基于 **cppzmq** / `zmq.hpp` 实现 `ZmqTransportBackend`
+- [ ] `CreateDefaultTransportBackend()` 按 CMake 选择 C++ 或 legacy C 实现（过渡期可并存）
+
+### 验收
+
+- [x] 全量编译（含 `OPENEMBER_LOG_BACKEND=SPDLOG` 的 `Log`）+ `ctest`（`test_msgbus_transport`）
+- [ ] 手动：`msgbus_demo_*` 双进程、spdlog topic + `web_dashboard` 日志环（发布前建议跑通）

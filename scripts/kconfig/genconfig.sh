@@ -95,7 +95,7 @@ module_acquisition="$(onoff CONFIG_OPENEMBER_MODULE_ACQUISITION)"
 module_web_server="$(onoff CONFIG_OPENEMBER_MODULE_WEB_SERVER)"
 module_logger="$(onoff CONFIG_OPENEMBER_MODULE_LOGGER)"
 feature_algorithm="$(onoff CONFIG_OPENEMBER_FEATURE_ALGORITHM)"
-example_pubsub_two_nodes="$(onoff CONFIG_OPENEMBER_EXAMPLE_PUBSUB_TWO_NODES)"
+example_msgbus_two_nodes="$(onoff CONFIG_OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES)"
 example_msgbus_nng_forwarder="$(onoff CONFIG_OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER)"
 example_network_sockets="$(onoff CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS)"
 if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS=" "${CONFIG_FILE}"; then
@@ -212,8 +212,6 @@ spdlog_topic_pub_url="$(awk '
 if [[ -z "${spdlog_topic_pub_url}" ]]; then
   if [[ "${msgbus_backend}" == "LCM" ]]; then
     spdlog_topic_pub_url="udpm://239.255.76.67:7667?ttl=1"
-  elif [[ "${msgbus_backend}" == "UDP" ]]; then
-    spdlog_topic_pub_url="udp://127.0.0.1:7560"
   else
     spdlog_topic_pub_url="tcp://*:7561"
   fi
@@ -232,8 +230,6 @@ spdlog_topic_sub_url="$(awk '
 if [[ -z "${spdlog_topic_sub_url}" ]]; then
   if [[ "${msgbus_backend}" == "LCM" ]]; then
     spdlog_topic_sub_url="udpm://239.255.76.67:7667?ttl=1"
-  elif [[ "${msgbus_backend}" == "UDP" ]]; then
-    spdlog_topic_sub_url="udp://127.0.0.1:7560"
   else
     spdlog_topic_sub_url="tcp://127.0.0.1:7561"
   fi
@@ -356,24 +352,12 @@ set(OPENEMBER_MODULE_ACQUISITION ${module_acquisition} CACHE BOOL "Build app ref
 set(OPENEMBER_MODULE_WEB_SERVER ${module_web_server} CACHE BOOL "Build app services/web_dashboard" FORCE)
 set(OPENEMBER_MODULE_LOGGER ${module_logger} CACHE BOOL "Build app services/logger" FORCE)
 set(OPENEMBER_FEATURE_ALGORITHM ${feature_algorithm} CACHE BOOL "Enable Algorithm module" FORCE)
-set(OPENEMBER_EXAMPLE_PUBSUB_TWO_NODES ${example_pubsub_two_nodes} CACHE BOOL "Build example pubsub_two_nodes" FORCE)
+set(OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES ${example_msgbus_two_nodes} CACHE BOOL "Build example msgbus_two_nodes" FORCE)
 set(OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER ${example_msgbus_nng_forwarder} CACHE BOOL "Build example msgbus_nng_forwarder" FORCE)
 set(OPENEMBER_EXAMPLE_NETWORK_SOCKETS ${example_network_sockets} CACHE BOOL "Build example network_sockets" FORCE)
 
 set(OPENEMBER_ENABLE_OSAL ${enable_osal} CACHE BOOL "Build platform OSAL (Linux pthread)" FORCE)
 set(OPENEMBER_ENABLE_HAL ${enable_hal} CACHE BOOL "Build platform HAL (Linux file/uart; requires OSAL)" FORCE)
-
-# Keep existing CMake backend selection interface
-set(BUILD_PUBSUB_ZMQ OFF CACHE BOOL "" FORCE)
-set(BUILD_PUBSUB_NNG OFF CACHE BOOL "" FORCE)
-set(BUILD_PUBSUB_LCM OFF CACHE BOOL "" FORCE)
-if("${msgbus_backend}" STREQUAL "ZMQ")
-  set(BUILD_PUBSUB_ZMQ ON CACHE BOOL "" FORCE)
-elseif("${msgbus_backend}" STREQUAL "NNG")
-  set(BUILD_PUBSUB_NNG ON CACHE BOOL "" FORCE)
-elseif("${msgbus_backend}" STREQUAL "LCM")
-  set(BUILD_PUBSUB_LCM ON CACHE BOOL "" FORCE)
-endif()
 
 if("${msgbus_backend}" STREQUAL "LCM")
   set(OPENEMBER_MSGBUS_USE_NNG OFF CACHE BOOL "Use NNG backend for internal msgbus" FORCE)

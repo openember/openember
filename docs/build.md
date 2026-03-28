@@ -152,10 +152,9 @@ source <(ember completion bash)
   - `OPENEMBER_WITH_YAMLCPP`
   - `OPENEMBER_WITH_ASIO`
 - **Transport / Msgbus**
-  - Pub/Sub backend（三选一）：ZMQ / NNG / LCM（映射到 `BUILD_PUBSUB_*`）
-  - Internal msgbus backend（二选一）：NNG / LCM（映射到 `OPENEMBER_MSGBUS_USE_*`）
+  - 内部总线后端（二选一）：NNG / LCM（`OPENEMBER_MSGBUS_USE_*`）；spdlog topic、示例与框架节点共用该传输
 - **Framework Modules（新增）**
-  - 可单独启停：`system/launch_manager` / `examples/hello_node` / `system/log_service` / `system/device_manager` / `system/config_service` / `system/health_monitor` / `services/ota_update_service` / `references/sensor_data_reference` / `services/web_dashboard`；示例还可选 `examples/pubsub_two_nodes`、`examples/msgbus_nng_forwarder`
+  - 可单独启停：`system/launch_manager` / `examples/hello_node` / `system/log_service` / `system/device_manager` / `system/config_service` / `system/health_monitor` / `services/ota_update_service` / `references/sensor_data_reference` / `services/web_dashboard`；示例还可选 `examples/msgbus_two_nodes`、`examples/msgbus_nng_forwarder`
   - 映射到 `OPENEMBER_MODULE_*`，由 `apps/CMakeLists.txt` 条件 `add_subdirectory()` 控制
 
 ## 4. 运行说明
@@ -164,7 +163,7 @@ source <(ember completion bash)
 
 - `launch_manager`
 - `hello_node`
-- `pubsub_publisher` / `pubsub_subscriber`（启用 `OPENEMBER_EXAMPLE_PUBSUB_TWO_NODES` 且 pub/sub 后端为 ZMQ/NNG/LCM 时）
+- `msgbus_demo_publisher` / `msgbus_demo_subscriber`（启用 `OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES` 时）
 - `msgbus_nng_forwarder`（启用 `OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER` 且内部 msgbus 为 NNG 时）
 
 ## 5. 常见问题

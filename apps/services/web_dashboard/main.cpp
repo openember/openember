@@ -14,9 +14,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <deque>
 #include <mutex>
-#include <string>
 #include <vector>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -28,7 +28,6 @@
 #define MODULE_NAME            "web_dashboard"
 #define LOG_TAG                MODULE_NAME
 #include "openember.h"
-#include "ember_pubsub.h"
 
 static msg_node_t client;
 
@@ -54,12 +53,9 @@ static unsigned s_logger_port =
 static std::mutex s_log_mu;
 static std::deque<std::string> s_log_ring;
 static size_t s_log_ring_max = 2000;
-static ember_pubsub_t *s_log_sub = nullptr;
 
-static void on_log_topic(const char *topic, const void *payload, size_t payload_len, void *user_data)
+static void on_log_topic_payload(const void *payload, size_t payload_len)
 {
-    (void)user_data;
-    (void)topic;
     if (!payload || payload_len == 0) return;
     std::string line((const char *)payload, (const char *)payload + payload_len);
     std::lock_guard<std::mutex> lk(s_log_mu);
@@ -409,6 +405,17 @@ static void fn(struct mg_connection *c, int ev, void *ev_data)
 
 static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
 {
+#if defined(OPENEMBER_SPDLOG_ENABLE_TOPIC) && OPENEMBER_SPDLOG_ENABLE_TOPIC && defined(OPENEMBER_SPDLOG_TOPIC_NAME)
+    if (topic && payload && payloadlen > 0) {
+        const size_t tlen = std::strlen(OPENEMBER_SPDLOG_TOPIC_NAME);
+        if (std::strncmp(topic, OPENEMBER_SPDLOG_TOPIC_NAME, tlen) == 0) {
+            on_log_topic_payload(payload, payloadlen);
+            return;
+        }
+    }
+#else
+    (void)payloadlen;
+#endif
     LOG_D("[%s] %s\n", topic, (char *)payload);
 }
 
@@ -429,6 +436,11 @@ static int msg_init(void)
     if (rc != EMBER_EOK) cn++;
     rc = msg_bus_subscribe(client, MOD_REGISTER_REPLY_TOPIC);
     if (rc != EMBER_EOK) cn++;
+
+#if defined(OPENEMBER_SPDLOG_ENABLE_TOPIC) && OPENEMBER_SPDLOG_ENABLE_TOPIC
+    rc = msg_bus_subscribe(client, OPENEMBER_SPDLOG_TOPIC_NAME);
+    if (rc != EMBER_EOK) cn++;
+#endif
 
     if (cn != 0) {
         msg_bus_deinit(client);
@@ -469,13 +481,7 @@ int main()
     }
 
 #if defined(OPENEMBER_SPDLOG_ENABLE_TOPIC) && OPENEMBER_SPDLOG_ENABLE_TOPIC
-    // Subscribe logs from topic sink.
-    if (ember_pubsub_create_subscriber(&s_log_sub, OPENEMBER_SPDLOG_TOPIC_SUB_URL, on_log_topic, nullptr) == 0) {
-        (void)ember_pubsub_subscribe(s_log_sub, OPENEMBER_SPDLOG_TOPIC_NAME);
-        LOG_I("log topic subscribed: url=%s topic=%s", OPENEMBER_SPDLOG_TOPIC_SUB_URL, OPENEMBER_SPDLOG_TOPIC_NAME);
-    } else {
-        LOG_W("log topic subscribe failed: url=%s", OPENEMBER_SPDLOG_TOPIC_SUB_URL);
-    }
+    LOG_I("log topic subscribed via msgbus: topic=%s (same transport as framework bus)", OPENEMBER_SPDLOG_TOPIC_NAME);
 #endif
 
     /* Run web server */

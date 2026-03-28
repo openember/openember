@@ -20,7 +20,7 @@
 #include <string_view>
 #include <chrono>
 
-#include "ember_pubsub.h"
+#include "transport_backend.hpp"
 #include <unistd.h>
 
 #ifndef OPENEMBER_SPDLOG_LEVEL
@@ -116,9 +116,9 @@ public:
 
     ~oe_topic_sink() override
     {
-        if (pub_) {
-            ember_pubsub_destroy(pub_);
-            pub_ = nullptr;
+        if (transport_) {
+            (void)transport_->deinit();
+            transport_.reset();
         }
     }
 
@@ -140,9 +140,14 @@ protected:
             rl_count_++;
         }
 
-        if (!pub_) {
-            if (ember_pubsub_create_publisher(&pub_, pub_url_.c_str()) != 0) {
-                pub_ = nullptr;
+        if (!transport_) {
+            transport_ = openember::msgbus::CreateDefaultTransportBackend();
+            if (!transport_) {
+                return;
+            }
+            openember::msgbus::MessageCallback no_recv{};
+            if (transport_->init("spdlog", pub_url_, std::move(no_recv)) != 0) {
+                transport_.reset();
                 return;
             }
         }
@@ -162,7 +167,7 @@ protected:
         payload += "\"msg\":\"" + json_escape(std::string_view(msg.payload.data(), msg.payload.size())) + "\"";
         payload += "}";
 
-        (void)ember_pubsub_publish(pub_, topic_.c_str(), payload.data(), payload.size());
+        (void)transport_->publish_raw(topic_, payload.data(), payload.size());
     }
 
     void flush_() override {}
@@ -176,7 +181,7 @@ private:
     spdlog::level::level_enum threshold_{spdlog::level::info};
     int rate_limit_lps_{0};
 
-    ember_pubsub_t *pub_{nullptr};
+    std::unique_ptr<openember::msgbus::TransportBackend> transport_;
     std::string proc_{"openember"};
 
     // rate limit state (protected by base_sink mutex)
