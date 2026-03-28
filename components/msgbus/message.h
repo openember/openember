@@ -3,6 +3,10 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  *
+ * 框架内部消息总线（msg_bus_* 声明由各 backend 提供）：节点间模块通信、SMM、订阅框架话题。
+ * 应用若只需「任意 topic 数据流」（如 spdlog 对外广播），请用 components/pubsub/ember_pubsub.h，
+ * 勿与 msg_bus 混为一谈。
+ *
  * Change Logs:
  * Date           Author       Notes
  * 2022-07-07     luhuadong    the first version

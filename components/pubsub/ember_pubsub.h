@@ -3,8 +3,12 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  *
- * OpenEmber pub/sub 通信骨架（UDP / ZeroMQ / NNG / LCM）。
- * 与现有 MQTT msg_bus 并行存在，后续可接入统一 transport 抽象层。
+ * 应用层「数据面」pub/sub 骨架（UDP / ZMQ / NNG / LCM）：裸 topic + payload，
+ * 用于日志 topic 流（components/Log）、web_dashboard 订阅、双节点示例等。
+ *
+ * 这与 components/msgbus 的 msg_bus_* 不同：msgbus 是运行时框架总线（SMM、模块话题、
+ * 生命周期），由 lcm/nng/… 实现；ember_pubsub 不参与 SMM，也不替代 msg_bus。
+ * 二者可并存；若将来要「统一 transport」，应在抽象层对接，而不是删掉本模块。
  */
 
 #ifndef OPENEMBER_EMBER_PUBSUB_H
