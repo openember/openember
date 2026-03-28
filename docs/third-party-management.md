@@ -100,3 +100,7 @@
 
 - 仅引入当前能力所需的最小依赖集合。
 - 通过 CMake 变量或导入目标暴露 include/link，避免在核心代码硬编码路径。
+
+## 相关设计文档
+
+- Msgbus 集成 **Zenoh**（Rust 核心 + C/C++/Python 绑定）：见 `docs/architecture/msgbus-zenoh-integration.md`。
