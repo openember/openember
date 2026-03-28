@@ -53,6 +53,21 @@
 - **SYSTEM**：不预取；仍按各 `resolve_*` 使用系统包。
 - 详见 `third_party/Kconfig` 与 `scripts/kconfig/genconfig.sh`。
 
+## 本地源码覆盖（`*_LOCAL_SOURCE`）
+
+在 **FETCH / VENDOR** 下，可为部分库设置 **已解压源码路径**，跳过从 `third_party/` 归档或网络获取。变量在 `cmake/Dependencies.cmake` 中声明为 `CACHE PATH`。
+
+### SQLite（`OPENEMBER_SQLITE_LOCAL_SOURCE`）
+
+- 指向**已解压的 amalgamation 目录**（根目录或子目录中需存在 `sqlite3.c`），与 `GetSqlite.cmake` 的查找逻辑一致。
+- **合并包**（单目录内含 `sqlite3.c` / `sqlite3.h`）由 [sqlite.org](https://www.sqlite.org/download.html) 发布；`Dependencies.cmake` 中的版本与 URL 以 amalgamation 为准。
+- [GitHub `sqlite/sqlite`](https://github.com/sqlite/sqlite) 的 **tag 源码归档是完整开发树**，不是 amalgamation，**不能**直接当作 `OPENEMBER_SQLITE_LOCAL_SOURCE` 使用，除非自行生成或整理出含 `sqlite3.c` 的目录。
+
+### Eclipse Paho MQTT C（`PAHO_MQTT_C_LOCAL_SOURCE`）
+
+- 与多数 `OPENEMBER_*_LOCAL_SOURCE` 命名不同，沿用 **Paho / CMake 生态** 常见变量名。
+- 指向已解压的 **paho.mqtt.c** 工程根目录（含 `CMakeLists.txt`），由 `GetPahoMqttC.cmake` 读取；设置后**不再**使用 `third_party/paho.mqtt.c-*.tar.gz` 与网络下载。
+
 ## 目录约定
 
 | 路径 | 含义 |

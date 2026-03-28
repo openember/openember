@@ -53,12 +53,12 @@ fi
 
 usage() {
   cat <<EOF
-OpenEmber CLI
+OpenEmber CLI — Kconfig + CMake helpers
 
 Usage:
   ember menuconfig [build_dir]
   ember genconfig [build_dir]
-  ember configure [build_dir]
+  ember update [build_dir]
   ember build [build_dir]
   ember all [build_dir]
   ember clean [build_dir]
@@ -67,10 +67,23 @@ Usage:
   ember uninstall [--prefix <dir>]
   ember help
 
+Commands:
+  menuconfig   Interactive Kconfig UI; writes build/.config, then runs genconfig to refresh build/config.cmake
+  genconfig    Map build/.config → build/config.cmake (CMake cache variables); use alone if .config was edited elsewhere
+  update       Run CMake configure (cmake -S -B): applies config.cmake, may fetch/extract third-party sources
+  build        Ensure .config and config.cmake exist, then update + compile (parallel jobs: OPENEMBER_JOBS)
+  all          menuconfig + update + build (full interactive flow)
+  clean        Remove the build directory (default: build/)
+  completion   Print shell completion script (e.g. "completion bash")
+  install      Symlink this script into PATH and optionally register bash completion (~/.bashrc)
+  uninstall    Remove ember symlink(s) and completion/PATH blocks from ~/.bashrc
+
+Legacy alias: "ember configure" is the same as "ember update".
+
 Environment:
   OPENEMBER_BUILD_DIR   default build dir (default: build)
   OPENEMBER_JOBS        parallel jobs for build (default: nproc)
-  OPENEMBER_KCONFIG_NONINTERACTIVE=1  generate default .config without TUI
+  OPENEMBER_KCONFIG_NONINTERACTIVE=1  generate default .config without TUI (menuconfig)
 EOF
 }
 
@@ -81,6 +94,13 @@ resolve_build_dir() {
   else
     echo "${BUILD_DIR}"
   fi
+}
+
+# After menuconfig exits, refresh build/config.cmake (same as standalone ember genconfig).
+run_menuconfig_and_genconfig() {
+  local bd="$1"
+  bash "${ROOT_DIR}/scripts/kconfig/menuconfig.sh" "${bd}"
+  bash "${ROOT_DIR}/scripts/kconfig/genconfig.sh" "${bd}"
 }
 
 upsert_block_in_file() {
@@ -239,12 +259,12 @@ bd="$(resolve_build_dir "${arg_build_dir}")"
 
 case "${cmd}" in
   menuconfig)
-    bash "${ROOT_DIR}/scripts/kconfig/menuconfig.sh" "${bd}"
+    run_menuconfig_and_genconfig "${bd}"
     ;;
   genconfig)
     bash "${ROOT_DIR}/scripts/kconfig/genconfig.sh" "${bd}"
     ;;
-  configure)
+  update|configure)
     cmake -S "${ROOT_DIR}" -B "${bd}"
     ;;
   build)
@@ -252,6 +272,7 @@ case "${cmd}" in
     if [[ ! -f "${bd}/.config" ]]; then
       echo "[ember] ${bd}/.config not found, generating default config..." >&2
       OPENEMBER_KCONFIG_NONINTERACTIVE=1 bash "${ROOT_DIR}/scripts/kconfig/menuconfig.sh" "${bd}"
+      bash "${ROOT_DIR}/scripts/kconfig/genconfig.sh" "${bd}"
     fi
     if [[ ! -f "${bd}/config.cmake" ]]; then
       echo "[ember] ${bd}/config.cmake not found, generating..." >&2
@@ -261,8 +282,7 @@ case "${cmd}" in
     cmake --build "${bd}" -j"${JOBS}"
     ;;
   all)
-    bash "${ROOT_DIR}/scripts/kconfig/menuconfig.sh" "${bd}"
-    bash "${ROOT_DIR}/scripts/kconfig/genconfig.sh" "${bd}"
+    run_menuconfig_and_genconfig "${bd}"
     cmake -S "${ROOT_DIR}" -B "${bd}"
     cmake --build "${bd}" -j"${JOBS}"
     ;;

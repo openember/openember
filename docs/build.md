@@ -56,14 +56,14 @@ cmake --build build -j"$(nproc)"
 根目录已提供 `Makefile`，可将多条命令简化为：
 
 ```bash
-# 菜单配置（交互）
+# 菜单配置（交互）；结束后会自动执行 genconfig，写入 build/config.cmake
 make menuconfig
 
-# 生成 build/config.cmake
+# 若只改了 .config、未走 menuconfig，可单独生成 config.cmake
 make genconfig
 
-# 配置 + 编译
-make configure
+# CMake 配置（下载/解压第三方等）与编译
+make update
 make build
 ```
 
@@ -84,15 +84,17 @@ make all BUILD_DIR=build-dev JOBS=16
 新增脚本：`scripts/ember`。可直接执行：
 
 ```bash
-./scripts/ember menuconfig
-./scripts/ember genconfig
-./scripts/ember configure
+./scripts/ember menuconfig   # 退出菜单后自动执行 genconfig，更新 build/config.cmake
+./scripts/ember genconfig    # 可选：仅当单独维护 .config 时需要
+./scripts/ember update       # cmake -S . -B build（原 ember configure，仍可用作别名）
 ./scripts/ember build
 ```
 
+`ember help` 列出各子命令说明。`ember configure` 与 `ember update` 等价（保留旧名）。
+
 其中 `./scripts/ember build` 会自动补齐流程：
 
-- 若 `build/.config` 不存在：自动以非交互默认配置生成
+- 若 `build/.config` 不存在：自动以非交互默认配置生成，并执行 `genconfig`
 - 若 `build/config.cmake` 不存在：自动执行 `genconfig`
 - 然后自动执行 `cmake -S . -B build` + `cmake --build build -j$(nproc)`
 
