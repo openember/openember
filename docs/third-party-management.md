@@ -1,60 +1,84 @@
-# 第三方库管理（FetchContent / Vendor / System）
+# 第三方库管理
 
-## 模式定义
+本文说明 OpenEmber 如何统一获取、缓存与构建第三方源码，以及如何与 Kconfig / CMake 联动。**版本号与下载 URL 的唯一事实来源**为 `cmake/Dependencies.cmake`；业务代码不应手写版本字符串。
 
-通过 `OPENEMBER_THIRD_PARTY_MODE` 控制第三方库来源：
+## 设计要点（结论摘要）
 
-- `FETCH`：使用 CMake `FetchContent` 下载并构建“固定版本”的依赖
-- `VENDOR`：使用本地已解压源码（默认路径为 `download/_extracted/<name>-<version>/`，与 `Dependencies.cmake` 中变量一致）
-- `SYSTEM`：优先使用系统已安装的依赖（Yocto/企业场景）
+| 项目 | 约定 |
+|------|------|
+| 版本与 URL | 仅在 `cmake/Dependencies.cmake` 钉死；升级只改该处并重新配置。 |
+| 本地缓存 | `third_party/<cache-key>.tar.gz` 或 `.zip`；FETCH 模式下**先查缓存再联网**，下载仍落盘到 `third_party/`。 |
+| 构建树路径 | `build/_deps/<上游解压顶层目录名>/`，与 GitHub 等官方归档一致（**不再**使用 FetchContent 的 `openember_*-src` 风格目录名）。 |
+| Kconfig | `third_party/Kconfig` 中仅 **`OPENEMBER_THIRD_PARTY_BUNDLE_*` 布尔开关**，不记录版本；与功能项 `depends on` / `default y if` 联动。 |
+| 默认行为 | 未出现在 `.config` 中的 bundle 符号由 `cmake/OpenEmberThirdPartyBundleDefaults.cmake` 视为 **ON**（与历史「默认拉取」一致）。 |
+| 生成 CMake 缓存 | `scripts/kconfig/genconfig.sh` 将 Kconfig 选项写入 `build/config.cmake`（`FORCE`）。 |
 
-> 仓库内不再提交 `cJSON` / `zlog` / `paho.mqtt.c` / `sqlite` 等上游源码树；见 `third_party/README.md`。
+实现辅助：`cmake/ThirdPartyArchive.cmake`（解压/下载）、各 `cmake/Get*.cmake`（`openember_third_party_prepare_stage` + `add_subdirectory`）。
 
-## 版本钉死与升级
+## 模式：`OPENEMBER_THIRD_PARTY_MODE`
 
-每个依赖应在 CMake 中用“版本变量 + URL/下载信息”固定到可追溯状态。
+- **FETCH**：优先 `third_party/` 已有归档；否则下载到 `third_party/` 再解压到 `build/_deps/...`。
+- **VENDOR**：将归档放入 `third_party/`，或设置各库对应的 `*_LOCAL_SOURCE` 指向已解压目录。
+- **SYSTEM**：使用系统已安装的包（企业/Yocto 等）；不下载。若某库在 SYSTEM 下未找到，配置阶段报错。
 
-升级流程（建议）：
+## 官方维护的第三方清单（插件式管理）
 
-1. 在 `cmake/Dependencies.cmake` 中更新依赖版本变量（以及必要时的校验信息）
-2. 重新配置构建：`cmake .. -DOPENEMBER_THIRD_PARTY_MODE=FETCH`
-3. 验证目标：编译通过、目标链接正确（include dir / library name）
-4. 若升级涉及 ABI 行为变化，更新对应的 OpenEmber 适配层/文档说明
+下列库均由项目 **钉版本、提供 Get 脚本与（适用时）BUNDLE 开关**，可按需启用；**未在下列单独列「何时解析」的**，在根 `CMakeLists.txt` 的 `openember_third_party_resolve_*` / `openember_transport_resolve_*` 中有明确调用条件。
 
-## 当前已接入的依赖（示例范围）
+| 上游 | CMake 版本变量（节选） | 脚本 | 典型启用条件 / 备注 |
+|------|------------------------|------|---------------------|
+| [zlog](https://github.com/HardySimpson/zlog) | `OPENEMBER_ZLOG_VERSION` | `GetZlog.cmake` | `OPENEMBER_LOG_BACKEND=ZLOG` |
+| [cJSON](https://github.com/DaveGamble/cJSON) | `OPENEMBER_CJSON_VERSION` | `GetCjson.cmake` | `OPENEMBER_JSON_LIBRARY=CJSON` |
+| [nlohmann/json](https://github.com/nlohmann/json) | `OPENEMBER_NLOHMANN_JSON_VERSION` | `GetNlohmannJson.cmake` | `OPENEMBER_JSON_LIBRARY=NLOHMANN_JSON` |
+| [SQLite amalgamation](https://www.sqlite.org/) | `OPENEMBER_SQLITE_*` | `GetSqlite.cmake` | 全局解析（config 等使用） |
+| [yaml-cpp](https://github.com/jbeder/yaml-cpp) | `OPENEMBER_YAMLCPP_VERSION` | `GetYamlCpp.cmake` | `OPENEMBER_WITH_YAMLCPP=ON` |
+| [Asio](https://github.com/chriskohlhoff/asio) standalone | `OPENEMBER_ASIO_TAG` | `GetAsio.cmake` | `OPENEMBER_WITH_ASIO=ON` |
+| [spdlog](https://github.com/gabime/spdlog) | `OPENEMBER_SPDLOG_VERSION` | `GetSpdlog.cmake` | `OPENEMBER_LOG_BACKEND=SPDLOG` |
+| [Eclipse Paho MQTT C](https://github.com/eclipse-paho/paho.mqtt.c) | `OPENEMBER_PAHO_MQTT_C_VERSION` | `GetPahoMqttC.cmake` | `OPENEMBER_COMPONENT_MQTT=ON` |
+| [Mongoose](https://github.com/cesanta/mongoose) | `OPENEMBER_MONGOOSE_VERSION` | `GetMongoose.cmake` | web_dashboard 等 |
+| [NNG](https://github.com/nanomsg/nng) | `OPENEMBER_NNG_VERSION` | `GetNng.cmake` | `OPENEMBER_MSGBUS_USE_NNG=ON` |
+| [LCM](https://github.com/lcm-proj/lcm) | `OPENEMBER_LCM_VERSION` | `GetLcm.cmake` | `OPENEMBER_MSGBUS_USE_LCM=ON` |
+| [libzmq](https://github.com/zeromq/libzmq) | `OPENEMBER_LIBZMQ_VERSION` | `GetLibzmq.cmake` | msgbus ZMQ 后端选用时 |
+| [cppzmq](https://github.com/zeromq/cppzmq) | `OPENEMBER_CPPZMQ_VERSION` | `GetCppZmq.cmake` | 同上 |
+| [ruckig](https://github.com/pantor/ruckig) | `OPENEMBER_RUCKIG_VERSION` | `GetRuckig.cmake` | `OPENEMBER_WITH_RUCKIG=ON`（默认关；C++20 库） |
 
-- `zlog`（固定到 `1.2.16`：Fetch/Vendor/System；脚本见 `cmake/GetZlog.cmake`；上游无 CMake，由 `cmake/vendor/zlog` 包装编译 `FetchContent` 拉取的 `src/`）
-- `cJSON`（固定到 `1.7.15`；Fetch/Vendor/System；`cmake/GetCjson.cmake`）— 与 **`nlohmann/json`** 二选一，由 `OPENEMBER_JSON_LIBRARY`（`CJSON` / `NLOHMANN_JSON`）控制；见 `inc/ember_json_config.h.in` 生成的 `ember_json_config.h`
-- `nlohmann/json`（默认版本 `3.11.3`；`cmake/GetNlohmannJson.cmake`；目标 `nlohmann_json::nlohmann_json`）
-- `paho.mqtt.c`（版本见 `cmake/Dependencies.cmake` 中 `OPENEMBER_PAHO_MQTT_C_VERSION`；Fetch/Vendor/System；`cmake/GetPahoMqttC.cmake`）
-- `sqlite`（amalgamation，与历史 `3.39.2` 对齐；Fetch/Vendor/System；`cmake/GetSqlite.cmake`）
-- `yaml-cpp`（可选：`OPENEMBER_WITH_YAMLCPP`；默认 ON；Fetch/Vendor/System；`cmake/GetYamlCpp.cmake`；目标 `yaml-cpp::yaml-cpp`）
-- `Asio` standalone（可选：`OPENEMBER_WITH_ASIO`；默认 ON；Fetch/Vendor/System；`cmake/GetAsio.cmake`；目标 `openember::asio`）
-- `spdlog`（仅当 `OPENEMBER_LOG_BACKEND=SPDLOG` 时拉取；Fetch/Vendor/System；`cmake/GetSpdlog.cmake`；目标 `spdlog::spdlog`）
-- （已删除）`easylogger`：当前已不再维护
+> 链接业务目标时按需 `target_link_libraries(... yaml-cpp::yaml-cpp)`、`target_link_libraries(... ruckig::ruckig)` 等；并非所有目标都会自动链接全部可选库。
+
+## Kconfig：`Third party (bundles)`
+
+- 菜单在 **`components/Kconfig` 之后** 加载，以便 `depends on OPENEMBER_MSGBUS_BACKEND_*`、`OPENEMBER_COMPONENT_MQTT` 等符号已定义。
+- 每个 `OPENEMBER_THIRD_PARTY_BUNDLE_<NAME>`：在 FETCH/VENDOR 下是否允许下载/解压该包；关断且系统无对应库时配置失败。
+- 详见 `third_party/Kconfig` 与 `scripts/kconfig/genconfig.sh`。
+
+## 目录约定
+
+| 路径 | 含义 |
+|------|------|
+| `third_party/<cache-key>.tar.gz` \| `.zip` | 离线缓存（FETCH 下载落盘位置） |
+| `build/_deps/<上游顶层目录>/` | 解压后的源码树 |
+| `build/_deps/<上游顶层目录>-build/` | `add_subdirectory` 的二进制目录 |
+
+## 升级流程（简要）
+
+1. 在 `cmake/Dependencies.cmake` 中更新版本与 URL（及必要时 `*_CACHE_KEY` / `*_STAGE_DIR_NAME`）。
+2. 更新或删除 `third_party/` 中旧归档后重新 `cmake`。
+3. 全量编译与链接验证。
 
 ## 日志后端（`OPENEMBER_LOG_BACKEND`）
 
-通过 CMake 缓存变量选择实现，**不**在 `ember_config.h` 里手写互斥宏：
-
 | 值 | 说明 |
 |----|------|
-| `ZLOG` | 默认；沿用 `zlog` + `LOG_FILE`（`/etc/openember/zlog.conf`） |
-| `SPDLOG` | C++ `spdlog`，彩色控制台输出（`libs/Log/log_spdlog.cpp`） |
-| `BUILTIN` | 自研轻量实现：stderr + 前缀，无第三方日志库 |
+| `ZLOG` | 默认；`zlog` + `LOG_FILE` |
+| `SPDLOG` | C++ `spdlog` |
+| `BUILTIN` | 自研轻量实现 |
 
-配置阶段会生成 `${CMAKE_BINARY_DIR}/include/ember_log_backend.h`，`inc/ember_config.h` 通过 `#include "ember_log_backend.h"` 接入。
+生成头：`${CMAKE_BINARY_DIR}/include/ember_log_backend.h`。
 
-可选依赖（yaml-cpp / Asio）**不会**自动加入所有目标的链接行；需要时在模块 `target_link_libraries(... yaml-cpp::yaml-cpp)` / `target_link_libraries(... openember::asio)`。
+## JSON（`OPENEMBER_JSON_LIBRARY`）
 
-### JSON 库（`OPENEMBER_JSON_LIBRARY`）
-
-- `CJSON`（默认）：C API，适合与现有 C 代码混用。
-- `NLOHMANN_JSON`：仅适用于使用 `<nlohmann/json.hpp>` 的 **C++** 源码；`OPENEMBER_JSON_USE_*` 宏在 `ember_json_config.h` 中定义，业务代码用 `#if OPENEMBER_JSON_USE_CJSON` / `OPENEMBER_JSON_USE_NLOHMANN_JSON` 分支。
+- `CJSON` / `NLOHMANN_JSON`：宏见 `ember_json_config.h`。
 
 ## 代码接入原则
 
-为避免维护成本膨胀：
-
-- 只为关键能力引入 transport / ABI 适配层所需的最低集合（不强依赖上游测试/示例/语言绑定）
-- CMake 层提供统一的 include/lib 变量（例如 `ZLOG_INCLUDE_DIRS`、`ZLOG_LIBRARIES`），让核心代码保持稳定
+- 仅引入当前能力所需的最小依赖集合。
+- 通过 CMake 变量或导入目标暴露 include/link，避免在核心代码硬编码路径。

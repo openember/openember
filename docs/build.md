@@ -19,6 +19,12 @@
 sudo apt install libssl-dev
 ```
 
+### 1.1 第三方源码缓存（`third_party/`）
+
+- **FETCH**：构建前若 `third_party/` 中已有与 `Dependencies.cmake` 版本一致的归档（例如 `paho.mqtt.c-1.3.16.tar.gz`），则**不会重复下载**；缺失时下载到 `third_party/` 再解压到 `build/_deps/<package>-<version>/`。
+- **VENDOR**：将对应 `.tar.gz` / `.zip` 放入 `third_party/`（无需事先解压），或设置各库文档中的 `*_LOCAL_SOURCE`。
+- 细节与迁移计划见 `docs/third-party-management.md` 与 `third_party/README.md`。
+
 
 
 ## 2. 一键推荐流程（不传 `-DXXX`）
@@ -155,10 +161,12 @@ source <(ember completion bash)
   - `OPENEMBER_LOG_BACKEND`：`ZLOG` / `SPDLOG` / `BUILTIN`
   - `OPENEMBER_LOG_FILE`：zlog 配置路径（例如 `/etc/openember/zlog.conf`）
 - **Dependencies**
-  - `OPENEMBER_THIRD_PARTY_MODE`：`FETCH` / `VENDOR` / `SYSTEM`
+  - `OPENEMBER_THIRD_PARTY_MODE`：`FETCH`（先查 `third_party/` 归档，再联网下载到 `third_party/`） / `VENDOR`（仅使用 `third_party/` 或 `*_LOCAL_SOURCE`） / `SYSTEM`
+  - **Third party (bundles)**：各上游源码包是否参与 FETCH/VENDOR（无版本字段；版本在 `cmake/Dependencies.cmake`）
   - `OPENEMBER_JSON_LIBRARY`：`CJSON` / `NLOHMANN_JSON`
   - `OPENEMBER_WITH_YAMLCPP`
   - `OPENEMBER_WITH_ASIO`
+  - `OPENEMBER_WITH_RUCKIG`（可选轨迹库 [ruckig](https://github.com/pantor/ruckig)，默认关；需 C++20）
 - **Transport / Msgbus**
   - 内部总线后端（二选一）：NNG / LCM（`OPENEMBER_MSGBUS_USE_*`）；spdlog topic、示例与框架节点共用该传输
 - **Framework Modules（新增）**
