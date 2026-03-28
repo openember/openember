@@ -22,8 +22,14 @@
 extern "C" {
 #endif
 
-int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb)
+int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb,
+                 void *user_data)
 {
+    (void)handle;
+    (void)name;
+    (void)address;
+    (void)cb;
+    (void)user_data;
     return EMBER_EOK;
 }
 

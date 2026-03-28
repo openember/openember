@@ -20,10 +20,11 @@ extern "C" {
 
 typedef void* msg_node_t;
 
-/* Callback function prototype type */
-typedef void msg_arrived_cb_t(char *topic, void *payload, size_t payloadlen);
+/* Callback: user_data is the opaque passed to msg_bus_init (may be NULL). */
+typedef void msg_arrived_cb_t(void *user_data, char *topic, void *payload, size_t payloadlen);
 
-int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb);
+int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb,
+                 void *user_data);
 int msg_bus_deinit(msg_node_t handle);
 
 int msg_bus_publish(msg_node_t handle, const char *topic, const char *payload);

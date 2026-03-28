@@ -17,6 +17,8 @@ namespace openember::mqtt {
 
 using MessageCallback = std::function<void(std::string_view topic, const void *payload, std::size_t len)>;
 
+extern "C" void openember_mqtt_client_bridge(void *user_data, char *topic, void *payload, std::size_t len);
+
 struct ClientConfig {
     std::string server_uri{"tcp://localhost:1883"};
     std::string client_id{"openember"};
@@ -38,6 +40,8 @@ public:
     int publish_raw(std::string_view topic, const void *data, std::size_t len);
 
 private:
+    friend void openember_mqtt_client_bridge(void *user_data, char *topic, void *payload, size_t len);
+
     ClientConfig cfg_;
     void *handle_{nullptr};
     MessageCallback on_{};

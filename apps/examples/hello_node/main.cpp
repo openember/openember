@@ -75,8 +75,9 @@ static void task_entry(void *args)
     free(args);
 }
 
-static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
+static void _msg_arrived_cb(void *user_data, char *topic, void *payload, size_t payloadlen)
 {
+    (void)user_data;
 #ifdef TEMPLATE_RAW_MSG
     test_msg_t *test_msg = (test_msg_t *)payload;
     LOG_I("Payload len = %lu >> id: %d, msg: %s", payloadlen, test_msg->id, test_msg->msg);
@@ -98,10 +99,10 @@ static int msg_init(void)
     int rc = 0, cn = 0;
 
     if (sync_mode) {
-        rc = msg_bus_init(&client, MODULE_NAME, NULL, NULL);
+        rc = msg_bus_init(&client, MODULE_NAME, NULL, NULL, NULL);
     }
     else {
-        rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb);
+        rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb, NULL);
     }
     if (rc != EMBER_EOK) {
         LOG_E("Message bus init failed.\n");

@@ -14,18 +14,13 @@ extern "C" {
 
 namespace openember::mqtt {
 
-namespace {
-
-thread_local MessageCallback *g_tls_cb = nullptr;
-
-} // namespace
-
-extern "C" void openember_mqtt_client_bridge(char *topic, void *payload, size_t len)
+extern "C" void openember_mqtt_client_bridge(void *user_data, char *topic, void *payload, std::size_t len)
 {
-    if (!g_tls_cb || !(*g_tls_cb)) {
+    auto *self = static_cast<Client *>(user_data);
+    if (!self || !self->on_) {
         return;
     }
-    (*g_tls_cb)(topic ? std::string_view(topic) : std::string_view{}, payload, len);
+    self->on_(topic ? std::string_view(topic) : std::string_view{}, payload, len);
 }
 
 Client::Client(ClientConfig cfg) : cfg_(std::move(cfg)) {}
@@ -45,7 +40,6 @@ int Client::connect(MessageCallback on_message)
     if (handle_) {
         return -EBUSY;
     }
-    g_tls_cb = &on_;
     char *addr = nullptr;
     std::string addr_buf;
     if (!cfg_.server_uri.empty()) {
@@ -53,7 +47,7 @@ int Client::connect(MessageCallback on_message)
         addr = addr_buf.data();
     }
     msg_arrived_cb_t *cb = on_ ? openember_mqtt_client_bridge : nullptr;
-    return msg_bus_init(&handle_, cfg_.client_id.c_str(), addr, cb);
+    return msg_bus_init(&handle_, cfg_.client_id.c_str(), addr, cb, this);
 #endif
 }
 
@@ -66,9 +60,6 @@ int Client::disconnect()
     if (handle_) {
         rc = msg_bus_deinit(handle_);
         handle_ = nullptr;
-    }
-    if (g_tls_cb == &on_) {
-        g_tls_cb = nullptr;
     }
     on_ = {};
     return rc;

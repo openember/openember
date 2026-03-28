@@ -25,12 +25,17 @@ extern "C" {
  */
 typedef void* msg_node_t;
 
-/* Callback function pointer type */
-typedef void msg_arrived_cb_t(char *topic, void *payload, size_t payloadlen);
+typedef void msg_arrived_cb_t(void *user_data, char *topic, void *payload, size_t payloadlen);
+
+typedef struct mqtt_cb_ctx {
+    msg_arrived_cb_t *fn;
+    void *user_data;
+} mqtt_cb_ctx_t;
 typedef void msg_connlost_cb_t(char *cause);
 typedef void msg_delivered_cb_t(int token);
 
-int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb);
+int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb,
+                 void *user_data);
 int msg_bus_deinit(msg_node_t handle);
 
 int msg_bus_publish(msg_node_t handle, const char *topic, const char *payload);
@@ -39,7 +44,7 @@ int msg_bus_publish_raw(msg_node_t handle, const char *topic, const void *payloa
 int msg_bus_subscribe(msg_node_t handle, const char *topic);
 int msg_bus_unsubscribe(msg_node_t handle, const char *topic);
 
-int msg_bus_set_callback(msg_node_t handle, msg_arrived_cb_t *cb);
+int msg_bus_set_callback(msg_node_t handle, msg_arrived_cb_t *cb, void *user_data);
 
 int msg_bus_connect(msg_node_t handle);
 int msg_bus_disconnect(msg_node_t handle);

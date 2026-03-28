@@ -32,6 +32,53 @@ extern "C" {
 static const char *username = "openember";
 static const char *password = "p@ssw0rd";
 
+typedef struct mqtt_handle_ctx {
+    void *client;
+    mqtt_cb_ctx_t *cb_ctx;
+    struct mqtt_handle_ctx *next;
+} mqtt_handle_ctx_t;
+
+static mqtt_handle_ctx_t *g_handle_ctxs;
+
+static mqtt_handle_ctx_t *mqtt_lookup_entry(void *client)
+{
+    for (mqtt_handle_ctx_t *p = g_handle_ctxs; p; p = p->next) {
+        if (p->client == client) {
+            return p;
+        }
+    }
+    return NULL;
+}
+
+static int mqtt_register(void *client, mqtt_cb_ctx_t *cb_ctx)
+{
+    mqtt_handle_ctx_t *n = (mqtt_handle_ctx_t *)malloc(sizeof(*n));
+    if (!n) {
+        return -ENOMEM;
+    }
+    n->client = client;
+    n->cb_ctx = cb_ctx;
+    n->next = g_handle_ctxs;
+    g_handle_ctxs = n;
+    return 0;
+}
+
+static mqtt_cb_ctx_t *mqtt_unregister(void *client)
+{
+    mqtt_handle_ctx_t **pp = &g_handle_ctxs;
+    while (*pp) {
+        if ((*pp)->client == client) {
+            mqtt_handle_ctx_t *dead = *pp;
+            mqtt_cb_ctx_t *ctx = dead->cb_ctx;
+            *pp = dead->next;
+            free(dead);
+            return ctx;
+        }
+        pp = &(*pp)->next;
+    }
+    return NULL;
+}
+
 #ifdef EMBER_LIBS_USING_MQTT_ASYNC
 static void delivered(void *context, MQTTAsync_token token)
 {
@@ -40,13 +87,15 @@ static void delivered(void *context, MQTTAsync_token token)
 
 static int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message)
 {
-    msg_arrived_cb_t *user_cb = (msg_arrived_cb_t *)context;
+    mqtt_cb_ctx_t *ctx = (mqtt_cb_ctx_t *)context;
 
     //printf("\nMessage arrived\n");
     //printf("     topic: %s\n", topicName);
     //printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
 
-    user_cb(topicName, message->payload, message->payloadlen);
+    if (ctx && ctx->fn) {
+        ctx->fn(ctx->user_data, topicName, message->payload, (size_t)message->payloadlen);
+    }
 
     MQTTAsync_freeMessage(&message);
     MQTTAsync_free(topicName);
@@ -66,13 +115,15 @@ static void delivered(void *context, MQTTClient_deliveryToken token)
 
 static int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
-    msg_arrived_cb_t *user_cb = (msg_arrived_cb_t *)context;
+    mqtt_cb_ctx_t *ctx = (mqtt_cb_ctx_t *)context;
 
     //printf("\nMessage arrived\n");
     //printf("     topic: %s\n", topicName);
     //printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
 
-    user_cb(topicName, message->payload, message->payloadlen);
+    if (ctx && ctx->fn) {
+        ctx->fn(ctx->user_data, topicName, message->payload, (size_t)message->payloadlen);
+    }
 
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
@@ -86,7 +137,8 @@ static void connlost(void *context, char *cause)
 }
 #endif
 
-int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb)
+int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb,
+                 void *user_data)
 {
     int rc;
 
@@ -113,9 +165,23 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
         return -EMBER_ERROR;
     }
 
-    rc = MQTTAsync_setCallbacks(*handle, (void *)cb, connlost, msgarrvd, delivered);
+    mqtt_cb_ctx_t *actx = NULL;
+    if (cb) {
+        actx = (mqtt_cb_ctx_t *)calloc(1, sizeof(*actx));
+        if (!actx) {
+            MQTTAsync_destroy(handle);
+            return -ENOMEM;
+        }
+        actx->fn = cb;
+        actx->user_data = user_data;
+    }
+
+    rc = MQTTAsync_setCallbacks(*handle, actx, connlost, msgarrvd, delivered);
     if (rc != MQTTASYNC_SUCCESS) {
         LOG_E("Failed to set callbacks, return code %d\n", rc);
+        if (actx) {
+            free(actx);
+        }
         MQTTAsync_destroy(handle);
         return -EMBER_ERROR;
     }
@@ -124,8 +190,19 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
     if (rc != MQTTASYNC_SUCCESS) {
         LOG_E("Failed to connect, return code %d\n", rc);
         LOG_E("Reason: %s\n", MQTTReasonCode_toString(rc));
+        if (actx) {
+            free(actx);
+        }
         MQTTAsync_destroy(handle);
         return -EMBER_ERROR;
+    }
+
+    if (mqtt_register(*handle, actx) != 0) {
+        if (actx) {
+            free(actx);
+        }
+        MQTTAsync_destroy(handle);
+        return -ENOMEM;
     }
 
 #else
@@ -149,9 +226,23 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
         return -EMBER_ERROR;
     }
 
-    rc = MQTTClient_setCallbacks(*handle, (void *)cb, connlost, msgarrvd, delivered);
+    mqtt_cb_ctx_t *sctx = NULL;
+    if (cb) {
+        sctx = (mqtt_cb_ctx_t *)calloc(1, sizeof(*sctx));
+        if (!sctx) {
+            MQTTClient_destroy(handle);
+            return -ENOMEM;
+        }
+        sctx->fn = cb;
+        sctx->user_data = user_data;
+    }
+
+    rc = MQTTClient_setCallbacks(*handle, sctx, connlost, msgarrvd, delivered);
     if (rc != MQTTCLIENT_SUCCESS) {
         LOG_E("Failed to set callbacks, return code %d\n", rc);
+        if (sctx) {
+            free(sctx);
+        }
         MQTTClient_destroy(handle);
         return -EMBER_ERROR;
     }
@@ -160,8 +251,19 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
     rc = MQTTClient_connect(*handle, &conn_opts);
     if (rc != MQTTCLIENT_SUCCESS) {
         LOG_E("Failed to connect, return code %d\n", rc);
+        if (sctx) {
+            free(sctx);
+        }
         MQTTClient_destroy(handle);
         return -EMBER_ERROR;
+    }
+
+    if (mqtt_register(*handle, sctx) != 0) {
+        if (sctx) {
+            free(sctx);
+        }
+        MQTTClient_destroy(handle);
+        return -ENOMEM;
     }
 #endif
 
@@ -170,7 +272,15 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
 
 int msg_bus_deinit(msg_node_t handle)
 {
+    mqtt_cb_ctx_t *ctx = mqtt_unregister(handle);
+    if (ctx) {
+        free(ctx);
+    }
+#ifdef EMBER_LIBS_USING_MQTT_ASYNC
+    MQTTAsync_destroy(handle);
+#else
     MQTTClient_destroy(&handle);
+#endif
     return EMBER_EOK;
 }
 
@@ -243,15 +353,48 @@ int msg_bus_unsubscribe(msg_node_t handle, const char *topic)
     return EMBER_EOK;
 }
 
-int msg_bus_set_callback(msg_node_t handle, msg_arrived_cb_t *cb)
+int msg_bus_set_callback(msg_node_t handle, msg_arrived_cb_t *cb, void *user_data)
 {
     int rc;
+    mqtt_handle_ctx_t *entry = mqtt_lookup_entry(handle);
+    mqtt_cb_ctx_t *ctx = NULL;
 
-    rc = MQTTClient_setCallbacks(handle, (void *)cb, connlost, msgarrvd, delivered);
+    if (!entry) {
+        ctx = (mqtt_cb_ctx_t *)calloc(1, sizeof(*ctx));
+        if (!ctx) {
+            return -ENOMEM;
+        }
+        ctx->fn = cb;
+        ctx->user_data = user_data;
+        if (mqtt_register(handle, ctx) != 0) {
+            free(ctx);
+            return -ENOMEM;
+        }
+    } else {
+        if (!entry->cb_ctx) {
+            entry->cb_ctx = (mqtt_cb_ctx_t *)calloc(1, sizeof(mqtt_cb_ctx_t));
+            if (!entry->cb_ctx) {
+                return -ENOMEM;
+            }
+        }
+        ctx = entry->cb_ctx;
+        ctx->fn = cb;
+        ctx->user_data = user_data;
+    }
+
+#ifdef EMBER_LIBS_USING_MQTT_ASYNC
+    rc = MQTTAsync_setCallbacks(handle, ctx, connlost, msgarrvd, delivered);
+    if (rc != MQTTASYNC_SUCCESS) {
+        LOG_E("Failed to set callbacks, return code %d\n", rc);
+        return -EMBER_ERROR;
+    }
+#else
+    rc = MQTTClient_setCallbacks(handle, ctx, connlost, msgarrvd, delivered);
     if (rc != MQTTCLIENT_SUCCESS) {
         LOG_E("Failed to set callbacks, return code %d\n", rc);
         return -EMBER_ERROR;
     }
+#endif
     return EMBER_EOK;
 }
 

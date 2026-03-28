@@ -10,30 +10,19 @@ extern "C" {
 
 namespace openember::msgbus {
 
-namespace {
-
-thread_local MessageCallback *g_tls_cb = nullptr;
-
-void ClibCbBridge(char *topic, void *payload, size_t payload_len)
-{
-    if (!g_tls_cb || !(*g_tls_cb) || !topic) return;
-    (*g_tls_cb)(topic, payload, payload_len);
-}
-
-} // namespace
+extern "C" void ClibCbBridge(void *user_data, char *topic, void *payload, size_t payload_len);
 
 class ClibTransportBackend final : public TransportBackend {
 public:
     int init(const std::string &node_name, const std::string &address, MessageCallback cb) override
     {
         cb_ = std::move(cb);
-        g_tls_cb = &cb_;
         char *addr = nullptr;
         if (!address.empty()) {
             addr_buf_ = address;
             addr = addr_buf_.data();
         }
-        return msg_bus_init(&handle_, node_name.c_str(), addr, ClibCbBridge);
+        return msg_bus_init(&handle_, node_name.c_str(), addr, ClibCbBridge, this);
     }
 
     int deinit() override
@@ -43,7 +32,6 @@ public:
             rc = msg_bus_deinit(handle_);
             handle_ = nullptr;
         }
-        g_tls_cb = nullptr;
         cb_ = {};
         return rc;
     }
@@ -79,10 +67,21 @@ public:
     }
 
 private:
+    friend void ClibCbBridge(void *user_data, char *topic, void *payload, size_t payload_len);
+
     msg_node_t handle_{nullptr};
     MessageCallback cb_{};
     std::string addr_buf_{};
 };
+
+extern "C" void ClibCbBridge(void *user_data, char *topic, void *payload, size_t payload_len)
+{
+    auto *self = static_cast<ClibTransportBackend *>(user_data);
+    if (!self || !self->cb_ || !topic) {
+        return;
+    }
+    self->cb_(topic, payload, payload_len);
+}
 
 std::unique_ptr<TransportBackend> detail_create_clib_transport_backend()
 {

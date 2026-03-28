@@ -151,8 +151,9 @@ static int startup_modules(void)
     return EMBER_EOK;
 }
 
-static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
+static void _msg_arrived_cb(void *user_data, char *topic, void *payload, size_t payloadlen)
 {
+    (void)user_data;
     if (0 == strncmp(SYS_EVENT_TOPIC, topic, strlen(topic))) {
         event_msg_t *e = (event_msg_t *)payload;
         LOG_I("Payload len = %lu >> event: [%d] %s", payloadlen, e->event_id, e->event_data.event_str);
@@ -187,7 +188,7 @@ static int msg_init(void)
 {
     int rc = 0, cn = 0;
 
-    rc = msg_bus_init(&client, APPLICATION_NAME, NULL, _msg_arrived_cb);
+    rc = msg_bus_init(&client, APPLICATION_NAME, NULL, _msg_arrived_cb, NULL);
     if (rc != EMBER_EOK) {
         LOG_E("Message bus init failed.\n");
         return -1;

@@ -32,6 +32,7 @@ typedef struct msgbus_lcm {
     lcm_subscription_t *subscription;
 
     msg_arrived_cb_t *cb;
+    void *user_data;
     pthread_t recv_thread;
     volatile int recv_running;
 
@@ -145,9 +146,10 @@ static void lcm_on_message(const lcm_recv_buf_t *rbuf, const char *channel, void
 
     if (ps->cb && matched) {
         msg_arrived_cb_t *cb = ps->cb;
+        void *ud = ps->user_data;
         pthread_mutex_unlock(&ps->mtx);
 
-        cb(topic_copy, payload_copy, payload_len);
+        cb(ud, topic_copy, payload_copy, payload_len);
         free(topic_copy);
         free(payload_copy);
         return;
@@ -194,7 +196,8 @@ static void *lcm_recv_loop(void *arg)
     return NULL;
 }
 
-int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb)
+int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb,
+                 void *user_data)
 {
     (void)name;
 
@@ -216,6 +219,7 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
     }
 
     ps->cb = cb;
+    ps->user_data = user_data;
     ps->recv_running = (cb != NULL) ? 1 : 0;
     ps->sync_topic = NULL;
     ps->sync_payload = NULL;

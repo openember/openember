@@ -80,6 +80,7 @@ typedef struct msgbus_nng {
     volatile int recv_running;
 
     msg_arrived_cb_t *cb;
+    void *user_data;
 } msgbus_nng_t;
 
 static int split_topic_payload(const void *buf, size_t len,
@@ -232,7 +233,7 @@ static void *recv_loop(void *arg)
         (void)split_topic_payload(body, msg_len, &topic_copy, &payload_copy, &payload_len);
 
         if (ps->cb && topic_copy) {
-            ps->cb(topic_copy, payload_copy, payload_len);
+            ps->cb(ps->user_data, topic_copy, payload_copy, payload_len);
         }
 
         if (payload_copy) {
@@ -248,7 +249,8 @@ static void *recv_loop(void *arg)
     return NULL;
 }
 
-int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb)
+int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrived_cb_t *cb,
+                 void *user_data)
 {
     (void)name;
 
@@ -326,6 +328,7 @@ int msg_bus_init(msg_node_t *handle, const char *name, char *address, msg_arrive
     }
 
     ps->cb = cb;
+    ps->user_data = user_data;
     ps->recv_running = (cb != NULL) ? 1 : 0;
 
     if (cb) {

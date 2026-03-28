@@ -17,8 +17,9 @@
 
 static msg_node_t client;
 
-static void _msg_arrived_cb(char *topic, void *payload, size_t payloadlen)
+static void _msg_arrived_cb(void *user_data, char *topic, void *payload, size_t payloadlen)
 {
+    (void)user_data;
     LOG_D("[%s] %s\n", topic, (char *)payload);
 }
 
@@ -26,7 +27,7 @@ static int msg_init(void)
 {
     int rc = 0, cn = 0;
 
-    rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb);
+    rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb, NULL);
     if (rc != EMBER_EOK) {
         LOG_E("Message bus init failed.");
         return -1;
