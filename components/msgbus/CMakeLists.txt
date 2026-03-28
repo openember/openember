@@ -4,6 +4,7 @@ set( MSG_WRAPPER_SRCS
     message.c
     transport_backend_clib.cpp
     transport_backend_factory.cpp
+    msgbus_node.cpp
     zmq_wrapper.c
     nng_wrapper.c
     lcm_wrapper.c

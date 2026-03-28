@@ -74,6 +74,17 @@ if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
         set(OPENEMBER_SPDLOG_TOPIC_RATE_LIMIT 0)
     endif()
 
+    # Stale CMake cache often leaves tcp:// here; LCM lcm_create() does not support provider "tcp".
+    if(OPENEMBER_MSGBUS_USE_LCM)
+        if(OPENEMBER_SPDLOG_TOPIC_PUB_URL MATCHES "^tcp://")
+            message(STATUS "Log: spdlog topic PUB URL was tcp (invalid for LCM); overriding to udpm multicast")
+            set(OPENEMBER_SPDLOG_TOPIC_PUB_URL "udpm://239.255.76.67:7667?ttl=1")
+        endif()
+        if(OPENEMBER_SPDLOG_TOPIC_SUB_URL MATCHES "^tcp://")
+            set(OPENEMBER_SPDLOG_TOPIC_SUB_URL "udpm://239.255.76.67:7667?ttl=1")
+        endif()
+    endif()
+
     target_compile_definitions(Log PRIVATE
         OPENEMBER_SPDLOG_LEVEL="${OPENEMBER_SPDLOG_LEVEL}"
         OPENEMBER_SPDLOG_FLUSH_LEVEL="${OPENEMBER_SPDLOG_FLUSH_LEVEL}"

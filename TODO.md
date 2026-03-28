@@ -95,10 +95,14 @@ C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal
 - [x] Kconfig / `genconfig.sh`：示例 `OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES`；spdlog URL 回退与 msgbus 一致
 - [x] `docs/build.md` 更新
 
-### 阶段 B — C++ 原生后端（后续）
+### 阶段 B — C++ 应用 API（已起步）
 
-- [ ] 在 `components/msgbus` 增加 `LcmTransportBackend`：基于 **lcm::LCM**（C++）实现 `TransportBackend`，逐步替代 `lcm_wrapper.c` 调用路径
-- [ ] 若恢复 ZMQ 作为可选 msgbus 后端：基于 **cppzmq** / `zmq.hpp` 实现 `ZmqTransportBackend`
+- [x] `components/msgbus/msgbus_node.hpp`：`openember::msgbus::MsgBusNode` 封装 `TransportBackend`（示例已改用此类，不再直接调用 `msg_bus_*`）
+
+### 阶段 C — C++ 原生传输后端（后续）
+
+- [ ] `LcmTransportBackend`：基于 **lcm::LCM**（C++）实现 `TransportBackend`，逐步替代 `lcm_wrapper.c`
+- [ ] 若恢复 ZMQ msgbus：基于 **cppzmq** 实现 `ZmqTransportBackend`
 - [ ] `CreateDefaultTransportBackend()` 按 CMake 选择 C++ 或 legacy C 实现（过渡期可并存）
 
 ### 验收

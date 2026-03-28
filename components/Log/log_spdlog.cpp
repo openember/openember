@@ -58,7 +58,11 @@
 #define OPENEMBER_SPDLOG_TOPIC_NAME "/openember/log"
 #endif
 #ifndef OPENEMBER_SPDLOG_TOPIC_PUB_URL
+#if defined(EMBER_LIBS_USING_LCM)
+#define OPENEMBER_SPDLOG_TOPIC_PUB_URL "udpm://239.255.76.67:7667?ttl=1"
+#else
 #define OPENEMBER_SPDLOG_TOPIC_PUB_URL "tcp://*:7561"
+#endif
 #endif
 #ifndef OPENEMBER_SPDLOG_TOPIC_LEVEL
 #define OPENEMBER_SPDLOG_TOPIC_LEVEL "info"
@@ -106,10 +110,23 @@ static std::string json_escape(std::string_view v)
     return out;
 }
 
+/* LCM only accepts providers like udpm/file; a stale tcp:// URL causes lcm_create to print
+ * "Error: LCM provider \"tcp\" not found" on stderr while the main msgbus may still use udpm. */
+static std::string normalize_topic_pub_url(const char *raw)
+{
+    std::string u = raw ? raw : "";
+#if defined(EMBER_LIBS_USING_LCM)
+    if (u.size() >= 6u && u.compare(0u, 6u, "tcp://") == 0) {
+        return "udpm://239.255.76.67:7667?ttl=1";
+    }
+#endif
+    return u;
+}
+
 class oe_topic_sink final : public spdlog::sinks::base_sink<std::mutex> {
 public:
     oe_topic_sink(const char *pub_url, const char *topic, spdlog::level::level_enum threshold, int rate_limit_lps)
-        : pub_url_(pub_url ? pub_url : ""), topic_(topic ? topic : ""), threshold_(threshold),
+        : pub_url_(normalize_topic_pub_url(pub_url)), topic_(topic ? topic : ""), threshold_(threshold),
           rate_limit_lps_(rate_limit_lps)
     {
     }

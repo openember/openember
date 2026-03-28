@@ -6,6 +6,9 @@
  * 框架内部消息总线（msg_bus_* 声明由各 backend 提供）：节点间模块通信、SMM、订阅框架话题、
  * spdlog topic 日志流（与数据面共用同一传输）。
  *
+ * 新代码请优先使用 C++ 门面：msgbus_node.hpp（openember::msgbus::MsgBusNode），避免直接调用
+ * msg_bus_*（保留给 C 模块与过渡期）。
+ *
  * Change Logs:
  * Date           Author       Notes
  * 2022-07-07     luhuadong    the first version
