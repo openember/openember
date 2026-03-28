@@ -2,6 +2,7 @@ project(msgbus)
 
 set( MSG_WRAPPER_SRCS 
     message.c
+    transport_backend_legacy.cpp
     zmq_wrapper.c
     mqtt_client_wrapper.c
     mqtt_async_wrapper.c
