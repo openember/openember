@@ -4,6 +4,7 @@ add_subdirectory(pubsub)
 
 add_subdirectory(Log)
 add_subdirectory(GDSL)
+add_subdirectory(mqtt)
 add_subdirectory(msgbus)
 add_subdirectory(Common)
 if(NOT DEFINED OPENEMBER_COMPONENT_NETWORK OR OPENEMBER_COMPONENT_NETWORK)

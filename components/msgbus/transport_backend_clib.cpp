@@ -14,13 +14,15 @@ namespace {
 
 thread_local MessageCallback *g_tls_cb = nullptr;
 
-void LegacyCbBridge(char *topic, void *payload, size_t payload_len)
+void ClibCbBridge(char *topic, void *payload, size_t payload_len)
 {
     if (!g_tls_cb || !(*g_tls_cb) || !topic) return;
     (*g_tls_cb)(topic, payload, payload_len);
 }
 
-class LegacyTransportBackend final : public TransportBackend {
+} // namespace
+
+class ClibTransportBackend final : public TransportBackend {
 public:
     int init(const std::string &node_name, const std::string &address, MessageCallback cb) override
     {
@@ -31,7 +33,7 @@ public:
             addr_buf_ = address;
             addr = addr_buf_.data();
         }
-        return msg_bus_init(&handle_, node_name.c_str(), addr, LegacyCbBridge);
+        return msg_bus_init(&handle_, node_name.c_str(), addr, ClibCbBridge);
     }
 
     int deinit() override
@@ -71,7 +73,7 @@ public:
         return msg_bus_unsubscribe(handle_, t.c_str());
     }
 
-    ~LegacyTransportBackend() override
+    ~ClibTransportBackend() override
     {
         (void)deinit();
     }
@@ -82,11 +84,9 @@ private:
     std::string addr_buf_{};
 };
 
-} // namespace
-
-std::unique_ptr<TransportBackend> CreateDefaultTransportBackend()
+std::unique_ptr<TransportBackend> detail_create_clib_transport_backend()
 {
-    return std::make_unique<LegacyTransportBackend>();
+    return std::make_unique<ClibTransportBackend>();
 }
 
 } // namespace openember::msgbus

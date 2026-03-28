@@ -314,6 +314,7 @@ set( OPENEMBER_INTERNAL_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/components/pubsub
     ${CMAKE_SOURCE_DIR}/components/ppool
     ${CMAKE_SOURCE_DIR}/components/msgbus
+    ${CMAKE_SOURCE_DIR}/components/mqtt
     ${CMAKE_SOURCE_DIR}/components/Common
     ${CMAKE_SOURCE_DIR}/modules/Algorithm
     ${CMAKE_SOURCE_DIR}/components/libcsv
@@ -326,6 +327,7 @@ set( OPENEMBER_INTERNAL_LIBRARIES
     ember_pubsub
     ppool
     msgbus
+    openember_mqtt
     Common
     Algorithm
     csv

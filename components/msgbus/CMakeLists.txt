@@ -2,11 +2,9 @@ project(msgbus)
 
 set( MSG_WRAPPER_SRCS 
     message.c
-    transport_backend_legacy.cpp
+    transport_backend_clib.cpp
+    transport_backend_factory.cpp
     zmq_wrapper.c
-    mqtt_client_wrapper.c
-    mqtt_async_wrapper.c
-    mosquitto_wrapper.c
     nng_wrapper.c
     lcm_wrapper.c
 )
@@ -17,3 +15,6 @@ OPENEMBER_ADD_STATIC_LIBRARY (TARGET ${PROJECT_NAME}
     INCLUDES ${OPENEMBER_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}
     DESTINATION lib
 )
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)

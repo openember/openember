@@ -1,6 +1,7 @@
 set(_openember_tests
     minunit_example.c
     test_log.c
+    test_msgbus_transport.cpp
 )
 
 if(OPENEMBER_ENABLE_OSAL)
@@ -16,7 +17,9 @@ if(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
 endif()
 
 foreach(_t ${_openember_tests})
-    string(REPLACE ".c" "" TEST_NAME ${_t})
+    set(TEST_NAME "${_t}")
+    string(REPLACE ".cpp" "" TEST_NAME "${TEST_NAME}")
+    string(REPLACE ".c" "" TEST_NAME "${TEST_NAME}")
     message(STATUS "${TEST_NAME} ${_t}")
     OPENEMBER_ADD_TEST(TARGET   ${TEST_NAME}
                    SRCS     ${_t}

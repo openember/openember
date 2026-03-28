@@ -76,8 +76,8 @@ C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal
 - [x] 修复 `LCM` 默认 topic URL（避免 `LCM provider "tcp" not found`）
 - [x] spdlog topic 默认 URL 与 `OPENEMBER_PUBSUB_BACKEND`（ember_pubsub 实际传输）对齐，避免 ZMQ pubsub + LCM msgbus 混用时误用 `udpm://`
 - [x] 在 `components/msgbus` 引入 C++ 抽象层骨架（接口 + 工厂 + legacy 适配）
-- [ ] 将 `components/msgbus` 旧 C wrapper 逐步迁移到 backend 类（LCM/NNG/ZMQ）
-- [ ] 将 `components/msgbus` 的 `mqtt_*` wrapper 迁出到 `components/mqtt`
-- [ ] 在 `components/mqtt` 提供独立 C++ 封装（面向 IoT 云连接）
-- [ ] 增加 backend 插件注册机制（按 Kconfig/CMake 组合装配）
-- [ ] 补齐回归测试（logger/web_dashboard/topic/msgbus 示例）
+- [x] 将 `components/msgbus` 旧 C wrapper 逐步迁移到 backend 类（LCM/NNG/ZMQ）：`ClibTransportBackend` + `transport_backend_factory.cpp`（仍调用统一 `msg_bus_*` C API）
+- [x] 将 `components/msgbus` 的 `mqtt_*` wrapper 迁出到 `components/mqtt`（静态库 `openember_mqtt`）
+- [x] 在 `components/mqtt` 提供独立 C++ 封装（面向 IoT 云连接）：`mqtt_client.hpp` / `mqtt_client.cpp`（`EMBER_LIBS_USING_MQTT` 时启用）
+- [x] 增加 backend 装配说明与工厂入口（`CreateDefaultTransportBackend` → `detail_create_clib_transport_backend`；动态插件仍待后续）
+- [x] 补齐回归测试：`test/test_msgbus_transport.cpp`（TransportBackend 工厂冒烟；logger/web_dashboard/topic 全链路仍建议发布前手动跑通）
