@@ -70,3 +70,14 @@ C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal
 - [ ] 在 `web_dashboard` 增加“订阅日志 topic 并缓存”的后台逻辑（内存 ring）
 - [ ] 前端 logs 页面接入（优先走 `/api/logs` 读取 ring；后续再做 SSE）
 - [ ] 编译运行验证：至少 `web_dashboard` 能实时看到 `INFO+` 日志
+
+## Msgbus 插件化重构（进行中）
+
+- [x] 修复 `LCM` 默认 topic URL（避免 `LCM provider "tcp" not found`）
+- [x] spdlog topic 默认 URL 与 `OPENEMBER_PUBSUB_BACKEND`（ember_pubsub 实际传输）对齐，避免 ZMQ pubsub + LCM msgbus 混用时误用 `udpm://`
+- [x] 在 `components/msgbus` 引入 C++ 抽象层骨架（接口 + 工厂 + legacy 适配）
+- [ ] 将 `components/msgbus` 旧 C wrapper 逐步迁移到 backend 类（LCM/NNG/ZMQ）
+- [ ] 将 `components/msgbus` 的 `mqtt_*` wrapper 迁出到 `components/mqtt`
+- [ ] 在 `components/mqtt` 提供独立 C++ 封装（面向 IoT 云连接）
+- [ ] 增加 backend 插件注册机制（按 Kconfig/CMake 组合装配）
+- [ ] 补齐回归测试（logger/web_dashboard/topic/msgbus 示例）

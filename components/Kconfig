@@ -111,9 +111,12 @@ config OPENEMBER_SPDLOG_TOPIC_NAME
 config OPENEMBER_SPDLOG_TOPIC_PUB_URL
     string "spdlog: topic transport publish URL"
     depends on OPENEMBER_SPDLOG_ENABLE_TOPIC
+    default "udpm://239.255.76.67:7667?ttl=1" if OPENEMBER_MSGBUS_BACKEND_LCM
+    default "udp://127.0.0.1:7560" if OPENEMBER_MSGBUS_BACKEND_UDP
     default "tcp://*:7561"
     help
-      Publisher bind URL for ember_pubsub.
+      Publisher bind URL for ember_pubsub (must match OPENEMBER_PUBSUB_BACKEND / ember_pubsub transport).
+      - LCM: udpm://...
       - ZMQ: tcp://*:7561
       - NNG: tcp://127.0.0.1:7561 (or tcp://*:7561 if supported by backend)
       - UDP: udp://127.0.0.1:7560 (sendto target)
@@ -121,6 +124,8 @@ config OPENEMBER_SPDLOG_TOPIC_PUB_URL
 config OPENEMBER_SPDLOG_TOPIC_SUB_URL
     string "spdlog: topic transport subscribe URL"
     depends on OPENEMBER_SPDLOG_ENABLE_TOPIC
+    default "udpm://239.255.76.67:7667?ttl=1" if OPENEMBER_MSGBUS_BACKEND_LCM
+    default "udp://127.0.0.1:7560" if OPENEMBER_MSGBUS_BACKEND_UDP
     default "tcp://127.0.0.1:7561"
     help
       Subscriber connect/bind URL for ember_pubsub.

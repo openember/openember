@@ -210,7 +210,13 @@ spdlog_topic_pub_url="$(awk '
   }
 ' "${CONFIG_FILE}")"
 if [[ -z "${spdlog_topic_pub_url}" ]]; then
-  spdlog_topic_pub_url="tcp://*:7561"
+  if [[ "${msgbus_backend}" == "LCM" ]]; then
+    spdlog_topic_pub_url="udpm://239.255.76.67:7667?ttl=1"
+  elif [[ "${msgbus_backend}" == "UDP" ]]; then
+    spdlog_topic_pub_url="udp://127.0.0.1:7560"
+  else
+    spdlog_topic_pub_url="tcp://*:7561"
+  fi
 fi
 
 spdlog_topic_sub_url="tcp://127.0.0.1:7561"
@@ -224,7 +230,13 @@ spdlog_topic_sub_url="$(awk '
   }
 ' "${CONFIG_FILE}")"
 if [[ -z "${spdlog_topic_sub_url}" ]]; then
-  spdlog_topic_sub_url="tcp://127.0.0.1:7561"
+  if [[ "${msgbus_backend}" == "LCM" ]]; then
+    spdlog_topic_sub_url="udpm://239.255.76.67:7667?ttl=1"
+  elif [[ "${msgbus_backend}" == "UDP" ]]; then
+    spdlog_topic_sub_url="udp://127.0.0.1:7560"
+  else
+    spdlog_topic_sub_url="tcp://127.0.0.1:7561"
+  fi
 fi
 
 spdlog_topic_rate_limit="0"
