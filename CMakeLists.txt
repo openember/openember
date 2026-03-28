@@ -52,6 +52,7 @@ option( BUILD_EASYLOGGER "Whether compile EasyLogger (obsolete, currently disabl
 
 option( OPENEMBER_MSGBUS_USE_NNG "Use NNG backend for internal msgbus" ON)
 option( OPENEMBER_MSGBUS_USE_LCM "Use LCM backend for internal msgbus" OFF)
+option( OPENEMBER_MSGBUS_USE_ZMQ "Use ZeroMQ for internal msgbus (experimental; not all CMake paths wired)" OFF)
 # When LCM is selected: use C++ lcm::LCM for TransportBackend (MsgBusNode); C msg_bus_* still uses lcm_wrapper.c
 option( OPENEMBER_MSGBUS_LCM_USE_CPP "Use C++ lcm::LCM for TransportBackend when LCM msgbus is enabled" ON)
 
@@ -239,6 +240,8 @@ elseif(OPENEMBER_MSGBUS_USE_NNG)
     message(STATUS "├── nng: ${OPENEMBER_NNG_LIBRARIES}")
     message(STATUS "└── nng include: ${OPENEMBER_NNG_INCLUDE_DIRS}")
 endif()
+
+openember_third_party_prefetch_unused_bundles()
 
 set(OPENEMBER_LOG_BACKEND_INCLUDES "")
 set(OPENEMBER_LOG_BACKEND_LIBS "")

@@ -16,19 +16,22 @@ set(OPENEMBER_ZLOG_VERSION "1.2.16")
 set(OPENEMBER_ZLOG_URL
     "https://github.com/HardySimpson/zlog/archive/refs/tags/${OPENEMBER_ZLOG_VERSION}.tar.gz")
 
-set(OPENEMBER_CJSON_VERSION "1.7.15")
+set(OPENEMBER_CJSON_VERSION "1.7.19")
 set(OPENEMBER_CJSON_URL
-    "https://repository.timesys.com/buildsources/c/cJSON/cJSON-${OPENEMBER_CJSON_VERSION}/cJSON-${OPENEMBER_CJSON_VERSION}.tar.gz")
+    "https://github.com/DaveGamble/cJSON/archive/refs/tags/v${OPENEMBER_CJSON_VERSION}.tar.gz")
 
 include(${CMAKE_SOURCE_DIR}/cmake/GetZlog.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetCjson.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetPahoMqttC.cmake)
 
-# SQLite amalgamation（与历史 third_party/sqlite 对齐的版本）
-set(OPENEMBER_SQLITE_VERSION "3.39.2")
-set(OPENEMBER_SQLITE_AMALGAMATION_NUM "3390200")
+# SQLite amalgamation（单文件 sqlite3.c 发布包）
+# 官方合并包在 sqlite.org；GitHub sqlite/sqlite 的 tag 归档是完整源码树，不含根目录 amalgamation。
+# 合并包文件名中的数字为 3.x.y 版本编码（见 https://www.sqlite.org/download.html ）。
+# 优先使用 .tar.gz；若上游仅提供 .zip，FETCH 仍用该 URL；用户也可自行放入 third_party/*.zip（ThirdPartyArchive 支持两种格式）。
+set(OPENEMBER_SQLITE_VERSION "3.51.3")
+set(OPENEMBER_SQLITE_AMALGAMATION_NUM "3510300")
 set(OPENEMBER_SQLITE_URL
-    "https://www.sqlite.org/2022/sqlite-amalgamation-${OPENEMBER_SQLITE_AMALGAMATION_NUM}.zip")
+    "https://www.sqlite.org/2026/sqlite-amalgamation-${OPENEMBER_SQLITE_AMALGAMATION_NUM}.zip")
 
 include(${CMAKE_SOURCE_DIR}/cmake/GetSqlite.cmake)
 
@@ -82,6 +85,7 @@ set(OPENEMBER_PAHO_MQTT_C_VERSION "1.3.16")
 set(OPENEMBER_PAHO_MQTT_C_URL
     "https://github.com/eclipse-paho/paho.mqtt.c/archive/v${OPENEMBER_PAHO_MQTT_C_VERSION}.tar.gz")
 
+# Paho local override (CMake/Eclipse Paho naming; used by GetPahoMqttC.cmake — not duplicated under OPENEMBER_*_LOCAL_SOURCE).
 set(PAHO_MQTT_C_LOCAL_SOURCE "" CACHE PATH
     "Optional: pre-extracted paho.mqtt.c tree (overrides third_party/ archives and network download)")
 
@@ -497,6 +501,97 @@ function(openember_third_party_resolve_optional_cxx_deps)
             endif()
         endif()
         openember_get_ruckig()
+    endif()
+endfunction()
+
+# FETCH/VENDOR：勾选 bundle 但当前配置不会编译该库时，仅下载/解压到 third_party/ 与 build/_deps/（不 add_subdirectory）。
+function(openember_third_party_prefetch_unused_bundles)
+    if(NOT OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" AND NOT OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        return()
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_BUNDLE_ZLOG AND NOT OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
+        if(NOT OPENEMBER_ZLOG_LOCAL_SOURCE)
+            openember_prepare_zlog_source(_unused)
+            message(STATUS "Third-party: pre-fetch only (not built): zlog")
+        endif()
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG AND NOT OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
+        if(NOT OPENEMBER_SPDLOG_LOCAL_SOURCE)
+            openember_prepare_spdlog_source(_unused)
+            message(STATUS "Third-party: pre-fetch only (not built): spdlog")
+        endif()
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_BUNDLE_CJSON AND NOT OPENEMBER_JSON_LIBRARY STREQUAL "CJSON")
+        if(NOT OPENEMBER_CJSON_LOCAL_SOURCE)
+            openember_prepare_cjson_source(_unused)
+            message(STATUS "Third-party: pre-fetch only (not built): cJSON")
+        endif()
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON AND NOT OPENEMBER_JSON_LIBRARY STREQUAL "NLOHMANN_JSON")
+        if(NOT OPENEMBER_NLOHMANN_JSON_LOCAL_SOURCE)
+            openember_prepare_nlohmann_json_source(_unused)
+            message(STATUS "Third-party: pre-fetch only (not built): nlohmann/json")
+        endif()
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_BUNDLE_YAMLCPP AND NOT OPENEMBER_WITH_YAMLCPP)
+        if(NOT OPENEMBER_YAMLCPP_LOCAL_SOURCE)
+            openember_prepare_yaml_cpp_source(_unused)
+            message(STATUS "Third-party: pre-fetch only (not built): yaml-cpp")
+        endif()
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_BUNDLE_ASIO AND NOT OPENEMBER_WITH_ASIO)
+        if(NOT OPENEMBER_ASIO_LOCAL_SOURCE)
+            openember_prepare_asio_source(_unused)
+            message(STATUS "Third-party: pre-fetch only (not built): Asio")
+        endif()
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_BUNDLE_PAHO AND NOT OPENEMBER_COMPONENT_MQTT)
+        if(NOT PAHO_MQTT_C_LOCAL_SOURCE)
+            openember_prepare_paho_mqtt_c_source(_unused)
+            message(STATUS "Third-party: pre-fetch only (not built): Paho MQTT C")
+        endif()
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_BUNDLE_NNG AND NOT OPENEMBER_MSGBUS_USE_NNG)
+        if(NOT OPENEMBER_NNG_LOCAL_SOURCE)
+            openember_prepare_nng_source(_unused)
+            message(STATUS "Third-party: pre-fetch only (not built): NNG")
+        endif()
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_BUNDLE_LCM AND NOT OPENEMBER_MSGBUS_USE_LCM)
+        if(NOT OPENEMBER_LCM_LOCAL_SOURCE)
+            openember_prepare_lcm_source(_unused)
+            message(STATUS "Third-party: pre-fetch only (not built): LCM")
+        endif()
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_BUNDLE_LIBZMQ AND NOT OPENEMBER_MSGBUS_USE_ZMQ)
+        if(NOT OPENEMBER_LIBZMQ_LOCAL_SOURCE)
+            openember_prepare_libzmq_source(_unused)
+            message(STATUS "Third-party: pre-fetch only (not built): libzmq")
+        endif()
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_BUNDLE_CPPZMQ AND NOT OPENEMBER_MSGBUS_USE_ZMQ)
+        if(NOT OPENEMBER_CPPZMQ_LOCAL_SOURCE)
+            openember_prepare_cppzmq_source(_unused)
+            message(STATUS "Third-party: pre-fetch only (not built): cppzmq")
+        endif()
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG AND NOT OPENEMBER_WITH_RUCKIG)
+        if(NOT OPENEMBER_RUCKIG_LOCAL_SOURCE)
+            openember_prepare_ruckig_source(_unused)
+            message(STATUS "Third-party: pre-fetch only (not built): ruckig")
+        endif()
     endif()
 endfunction()
 

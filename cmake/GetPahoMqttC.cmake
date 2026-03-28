@@ -4,6 +4,16 @@
 
 include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
+function(openember_prepare_paho_mqtt_c_source out_var)
+    if(PAHO_MQTT_C_LOCAL_SOURCE)
+        set(${out_var} "${PAHO_MQTT_C_LOCAL_SOURCE}" PARENT_SCOPE)
+        return()
+    endif()
+    openember_third_party_prepare_stage(_src "${OPENEMBER_PAHO_MQTT_C_CACHE_KEY}" "${OPENEMBER_PAHO_MQTT_C_STAGE_DIR_NAME}"
+        "${OPENEMBER_PAHO_MQTT_C_URL}" "CMakeLists.txt" "")
+    set(${out_var} "${_src}" PARENT_SCOPE)
+endfunction()
+
 function(openember_get_paho_mqtt_c)
     set(_bind "${CMAKE_BINARY_DIR}/_deps/${OPENEMBER_PAHO_MQTT_C_STAGE_DIR_NAME}-build")
 
@@ -29,11 +39,9 @@ function(openember_get_paho_mqtt_c)
 
     if(PAHO_MQTT_C_LOCAL_SOURCE)
         message(STATUS "Paho MQTT C: using PAHO_MQTT_C_LOCAL_SOURCE=${PAHO_MQTT_C_LOCAL_SOURCE}")
-        set(_src "${PAHO_MQTT_C_LOCAL_SOURCE}")
-    else()
-        openember_third_party_prepare_stage(_src "${OPENEMBER_PAHO_MQTT_C_CACHE_KEY}" "${OPENEMBER_PAHO_MQTT_C_STAGE_DIR_NAME}"
-            "${OPENEMBER_PAHO_MQTT_C_URL}" "CMakeLists.txt" "")
     endif()
+
+    openember_prepare_paho_mqtt_c_source(_src)
 
     set(PAHO_ENABLE_TESTING OFF CACHE BOOL "Build paho unit tests" FORCE)
     set(PAHO_ENABLE_CPACK OFF CACHE BOOL "Build paho cpack" FORCE)

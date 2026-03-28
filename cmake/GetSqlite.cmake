@@ -2,7 +2,7 @@
 
 include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
-function(openember_get_sqlite)
+function(openember_prepare_sqlite_source out_var)
     if(OPENEMBER_SQLITE_LOCAL_SOURCE)
         set(_root "${OPENEMBER_SQLITE_LOCAL_SOURCE}")
     else()
@@ -23,6 +23,12 @@ function(openember_get_sqlite)
     if(NOT EXISTS "${_root}/sqlite3.c")
         message(FATAL_ERROR "sqlite3.c not found under extracted SQLite tree")
     endif()
+
+    set(${out_var} "${_root}" PARENT_SCOPE)
+endfunction()
+
+function(openember_get_sqlite)
+    openember_prepare_sqlite_source(_root)
 
     if(NOT TARGET sqlite3)
         add_library(sqlite3 SHARED "${_root}/sqlite3.c")

@@ -2,13 +2,18 @@
 
 include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
-function(openember_get_nng)
+function(openember_prepare_nng_source out_var)
     if(OPENEMBER_NNG_LOCAL_SOURCE)
         set(_src "${OPENEMBER_NNG_LOCAL_SOURCE}")
     else()
         openember_third_party_prepare_stage(_src "${OPENEMBER_NNG_CACHE_KEY}" "${OPENEMBER_NNG_STAGE_DIR_NAME}"
             "${OPENEMBER_NNG_URL}" "CMakeLists.txt" "")
     endif()
+    set(${out_var} "${_src}" PARENT_SCOPE)
+endfunction()
+
+function(openember_get_nng)
+    openember_prepare_nng_source(_src)
 
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libs" FORCE)
     set(NNG_TESTS OFF CACHE BOOL "Build and run tests." FORCE)

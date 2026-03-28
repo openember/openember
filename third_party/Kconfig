@@ -1,74 +1,155 @@
 menu "Third party (bundles)"
 
-comment "Which sources to fetch/extract in FETCH or VENDOR mode (versions only in cmake/Dependencies.cmake)."
-comment "OFF = do not download; you must provide system packages or *_LOCAL_SOURCE."
+comment "Lists all libraries pinned in cmake/Dependencies.cmake."
+comment "Required-by-current-config items are forced ON (shown as <*>, cannot turn off)."
+comment "Optional ON = pre-fetch only (third_party/ + build/_deps/), no compile/link unless used."
+comment "FETCH/VENDOR: OFF = do not download; SYSTEM may ignore bundles (use distro packages)."
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_ZLOG
     bool "Include zlog sources"
-    depends on OPENEMBER_LOG_BACKEND_ZLOG
-    default y if OPENEMBER_LOG_BACKEND_ZLOG
+    default n
+    help
+      When log backend is ZLOG, this is forced ON. Otherwise optional: pre-fetch only.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG
     bool "Include spdlog sources"
-    depends on OPENEMBER_LOG_BACKEND_SPDLOG
-    default y if OPENEMBER_LOG_BACKEND_SPDLOG
+    default n
+    help
+      When log backend is SPDLOG, forced ON. Otherwise optional pre-fetch.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_CJSON
     bool "Include cJSON sources"
-    depends on OPENEMBER_JSON_LIBRARY_CJSON
-    default y if OPENEMBER_JSON_LIBRARY_CJSON
+    default n
+    help
+      When JSON library is cJSON, forced ON. Otherwise optional pre-fetch.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON
     bool "Include nlohmann/json sources"
-    depends on OPENEMBER_JSON_LIBRARY_NLOHMANN
-    default y if OPENEMBER_JSON_LIBRARY_NLOHMANN
+    default n
+    help
+      When JSON library is nlohmann/json, forced ON. Otherwise optional pre-fetch.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_SQLITE
     bool "Include SQLite amalgamation sources"
-    default y
+    default n
+    help
+      Always required for current OpenEmber build; forced ON.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_MONGOOSE
     bool "Include Mongoose sources"
-    default y
+    default n
+    help
+      Always required for current OpenEmber build; forced ON.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_YAMLCPP
     bool "Include yaml-cpp sources"
-    depends on OPENEMBER_USE_YAMLCPP
-    default y if OPENEMBER_USE_YAMLCPP
+    default n
+    help
+      When yaml-cpp is enabled, forced ON. Otherwise optional pre-fetch.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_ASIO
     bool "Include standalone Asio sources"
-    depends on OPENEMBER_USE_ASIO
-    default y if OPENEMBER_USE_ASIO
+    default n
+    help
+      When Asio is enabled, forced ON. Otherwise optional pre-fetch.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_PAHO
     bool "Include Eclipse Paho MQTT C sources"
-    depends on OPENEMBER_COMPONENT_MQTT
-    default y if OPENEMBER_COMPONENT_MQTT
+    default n
+    help
+      When MQTT component is enabled, forced ON. Otherwise optional pre-fetch.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_NNG
     bool "Include NNG sources"
-    depends on OPENEMBER_MSGBUS_BACKEND_NNG
-    default y if OPENEMBER_MSGBUS_BACKEND_NNG
+    default n
+    help
+      When msgbus backend is NNG, forced ON. Otherwise optional pre-fetch.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_LCM
     bool "Include LCM sources"
-    depends on OPENEMBER_MSGBUS_BACKEND_LCM
-    default y if OPENEMBER_MSGBUS_BACKEND_LCM
+    default n
+    help
+      When msgbus backend is LCM, forced ON. Otherwise optional pre-fetch.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_LIBZMQ
     bool "Include libzmq sources"
-    depends on OPENEMBER_MSGBUS_BACKEND_ZMQ
-    default y if OPENEMBER_MSGBUS_BACKEND_ZMQ
+    default n
+    help
+      When msgbus backend is ZeroMQ, forced ON (with cppzmq). Otherwise optional pre-fetch.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_CPPZMQ
     bool "Include cppzmq headers"
-    depends on OPENEMBER_MSGBUS_BACKEND_ZMQ
-    default y if OPENEMBER_MSGBUS_BACKEND_ZMQ
+    default n
+    help
+      When msgbus backend is ZeroMQ, forced ON (with libzmq). Otherwise optional pre-fetch.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG
     bool "Include ruckig sources"
-    depends on OPENEMBER_USE_RUCKIG
+    default n
+    help
+      When OPENEMBER_USE_RUCKIG, forced ON. Otherwise optional pre-fetch (C++20).
+
+# Hidden linkers: force bundle ON when the matching feature is active (Kconfig select = menu shows <*>).
+config OPENEMBER_TP_LINK_ZLOG
+    bool
+    default y if OPENEMBER_LOG_BACKEND_ZLOG
+    select OPENEMBER_THIRD_PARTY_BUNDLE_ZLOG
+
+config OPENEMBER_TP_LINK_SPDLOG
+    bool
+    default y if OPENEMBER_LOG_BACKEND_SPDLOG
+    select OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG
+
+config OPENEMBER_TP_LINK_CJSON
+    bool
+    default y if OPENEMBER_JSON_LIBRARY_CJSON
+    select OPENEMBER_THIRD_PARTY_BUNDLE_CJSON
+
+config OPENEMBER_TP_LINK_NLOHMANN
+    bool
+    default y if OPENEMBER_JSON_LIBRARY_NLOHMANN
+    select OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON
+
+config OPENEMBER_TP_LINK_SQLITE_MONGOOSE
+    bool
+    default y
+    select OPENEMBER_THIRD_PARTY_BUNDLE_SQLITE
+    select OPENEMBER_THIRD_PARTY_BUNDLE_MONGOOSE
+
+config OPENEMBER_TP_LINK_YAMLCPP
+    bool
+    default y if OPENEMBER_USE_YAMLCPP
+    select OPENEMBER_THIRD_PARTY_BUNDLE_YAMLCPP
+
+config OPENEMBER_TP_LINK_ASIO
+    bool
+    default y if OPENEMBER_USE_ASIO
+    select OPENEMBER_THIRD_PARTY_BUNDLE_ASIO
+
+config OPENEMBER_TP_LINK_PAHO
+    bool
+    default y if OPENEMBER_COMPONENT_MQTT
+    select OPENEMBER_THIRD_PARTY_BUNDLE_PAHO
+
+config OPENEMBER_TP_LINK_NNG
+    bool
+    default y if OPENEMBER_MSGBUS_BACKEND_NNG
+    select OPENEMBER_THIRD_PARTY_BUNDLE_NNG
+
+config OPENEMBER_TP_LINK_LCM
+    bool
+    default y if OPENEMBER_MSGBUS_BACKEND_LCM
+    select OPENEMBER_THIRD_PARTY_BUNDLE_LCM
+
+config OPENEMBER_TP_LINK_ZMQ
+    bool
+    default y if OPENEMBER_MSGBUS_BACKEND_ZMQ
+    select OPENEMBER_THIRD_PARTY_BUNDLE_LIBZMQ
+    select OPENEMBER_THIRD_PARTY_BUNDLE_CPPZMQ
+
+config OPENEMBER_TP_LINK_RUCKIG
+    bool
     default y if OPENEMBER_USE_RUCKIG
+    select OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG
 
 endmenu

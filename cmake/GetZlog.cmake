@@ -2,9 +2,7 @@
 
 include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
-function(openember_get_zlog)
-    set(UNIT_TEST OFF CACHE BOOL "Build zlog unit tests" FORCE)
-
+function(openember_prepare_zlog_source out_var)
     if(OPENEMBER_ZLOG_LOCAL_SOURCE)
         set(_src "${OPENEMBER_ZLOG_LOCAL_SOURCE}")
     else()
@@ -16,6 +14,14 @@ function(openember_get_zlog)
     if(NOT EXISTS "${OPENEMBER_ZLOG_FETCHED_SRC}/zlog.h")
         message(FATAL_ERROR "zlog: zlog.h not found under ${OPENEMBER_ZLOG_FETCHED_SRC}")
     endif()
+
+    set(${out_var} "${_src}" PARENT_SCOPE)
+endfunction()
+
+function(openember_get_zlog)
+    set(UNIT_TEST OFF CACHE BOOL "Build zlog unit tests" FORCE)
+
+    openember_prepare_zlog_source(_src)
 
     add_subdirectory(
         "${CMAKE_SOURCE_DIR}/cmake/vendor/zlog"

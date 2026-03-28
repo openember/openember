@@ -2,16 +2,21 @@
 
 include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
-function(openember_get_cjson)
-    set(ENABLE_CJSON_UTILS OFF CACHE BOOL "Build cJSON_Utils" FORCE)
-    set(ENABLE_CJSON_TEST OFF CACHE BOOL "Build cJSON test targets" FORCE)
-
+function(openember_prepare_cjson_source out_var)
     if(OPENEMBER_CJSON_LOCAL_SOURCE)
         set(_src "${OPENEMBER_CJSON_LOCAL_SOURCE}")
     else()
         openember_third_party_prepare_stage(_src "${OPENEMBER_CJSON_CACHE_KEY}" "${OPENEMBER_CJSON_STAGE_DIR_NAME}"
             "${OPENEMBER_CJSON_URL}" "CMakeLists.txt" "")
     endif()
+    set(${out_var} "${_src}" PARENT_SCOPE)
+endfunction()
+
+function(openember_get_cjson)
+    set(ENABLE_CJSON_UTILS OFF CACHE BOOL "Build cJSON_Utils" FORCE)
+    set(ENABLE_CJSON_TEST OFF CACHE BOOL "Build cJSON test targets" FORCE)
+
+    openember_prepare_cjson_source(_src)
 
     add_subdirectory("${_src}" "${CMAKE_BINARY_DIR}/_deps/${OPENEMBER_CJSON_STAGE_DIR_NAME}-build")
 

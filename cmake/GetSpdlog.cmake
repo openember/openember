@@ -2,13 +2,18 @@
 
 include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
-function(openember_get_spdlog)
+function(openember_prepare_spdlog_source out_var)
     if(OPENEMBER_SPDLOG_LOCAL_SOURCE)
         set(_src "${OPENEMBER_SPDLOG_LOCAL_SOURCE}")
     else()
         openember_third_party_prepare_stage(_src "${OPENEMBER_SPDLOG_CACHE_KEY}" "${OPENEMBER_SPDLOG_STAGE_DIR_NAME}"
             "${OPENEMBER_SPDLOG_URL}" "CMakeLists.txt" "")
     endif()
+    set(${out_var} "${_src}" PARENT_SCOPE)
+endfunction()
+
+function(openember_get_spdlog)
+    openember_prepare_spdlog_source(_src)
 
     set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
     set(SPDLOG_BUILD_TESTS OFF CACHE BOOL "" FORCE)

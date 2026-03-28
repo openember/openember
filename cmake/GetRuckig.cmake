@@ -4,13 +4,18 @@
 
 include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
-function(openember_get_ruckig)
+function(openember_prepare_ruckig_source out_var)
     if(OPENEMBER_RUCKIG_LOCAL_SOURCE)
         set(_src "${OPENEMBER_RUCKIG_LOCAL_SOURCE}")
     else()
         openember_third_party_prepare_stage(_src "${OPENEMBER_RUCKIG_CACHE_KEY}" "${OPENEMBER_RUCKIG_STAGE_DIR_NAME}"
             "${OPENEMBER_RUCKIG_URL}" "CMakeLists.txt" "")
     endif()
+    set(${out_var} "${_src}" PARENT_SCOPE)
+endfunction()
+
+function(openember_get_ruckig)
+    openember_prepare_ruckig_source(_src)
 
     set(BUILD_EXAMPLES OFF CACHE BOOL "ruckig examples" FORCE)
     set(BUILD_TESTS OFF CACHE BOOL "ruckig tests" FORCE)

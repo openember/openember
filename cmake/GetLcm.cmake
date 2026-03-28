@@ -2,13 +2,18 @@
 
 include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
-function(openember_get_lcm)
+function(openember_prepare_lcm_source out_var)
     if(OPENEMBER_LCM_LOCAL_SOURCE)
         set(_src "${OPENEMBER_LCM_LOCAL_SOURCE}")
     else()
         openember_third_party_prepare_stage(_src "${OPENEMBER_LCM_CACHE_KEY}" "${OPENEMBER_LCM_STAGE_DIR_NAME}"
             "${OPENEMBER_LCM_URL}" "CMakeLists.txt" "")
     endif()
+    set(${out_var} "${_src}" PARENT_SCOPE)
+endfunction()
+
+function(openember_get_lcm)
+    openember_prepare_lcm_source(_src)
 
     set(LCM_ENABLE_EXAMPLES OFF CACHE BOOL "Build test and example programs" FORCE)
     set(LCM_ENABLE_TESTS OFF CACHE BOOL "Build unit tests" FORCE)

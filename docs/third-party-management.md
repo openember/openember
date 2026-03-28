@@ -9,7 +9,7 @@
 | 版本与 URL | 仅在 `cmake/Dependencies.cmake` 钉死；升级只改该处并重新配置。 |
 | 本地缓存 | `third_party/<cache-key>.tar.gz` 或 `.zip`；FETCH 模式下**先查缓存再联网**，下载仍落盘到 `third_party/`。 |
 | 构建树路径 | `build/_deps/<上游解压顶层目录名>/`，与 GitHub 等官方归档一致（**不再**使用 FetchContent 的 `openember_*-src` 风格目录名）。 |
-| Kconfig | `third_party/Kconfig` 中仅 **`OPENEMBER_THIRD_PARTY_BUNDLE_*` 布尔开关**，不记录版本；与功能项 `depends on` / `default y if` 联动。 |
+| Kconfig | `third_party/Kconfig`：**全部 `OPENEMBER_THIRD_PARTY_BUNDLE_*` 列出**；必选项由 `OPENEMBER_TP_LINK_*` + `select` 锁定；可选预取见 `openember_third_party_prefetch_unused_bundles()`。 |
 | 默认行为 | 未出现在 `.config` 中的 bundle 符号由 `cmake/OpenEmberThirdPartyBundleDefaults.cmake` 视为 **ON**（与历史「默认拉取」一致）。 |
 | 生成 CMake 缓存 | `scripts/kconfig/genconfig.sh` 将 Kconfig 选项写入 `build/config.cmake`（`FORCE`）。 |
 
@@ -46,8 +46,11 @@
 
 ## Kconfig：`Third party (bundles)`
 
-- 菜单在 **`components/Kconfig` 之后** 加载，以便 `depends on OPENEMBER_MSGBUS_BACKEND_*`、`OPENEMBER_COMPONENT_MQTT` 等符号已定义。
-- 每个 `OPENEMBER_THIRD_PARTY_BUNDLE_<NAME>`：在 FETCH/VENDOR 下是否允许下载/解压该包；关断且系统无对应库时配置失败。
+- 菜单在 **`components/Kconfig` 与 `modules/Kconfig` 之后** 加载，以便 `OPENEMBER_LOG_BACKEND_*`、`OPENEMBER_JSON_LIBRARY_*`、`OPENEMBER_MSGBUS_BACKEND_*` 等符号已定义。
+- **清单**：`Dependencies.cmake` 中钉死的第三方均在菜单中列出（不再用 `depends on` 隐藏条目）。
+- **必选**：与当前功能绑定的库由隐藏的 `OPENEMBER_TP_LINK_*` 配置通过 **`select`** 强制勾选；在 `menuconfig` 中表现为 **`<*>`（built-in）且不可取消**。
+- **可选**：未绑定当前功能的库默认为关；若手动勾选，则在 **FETCH/VENDOR** 下仅 **预取**（下载到 `third_party/`、解压到 `build/_deps/`），**不参与** 对应 `add_subdirectory` 编译，除非后续在别处启用该功能。实现见 `openember_third_party_prefetch_unused_bundles()`。
+- **SYSTEM**：不预取；仍按各 `resolve_*` 使用系统包。
 - 详见 `third_party/Kconfig` 与 `scripts/kconfig/genconfig.sh`。
 
 ## 目录约定
