@@ -27,6 +27,8 @@ if(EXISTS "${CMAKE_BINARY_DIR}/config.cmake")
     include("${CMAKE_BINARY_DIR}/config.cmake")
 endif()
 
+include(${CMAKE_SOURCE_DIR}/cmake/OpenEmberThirdPartyBundleDefaults.cmake)
+
 ################################################################################
 # Options
 ################################################################################
@@ -108,6 +110,7 @@ set_property(CACHE OPENEMBER_LOG_BACKEND PROPERTY STRINGS BUILTIN ZLOG SPDLOG)
 
 option(OPENEMBER_WITH_YAMLCPP "Fetch/use yaml-cpp (optional C++ dependency)" ON)
 option(OPENEMBER_WITH_ASIO "Fetch/use standalone Asio (optional)" ON)
+option(OPENEMBER_WITH_RUCKIG "Fetch/use ruckig trajectory library (optional; C++20)" OFF)
 
 set(OPENEMBER_LOG_BACKEND_IS_BUILTIN 0)
 set(OPENEMBER_LOG_BACKEND_IS_ZLOG 0)
@@ -214,6 +217,9 @@ if(OPENEMBER_WITH_YAMLCPP)
 endif()
 if(OPENEMBER_WITH_ASIO)
     message(STATUS "├── optional: Asio enabled (target openember::asio)")
+endif()
+if(OPENEMBER_WITH_RUCKIG)
+    message(STATUS "├── optional: ruckig enabled (target ruckig::ruckig)")
 endif()
 if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
     message(STATUS "├── log backend: spdlog (target spdlog::spdlog)")

@@ -14,7 +14,7 @@ config OPENEMBER_TP_MODE_FETCH
     bool "FetchContent"
 
 config OPENEMBER_TP_MODE_VENDOR
-    bool "Vendor (download/_extracted)"
+    bool "Vendor (third_party/ archives + optional PAHO_MQTT_C_LOCAL_SOURCE, see docs)"
 
 config OPENEMBER_TP_MODE_SYSTEM
     bool "System packages"
@@ -29,3 +29,4 @@ source "components/Kconfig"
 source "core/Kconfig"
 source "platform/Kconfig"
 source "test/Kconfig"
+source "third_party/Kconfig"

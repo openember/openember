@@ -182,6 +182,17 @@ config OPENEMBER_USE_ASIO
 
 endmenu
 
+menu "Motion / trajectory"
+
+config OPENEMBER_USE_RUCKIG
+    bool "Enable ruckig (jerk-limited trajectory; C++20)"
+    default n
+    help
+      Optional MIT library for online motion generation. When enabled, CMake fetches or uses
+      OPENEMBER_RUCKIG_LOCAL_SOURCE; link targets with ruckig::ruckig.
+
+endmenu
+
 menu "Network"
 
 config OPENEMBER_COMPONENT_NETWORK

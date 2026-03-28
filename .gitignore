@@ -66,6 +66,10 @@ download/_extracted/
 # 本地下载的第三方压缩包（不建议提交）
 download/*.zip
 
+# third_party 离线缓存（与 download 类似；若需提交固定版本可删下列规则）
+third_party/*.tar.gz
+third_party/*.zip
+
 # Local Kconfig frontends tools downloaded by scripts/kconfig/*
 .kconfig-frontends/
 

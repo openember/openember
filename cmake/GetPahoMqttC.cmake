@@ -1,70 +1,50 @@
-# paho.mqtt.c 依赖获取脚本（FetchContent）
+# paho.mqtt.c：third_party/ 归档缓存 + 解压到 build/_deps/paho.mqtt.c-<version>/
 #
-# 参考 AimRT 的 GetXxx.cmake 组织方式：每个依赖一个脚本、用函数封装并提供稳定的变量接口。
+# 不再使用 FetchContent 工程名（避免出现 openember_* 与上游不一致的 -src 目录名）。
 
-include(FetchContent)
+include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_get_paho_mqtt_c)
-    # 目标/命名：
-    # - 库目标：paho-mqtt3c / paho-mqtt3a
-    # - 别名目标：paho_mqtt_c::paho-mqtt3c / paho_mqtt_c::paho-mqtt3a（可选）
-    # FetchContent 工程名带版本号，生成目录如 build/_deps/openember_paho_mqtt_c_v1_3_16-src
+    set(_bind "${CMAKE_BINARY_DIR}/_deps/${OPENEMBER_PAHO_MQTT_C_STAGE_DIR_NAME}-build")
 
-    string(REPLACE "." "_" _paho_ver_us "${OPENEMBER_PAHO_MQTT_C_VERSION}")
-    set(_fc_paho_name "openember_paho_mqtt_c_v${_paho_ver_us}")
-
-    set(PAHO_MQTT_C_LOCAL_SOURCE "" CACHE PATH "Optional local path override for paho.mqtt.c")
-
-    FetchContent_GetProperties(${_fc_paho_name} POPULATED _fc_paho_populated)
-
-    if(NOT _fc_paho_populated)
-        # OPENEMBER_MQTT_PAHO_TLS: Kconfig / cache — OFF 强制无 TLS；ON 强制需要 OpenSSL；未定义则尽量自动检测
-        if(DEFINED OPENEMBER_MQTT_PAHO_TLS AND NOT OPENEMBER_MQTT_PAHO_TLS)
-            set(PAHO_WITH_SSL OFF CACHE BOOL "Enable SSL for paho" FORCE)
-            message(STATUS "Paho MQTT C: TLS disabled (OPENEMBER_MQTT_PAHO_TLS=OFF)")
-        elseif(DEFINED OPENEMBER_MQTT_PAHO_TLS AND OPENEMBER_MQTT_PAHO_TLS)
-            find_package(OpenSSL REQUIRED)
+    # OPENEMBER_MQTT_PAHO_TLS: Kconfig / cache — OFF 强制无 TLS；ON 强制需要 OpenSSL；未定义则尽量自动检测
+    if(DEFINED OPENEMBER_MQTT_PAHO_TLS AND NOT OPENEMBER_MQTT_PAHO_TLS)
+        set(PAHO_WITH_SSL OFF CACHE BOOL "Enable SSL for paho" FORCE)
+        message(STATUS "Paho MQTT C: TLS disabled (OPENEMBER_MQTT_PAHO_TLS=OFF)")
+    elseif(DEFINED OPENEMBER_MQTT_PAHO_TLS AND OPENEMBER_MQTT_PAHO_TLS)
+        find_package(OpenSSL REQUIRED)
+        set(PAHO_WITH_SSL ON CACHE BOOL "Enable SSL for paho" FORCE)
+    else()
+        find_package(OpenSSL QUIET)
+        if(OpenSSL_FOUND)
             set(PAHO_WITH_SSL ON CACHE BOOL "Enable SSL for paho" FORCE)
         else()
-            find_package(OpenSSL QUIET)
-            if(OpenSSL_FOUND)
-                set(PAHO_WITH_SSL ON CACHE BOOL "Enable SSL for paho" FORCE)
-            else()
-                set(PAHO_WITH_SSL OFF CACHE BOOL "Enable SSL for paho" FORCE)
-                message(WARNING "OpenSSL not found (install libssl-dev / openssl-devel). Paho builds without TLS; use tcp:// only or install OpenSSL for ssl:// (e.g. EMQX Cloud :8883).")
-            endif()
+            set(PAHO_WITH_SSL OFF CACHE BOOL "Enable SSL for paho" FORCE)
+            message(WARNING "OpenSSL not found (install libssl-dev / openssl-devel). Paho builds without TLS; use tcp:// only or install OpenSSL for ssl:// (e.g. EMQX Cloud :8883).")
         endif()
-
-        if(PAHO_MQTT_C_LOCAL_SOURCE)
-            FetchContent_Declare(
-                ${_fc_paho_name}
-                SOURCE_DIR ${PAHO_MQTT_C_LOCAL_SOURCE}
-                OVERRIDE_FIND_PACKAGE
-            )
-        else()
-            FetchContent_Declare(
-                ${_fc_paho_name}
-                URL ${OPENEMBER_PAHO_MQTT_C_URL}
-                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-                OVERRIDE_FIND_PACKAGE
-            )
-        endif()
-
-        # Build options（若检测到 OpenSSL 则 PAHO_WITH_SSL=ON，见上）
-        set(PAHO_ENABLE_TESTING OFF CACHE BOOL "Build paho unit tests" FORCE)
-        set(PAHO_ENABLE_CPACK OFF CACHE BOOL "Build paho cpack" FORCE)
-        set(PAHO_BUILD_SHARED OFF CACHE BOOL "Build shared libs" FORCE)
-        set(PAHO_BUILD_STATIC ON CACHE BOOL "Build static libs" FORCE)
-
-        # Some upstreams use these options; harmless if ignored.
-        set(PAHO_BUILD_DOCUMENTATION OFF CACHE BOOL "Disable docs" FORCE)
-        set(PAHO_BUILD_SAMPLES OFF CACHE BOOL "Disable samples" FORCE)
-        set(PAHO_BUILD_DOCUMENTATION OFF CACHE BOOL "Disable docs" FORCE)
-
-        FetchContent_MakeAvailable(${_fc_paho_name})
     endif()
 
-    FetchContent_GetProperties(${_fc_paho_name} SOURCE_DIR _paho_fc_source_dir)
+    set(PAHO_MQTT_C_INCLUDE_DIRS "" PARENT_SCOPE)
+    set(PAHO_MQTT_C_LIBRARIES "" PARENT_SCOPE)
+
+    if(PAHO_MQTT_C_LOCAL_SOURCE)
+        message(STATUS "Paho MQTT C: using PAHO_MQTT_C_LOCAL_SOURCE=${PAHO_MQTT_C_LOCAL_SOURCE}")
+        set(_src "${PAHO_MQTT_C_LOCAL_SOURCE}")
+    else()
+        openember_third_party_prepare_stage(_src "${OPENEMBER_PAHO_MQTT_C_CACHE_KEY}" "${OPENEMBER_PAHO_MQTT_C_STAGE_DIR_NAME}"
+            "${OPENEMBER_PAHO_MQTT_C_URL}" "CMakeLists.txt" "")
+    endif()
+
+    set(PAHO_ENABLE_TESTING OFF CACHE BOOL "Build paho unit tests" FORCE)
+    set(PAHO_ENABLE_CPACK OFF CACHE BOOL "Build paho cpack" FORCE)
+    set(PAHO_BUILD_SHARED OFF CACHE BOOL "Build shared libs" FORCE)
+    set(PAHO_BUILD_STATIC ON CACHE BOOL "Build static libs" FORCE)
+    set(PAHO_BUILD_DOCUMENTATION OFF CACHE BOOL "Disable docs" FORCE)
+    set(PAHO_BUILD_SAMPLES OFF CACHE BOOL "Disable samples" FORCE)
+
+    add_subdirectory("${_src}" "${_bind}")
+
+    set(_paho_fc_source_dir "${_src}")
 
     # Provide stable alias targets for easier future migration.
     if(TARGET paho-mqtt3cs AND NOT TARGET paho_mqtt_c::paho-mqtt3cs)
@@ -80,9 +60,6 @@ function(openember_get_paho_mqtt_c)
         add_library(paho_mqtt_c::paho-mqtt3a ALIAS paho-mqtt3a)
     endif()
 
-    # When building only static libraries, upstream typically creates:
-    # - paho-mqtt3cs-static (OUTPUT_NAME: paho-mqtt3cs) when PAHO_WITH_SSL
-    # - paho-mqtt3c-static (OUTPUT_NAME: paho-mqtt3c)
     if(TARGET paho-mqtt3cs-static AND NOT TARGET paho_mqtt_c::paho-mqtt3cs-static)
         add_library(paho_mqtt_c::paho-mqtt3cs-static ALIAS paho-mqtt3cs-static)
     endif()
@@ -96,7 +73,6 @@ function(openember_get_paho_mqtt_c)
         add_library(paho_mqtt_c::paho-mqtt3a-static ALIAS paho-mqtt3a-static)
     endif()
 
-    # Legacy variable interface (给 Dependencies.cmake 的 resolve_* 返回值使用)
     set(PAHO_MQTT_C_INCLUDE_DIRS ${_paho_fc_source_dir}/src PARENT_SCOPE)
 
     if(DEFINED OPENEMBER_MQTT_PAHO_ASYNC AND OPENEMBER_MQTT_PAHO_ASYNC)
@@ -131,4 +107,3 @@ function(openember_get_paho_mqtt_c)
         endif()
     endif()
 endfunction()
-

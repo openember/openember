@@ -1,36 +1,16 @@
-# cppzmq 依赖获取脚本（FetchContent）
-#
-# cppzmq 是头文件为主的 C++ 绑定库（不需要编译目标），因此我们只导出 include dir。
-#
-include(FetchContent)
+# cppzmq（头文件为主）
+
+include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_get_cppzmq)
-    if(NOT DEFINED OPENEMBER_CPPZMQ_LOCAL_SOURCE)
-        set(OPENEMBER_CPPZMQ_LOCAL_SOURCE "" CACHE PATH "Optional local path override for cppzmq")
+    if(OPENEMBER_CPPZMQ_LOCAL_SOURCE)
+        set(_src "${OPENEMBER_CPPZMQ_LOCAL_SOURCE}")
+    else()
+        openember_third_party_prepare_stage(_src "${OPENEMBER_CPPZMQ_CACHE_KEY}" "${OPENEMBER_CPPZMQ_STAGE_DIR_NAME}"
+            "${OPENEMBER_CPPZMQ_URL}" "zmq.hpp" "")
     endif()
 
-    FetchContent_GetProperties(openember_cppzmq)
-    if(NOT openember_cppzmq_POPULATED)
-        if(OPENEMBER_CPPZMQ_LOCAL_SOURCE)
-            FetchContent_Declare(
-                openember_cppzmq
-                SOURCE_DIR ${OPENEMBER_CPPZMQ_LOCAL_SOURCE}
-                OVERRIDE_FIND_PACKAGE
-            )
-        else()
-            FetchContent_Declare(
-                openember_cppzmq
-                URL ${OPENEMBER_CPPZMQ_URL}
-                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-                OVERRIDE_FIND_PACKAGE
-            )
-        endif()
+    add_subdirectory("${_src}" "${CMAKE_BINARY_DIR}/_deps/${OPENEMBER_CPPZMQ_STAGE_DIR_NAME}-build")
 
-        # MakeAvailable is needed only if upstream generates targets;
-        # it is safe even if no compilation happens.
-        FetchContent_MakeAvailable(openember_cppzmq)
-    endif()
-
-    set(OPENEMBER_CPPZMQ_INCLUDE_DIRS ${openember_cppzmq_SOURCE_DIR} PARENT_SCOPE)
+    set(OPENEMBER_CPPZMQ_INCLUDE_DIRS ${_src} PARENT_SCOPE)
 endfunction()
-

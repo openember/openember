@@ -1,0 +1,74 @@
+menu "Third party (bundles)"
+
+comment "Which sources to fetch/extract in FETCH or VENDOR mode (versions only in cmake/Dependencies.cmake)."
+comment "OFF = do not download; you must provide system packages or *_LOCAL_SOURCE."
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_ZLOG
+    bool "Include zlog sources"
+    depends on OPENEMBER_LOG_BACKEND_ZLOG
+    default y if OPENEMBER_LOG_BACKEND_ZLOG
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG
+    bool "Include spdlog sources"
+    depends on OPENEMBER_LOG_BACKEND_SPDLOG
+    default y if OPENEMBER_LOG_BACKEND_SPDLOG
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_CJSON
+    bool "Include cJSON sources"
+    depends on OPENEMBER_JSON_LIBRARY_CJSON
+    default y if OPENEMBER_JSON_LIBRARY_CJSON
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON
+    bool "Include nlohmann/json sources"
+    depends on OPENEMBER_JSON_LIBRARY_NLOHMANN
+    default y if OPENEMBER_JSON_LIBRARY_NLOHMANN
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_SQLITE
+    bool "Include SQLite amalgamation sources"
+    default y
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_MONGOOSE
+    bool "Include Mongoose sources"
+    default y
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_YAMLCPP
+    bool "Include yaml-cpp sources"
+    depends on OPENEMBER_USE_YAMLCPP
+    default y if OPENEMBER_USE_YAMLCPP
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_ASIO
+    bool "Include standalone Asio sources"
+    depends on OPENEMBER_USE_ASIO
+    default y if OPENEMBER_USE_ASIO
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_PAHO
+    bool "Include Eclipse Paho MQTT C sources"
+    depends on OPENEMBER_COMPONENT_MQTT
+    default y if OPENEMBER_COMPONENT_MQTT
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_NNG
+    bool "Include NNG sources"
+    depends on OPENEMBER_MSGBUS_BACKEND_NNG
+    default y if OPENEMBER_MSGBUS_BACKEND_NNG
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_LCM
+    bool "Include LCM sources"
+    depends on OPENEMBER_MSGBUS_BACKEND_LCM
+    default y if OPENEMBER_MSGBUS_BACKEND_LCM
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_LIBZMQ
+    bool "Include libzmq sources"
+    depends on OPENEMBER_MSGBUS_BACKEND_ZMQ
+    default y if OPENEMBER_MSGBUS_BACKEND_ZMQ
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_CPPZMQ
+    bool "Include cppzmq headers"
+    depends on OPENEMBER_MSGBUS_BACKEND_ZMQ
+    default y if OPENEMBER_MSGBUS_BACKEND_ZMQ
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG
+    bool "Include ruckig sources"
+    depends on OPENEMBER_USE_RUCKIG
+    default y if OPENEMBER_USE_RUCKIG
+
+endmenu

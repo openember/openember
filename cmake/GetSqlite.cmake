@@ -1,32 +1,16 @@
-# SQLite amalgamation（FetchContent），与仓库内 third_party/sqlite 构建行为对齐：
-# - 目标：sqlite3（共享库）、sqlite3-static（静态库，OUTPUT_NAME sqlite3）
-# - 头文件目录：amalgamation 解压目录（含 sqlite3.h）
+# SQLite amalgamation：third_party/ sqlite-amalgamation-<num>.zip → build/_deps/sqlite-amalgamation-<num>/
 
-include(FetchContent)
+include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_get_sqlite)
-    if(NOT DEFINED OPENEMBER_SQLITE_LOCAL_SOURCE)
-        set(OPENEMBER_SQLITE_LOCAL_SOURCE "" CACHE PATH "Optional local path override for SQLite amalgamation (directory containing sqlite3.c)")
-    endif()
-
     if(OPENEMBER_SQLITE_LOCAL_SOURCE)
-        FetchContent_Declare(
-            openember_sqlite_amalgamation
-            SOURCE_DIR "${OPENEMBER_SQLITE_LOCAL_SOURCE}"
-        )
+        set(_root "${OPENEMBER_SQLITE_LOCAL_SOURCE}")
     else()
-        FetchContent_Declare(
-            openember_sqlite_amalgamation
-            URL ${OPENEMBER_SQLITE_URL}
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-        )
+        openember_third_party_prepare_stage(_root "${OPENEMBER_SQLITE_CACHE_KEY}" "${OPENEMBER_SQLITE_STAGE_DIR_NAME}"
+            "${OPENEMBER_SQLITE_URL}" "sqlite3.c" "")
     endif()
 
-    FetchContent_Populate(openember_sqlite_amalgamation)
-
-    set(_root "${openember_sqlite_amalgamation_SOURCE_DIR}")
     if(NOT EXISTS "${_root}/sqlite3.c")
-        # 官方 zip 通常包含一层 sqlite-amalgamation-xxxxxx/
         file(GLOB _cand LIST_DIRECTORIES true "${_root}/*")
         foreach(_d IN LISTS _cand)
             if(IS_DIRECTORY "${_d}" AND EXISTS "${_d}/sqlite3.c")
@@ -37,7 +21,7 @@ function(openember_get_sqlite)
     endif()
 
     if(NOT EXISTS "${_root}/sqlite3.c")
-        message(FATAL_ERROR "sqlite3.c not found under ${openember_sqlite_amalgamation_SOURCE_DIR}")
+        message(FATAL_ERROR "sqlite3.c not found under extracted SQLite tree")
     endif()
 
     if(NOT TARGET sqlite3)

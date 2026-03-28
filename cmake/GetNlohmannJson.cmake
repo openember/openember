@@ -1,25 +1,17 @@
-# nlohmann/json（C++ header-only + CMake 目标 nlohmann_json::nlohmann_json）
-include(FetchContent)
+# nlohmann/json（header-only + CMake 目标 nlohmann_json::nlohmann_json）
 
-set(OPENEMBER_NLOHMANN_JSON_VERSION "3.11.3" CACHE STRING "nlohmann/json version tag")
-set(OPENEMBER_NLOHMANN_JSON_URL
-    "https://github.com/nlohmann/json/archive/refs/tags/v${OPENEMBER_NLOHMANN_JSON_VERSION}.tar.gz"
-    CACHE STRING "nlohmann/json source archive URL")
+include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_get_nlohmann_json)
     if(OPENEMBER_NLOHMANN_JSON_LOCAL_SOURCE)
-        FetchContent_Declare(
-            nlohmann_json
-            SOURCE_DIR "${OPENEMBER_NLOHMANN_JSON_LOCAL_SOURCE}")
+        set(_src "${OPENEMBER_NLOHMANN_JSON_LOCAL_SOURCE}")
     else()
-        FetchContent_Declare(
-            nlohmann_json
-            URL ${OPENEMBER_NLOHMANN_JSON_URL}
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+        openember_third_party_prepare_stage(_src "${OPENEMBER_NLOHMANN_JSON_CACHE_KEY}" "${OPENEMBER_NLOHMANN_JSON_STAGE_DIR_NAME}"
+            "${OPENEMBER_NLOHMANN_JSON_URL}" "CMakeLists.txt" "")
     endif()
 
     set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
     set(JSON_Install OFF CACHE BOOL "" FORCE)
 
-    FetchContent_MakeAvailable(nlohmann_json)
+    add_subdirectory("${_src}" "${CMAKE_BINARY_DIR}/_deps/${OPENEMBER_NLOHMANN_JSON_STAGE_DIR_NAME}-build")
 endfunction()

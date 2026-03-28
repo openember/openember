@@ -13,10 +13,8 @@ set_property(CACHE OPENEMBER_THIRD_PARTY_MODE PROPERTY STRINGS FETCH VENDOR SYST
 # Version pins (可按需升级)
 # -----------------------------
 set(OPENEMBER_ZLOG_VERSION "1.2.16")
-# Git 标签（与上游仓库 tag 一致；若升级请同步修改并验证）
-set(OPENEMBER_ZLOG_GIT_TAG "1.2.16" CACHE STRING "zlog Git tag for FetchContent")
 set(OPENEMBER_ZLOG_URL
-    "https://github.com/HardySimpson/zlog/archive/refs/tags/v${OPENEMBER_ZLOG_VERSION}.tar.gz")
+    "https://github.com/HardySimpson/zlog/archive/refs/tags/${OPENEMBER_ZLOG_VERSION}.tar.gz")
 
 set(OPENEMBER_CJSON_VERSION "1.7.15")
 set(OPENEMBER_CJSON_URL
@@ -34,12 +32,26 @@ set(OPENEMBER_SQLITE_URL
 
 include(${CMAKE_SOURCE_DIR}/cmake/GetSqlite.cmake)
 
-include(${CMAKE_SOURCE_DIR}/cmake/GetNlohmannJson.cmake)
+# nlohmann/json、yaml-cpp、spdlog、Asio（版本唯一来源）
+set(OPENEMBER_NLOHMANN_JSON_VERSION "3.11.3" CACHE STRING "nlohmann/json version")
+set(OPENEMBER_NLOHMANN_JSON_URL
+    "https://github.com/nlohmann/json/archive/refs/tags/v${OPENEMBER_NLOHMANN_JSON_VERSION}.tar.gz"
+    CACHE STRING "nlohmann/json archive URL")
 
-include(${CMAKE_SOURCE_DIR}/cmake/GetYamlCpp.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetAsio.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetSpdlog.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetMongoose.cmake)
+set(OPENEMBER_YAMLCPP_VERSION "0.8.0" CACHE STRING "yaml-cpp version")
+set(OPENEMBER_YAMLCPP_URL
+    "https://github.com/jbeder/yaml-cpp/archive/${OPENEMBER_YAMLCPP_VERSION}.tar.gz"
+    CACHE STRING "yaml-cpp archive URL")
+
+set(OPENEMBER_SPDLOG_VERSION "1.14.1" CACHE STRING "spdlog version")
+set(OPENEMBER_SPDLOG_URL
+    "https://github.com/gabime/spdlog/archive/refs/tags/v${OPENEMBER_SPDLOG_VERSION}.tar.gz"
+    CACHE STRING "spdlog archive URL")
+
+set(OPENEMBER_ASIO_TAG "asio-1-30-2" CACHE STRING "Asio Git tag (e.g. asio-1-30-2)")
+set(OPENEMBER_ASIO_URL
+    "https://github.com/chriskohlhoff/asio/archive/${OPENEMBER_ASIO_TAG}.tar.gz"
+    CACHE STRING "Asio archive URL")
 
 # ------------------------------------------------------------
 # Transport dependencies (nng / lcm / libzmq / cppzmq)
@@ -70,10 +82,70 @@ set(OPENEMBER_PAHO_MQTT_C_VERSION "1.3.16")
 set(OPENEMBER_PAHO_MQTT_C_URL
     "https://github.com/eclipse-paho/paho.mqtt.c/archive/v${OPENEMBER_PAHO_MQTT_C_VERSION}.tar.gz")
 
+set(PAHO_MQTT_C_LOCAL_SOURCE "" CACHE PATH
+    "Optional: pre-extracted paho.mqtt.c tree (overrides third_party/ archives and network download)")
+
 # Mongoose embedded web server (used by apps/services/web_dashboard)
 set(OPENEMBER_MONGOOSE_VERSION "7.20")
 set(OPENEMBER_MONGOOSE_URL
     "https://github.com/cesanta/mongoose/archive/refs/tags/${OPENEMBER_MONGOOSE_VERSION}.tar.gz")
+
+# ruckig（可选；运动轨迹生成，C++20）https://github.com/pantor/ruckig
+set(OPENEMBER_RUCKIG_VERSION "0.17.3" CACHE STRING "ruckig release tag")
+set(OPENEMBER_RUCKIG_URL
+    "https://github.com/pantor/ruckig/archive/refs/tags/v${OPENEMBER_RUCKIG_VERSION}.tar.gz"
+    CACHE STRING "ruckig source archive URL")
+
+# 解压目录与 third_party 缓存文件名（与上游归档顶层目录一致）
+set(OPENEMBER_ZLOG_CACHE_KEY "zlog-${OPENEMBER_ZLOG_VERSION}")
+set(OPENEMBER_ZLOG_STAGE_DIR_NAME "${OPENEMBER_ZLOG_CACHE_KEY}")
+set(OPENEMBER_CJSON_CACHE_KEY "cJSON-${OPENEMBER_CJSON_VERSION}")
+set(OPENEMBER_CJSON_STAGE_DIR_NAME "${OPENEMBER_CJSON_CACHE_KEY}")
+set(OPENEMBER_NLOHMANN_JSON_CACHE_KEY "json-${OPENEMBER_NLOHMANN_JSON_VERSION}")
+set(OPENEMBER_NLOHMANN_JSON_STAGE_DIR_NAME "${OPENEMBER_NLOHMANN_JSON_CACHE_KEY}")
+set(OPENEMBER_SQLITE_CACHE_KEY "sqlite-amalgamation-${OPENEMBER_SQLITE_AMALGAMATION_NUM}")
+set(OPENEMBER_SQLITE_STAGE_DIR_NAME "${OPENEMBER_SQLITE_CACHE_KEY}")
+set(OPENEMBER_MONGOOSE_CACHE_KEY "mongoose-${OPENEMBER_MONGOOSE_VERSION}")
+set(OPENEMBER_MONGOOSE_STAGE_DIR_NAME "${OPENEMBER_MONGOOSE_CACHE_KEY}")
+set(OPENEMBER_YAMLCPP_CACHE_KEY "yaml-cpp-${OPENEMBER_YAMLCPP_VERSION}")
+set(OPENEMBER_YAMLCPP_STAGE_DIR_NAME "${OPENEMBER_YAMLCPP_CACHE_KEY}")
+set(OPENEMBER_SPDLOG_CACHE_KEY "spdlog-${OPENEMBER_SPDLOG_VERSION}")
+set(OPENEMBER_SPDLOG_STAGE_DIR_NAME "${OPENEMBER_SPDLOG_CACHE_KEY}")
+set(OPENEMBER_ASIO_CACHE_KEY "asio-${OPENEMBER_ASIO_TAG}")
+set(OPENEMBER_ASIO_STAGE_DIR_NAME "${OPENEMBER_ASIO_CACHE_KEY}")
+set(OPENEMBER_LIBZMQ_CACHE_KEY "libzmq-${OPENEMBER_LIBZMQ_VERSION}")
+set(OPENEMBER_LIBZMQ_STAGE_DIR_NAME "${OPENEMBER_LIBZMQ_CACHE_KEY}")
+set(OPENEMBER_NNG_CACHE_KEY "nng-${OPENEMBER_NNG_VERSION}")
+set(OPENEMBER_NNG_STAGE_DIR_NAME "${OPENEMBER_NNG_CACHE_KEY}")
+set(OPENEMBER_LCM_CACHE_KEY "lcm-${OPENEMBER_LCM_VERSION}")
+set(OPENEMBER_LCM_STAGE_DIR_NAME "${OPENEMBER_LCM_CACHE_KEY}")
+set(OPENEMBER_CPPZMQ_CACHE_KEY "cppzmq-${OPENEMBER_CPPZMQ_VERSION}")
+set(OPENEMBER_CPPZMQ_STAGE_DIR_NAME "${OPENEMBER_CPPZMQ_CACHE_KEY}")
+set(OPENEMBER_PAHO_MQTT_C_CACHE_KEY "paho.mqtt.c-${OPENEMBER_PAHO_MQTT_C_VERSION}")
+set(OPENEMBER_PAHO_MQTT_C_STAGE_DIR_NAME "${OPENEMBER_PAHO_MQTT_C_CACHE_KEY}")
+set(OPENEMBER_RUCKIG_CACHE_KEY "ruckig-${OPENEMBER_RUCKIG_VERSION}")
+set(OPENEMBER_RUCKIG_STAGE_DIR_NAME "${OPENEMBER_RUCKIG_CACHE_KEY}")
+
+set(OPENEMBER_ZLOG_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted zlog tree")
+set(OPENEMBER_CJSON_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted cJSON tree")
+set(OPENEMBER_NLOHMANN_JSON_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted nlohmann/json tree")
+set(OPENEMBER_SQLITE_LOCAL_SOURCE "" CACHE PATH "Optional: SQLite amalgamation dir (sqlite3.c)")
+set(OPENEMBER_MONGOOSE_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted mongoose tree")
+set(OPENEMBER_YAMLCPP_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted yaml-cpp tree")
+set(OPENEMBER_ASIO_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted Asio tree")
+set(OPENEMBER_SPDLOG_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted spdlog tree")
+set(OPENEMBER_LIBZMQ_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted libzmq tree")
+set(OPENEMBER_NNG_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted nng tree")
+set(OPENEMBER_LCM_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted lcm tree")
+set(OPENEMBER_CPPZMQ_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted cppzmq tree")
+set(OPENEMBER_RUCKIG_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted ruckig tree")
+
+include(${CMAKE_SOURCE_DIR}/cmake/GetNlohmannJson.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/GetYamlCpp.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/GetAsio.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/GetSpdlog.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/GetMongoose.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/GetRuckig.cmake)
 
 function(openember_third_party_resolve_zlog)
     # 仅当 OPENEMBER_LOG_BACKEND=ZLOG 时解析 zlog（由根 CMakeLists 在 include 本文件前设置）
@@ -103,20 +175,14 @@ function(openember_third_party_resolve_zlog)
         return()
     endif()
 
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-        if(NOT OPENEMBER_ZLOG_LOCAL_SOURCE)
-            set(OPENEMBER_ZLOG_LOCAL_SOURCE
-                "${CMAKE_SOURCE_DIR}/download/_extracted/zlog-${OPENEMBER_ZLOG_VERSION}"
-                CACHE PATH "Local source override for zlog (VENDOR mode)" FORCE)
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_ZLOG)
+            message(FATAL_ERROR
+                "OPENEMBER_THIRD_PARTY_BUNDLE_ZLOG=OFF but ZLOG backend needs zlog sources. "
+                "Install zlog system-wide, or enable the bundle in menuconfig (Third party).")
         endif()
-        openember_get_zlog()
-        set(BUILD_ZLOG FALSE PARENT_SCOPE)
-        set(ZLOG_INCLUDE_DIRS ${ZLOG_INCLUDE_DIRS} PARENT_SCOPE)
-        set(ZLOG_LIBRARIES ${ZLOG_LIBRARIES} PARENT_SCOPE)
-        return()
     endif()
 
-    # FETCH
     openember_get_zlog()
     set(BUILD_ZLOG FALSE PARENT_SCOPE)
     set(ZLOG_INCLUDE_DIRS ${ZLOG_INCLUDE_DIRS} PARENT_SCOPE)
@@ -143,24 +209,15 @@ function(openember_third_party_resolve_cjson)
         return()
     endif()
 
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-        # cJSON 的 upstream 默认会构建 Unity 测试框架（target 名叫 unity），
-        # 在同一工程中可能与其它依赖的测试目标发生冲突。
-        # 对 OpenEmber 构建链路而言，这些测试不需要，因此强制关闭。
-        set(ENABLE_CJSON_TEST OFF CACHE BOOL "Disable cJSON test build" FORCE)
-        if(NOT OPENEMBER_CJSON_LOCAL_SOURCE)
-            set(OPENEMBER_CJSON_LOCAL_SOURCE
-                "${CMAKE_SOURCE_DIR}/download/_extracted/cJSON-${OPENEMBER_CJSON_VERSION}"
-                CACHE PATH "Local source override for cJSON (VENDOR mode)" FORCE)
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_CJSON)
+            message(FATAL_ERROR
+                "OPENEMBER_THIRD_PARTY_BUNDLE_CJSON=OFF but JSON library is cJSON. "
+                "Install libcjson system-wide or enable bundle (Third party).")
         endif()
-        openember_get_cjson()
-        set(BUILD_CJSON FALSE PARENT_SCOPE)
-        set(CJSON_INCLUDE_DIRS ${CJSON_INCLUDE_DIRS} PARENT_SCOPE)
-        set(CJSON_LIBRARIES ${CJSON_LIBRARIES} PARENT_SCOPE)
-        return()
     endif()
 
-    # FETCH
+    set(ENABLE_CJSON_TEST OFF CACHE BOOL "Disable cJSON test build" FORCE)
     openember_get_cjson()
     set(BUILD_CJSON FALSE PARENT_SCOPE)
     set(CJSON_INCLUDE_DIRS ${CJSON_INCLUDE_DIRS} PARENT_SCOPE)
@@ -178,11 +235,11 @@ function(openember_third_party_resolve_nlohmann_json)
         return()
     endif()
 
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-        if(NOT OPENEMBER_NLOHMANN_JSON_LOCAL_SOURCE)
-            set(OPENEMBER_NLOHMANN_JSON_LOCAL_SOURCE
-                "${CMAKE_SOURCE_DIR}/download/_extracted/json-${OPENEMBER_NLOHMANN_JSON_VERSION}"
-                CACHE PATH "Local nlohmann/json sources (VENDOR mode)" FORCE)
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON)
+            message(FATAL_ERROR
+                "OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON=OFF but JSON library is nlohmann/json. "
+                "Install nlohmann-json3-dev package or enable bundle (Third party).")
         endif()
     endif()
 
@@ -214,25 +271,16 @@ function(openember_third_party_resolve_paho_mqtt_c)
         return()
     endif()
 
-    # VENDOR: 使用 download/_extracted 下的源码，通过 FetchContent SOURCE_DIR 构建
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-        if(NOT PAHO_MQTT_C_LOCAL_SOURCE)
-            set(PAHO_MQTT_C_LOCAL_SOURCE
-                "${CMAKE_SOURCE_DIR}/download/_extracted/paho.mqtt.c-${OPENEMBER_PAHO_MQTT_C_VERSION}"
-                CACHE PATH "Local source override for paho.mqtt.c (VENDOR mode)" FORCE)
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_PAHO)
+            message(FATAL_ERROR
+                "OPENEMBER_THIRD_PARTY_BUNDLE_PAHO=OFF but MQTT component is enabled. "
+                "Install Paho MQTT C system-wide or enable bundle (Third party).")
         endif()
-        openember_get_paho_mqtt_c()
-        set(BUILD_MQTT FALSE PARENT_SCOPE)
-        set(PAHO_MQTT_C_INCLUDE_DIRS ${PAHO_MQTT_C_INCLUDE_DIRS} PARENT_SCOPE)
-        set(PAHO_MQTT_C_LIBRARIES ${PAHO_MQTT_C_LIBRARIES} PARENT_SCOPE)
-        return()
     endif()
 
-    # FETCH: download + build via GetPahoMqttC.cmake
     openember_get_paho_mqtt_c()
-    set(BUILD_MQTT FALSE PARENT_SCOPE) # Avoid building vendor paho again
-    # Values are exported from openember_get_paho_mqtt_c() to this scope via PARENT_SCOPE,
-    # then re-export to the top-level via PARENT_SCOPE.
+    set(BUILD_MQTT FALSE PARENT_SCOPE)
     set(PAHO_MQTT_C_INCLUDE_DIRS ${PAHO_MQTT_C_INCLUDE_DIRS} PARENT_SCOPE)
     set(PAHO_MQTT_C_LIBRARIES ${PAHO_MQTT_C_LIBRARIES} PARENT_SCOPE)
 endfunction()
@@ -249,11 +297,10 @@ function(openember_third_party_resolve_sqlite)
         return()
     endif()
 
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-        if(NOT OPENEMBER_SQLITE_LOCAL_SOURCE)
-            set(OPENEMBER_SQLITE_LOCAL_SOURCE
-                "${CMAKE_SOURCE_DIR}/download/_extracted/sqlite-amalgamation-${OPENEMBER_SQLITE_AMALGAMATION_NUM}"
-                CACHE PATH "Local SQLite amalgamation directory (VENDOR mode)" FORCE)
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_SQLITE)
+            message(FATAL_ERROR
+                "OPENEMBER_THIRD_PARTY_BUNDLE_SQLITE=OFF: install sqlite3 dev package or enable bundle (Third party).")
         endif()
     endif()
 
@@ -275,12 +322,10 @@ function(openember_third_party_resolve_mongoose)
         return()
     endif()
 
-    # VENDOR: use local extracted sources if not set
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-        if(NOT OPENEMBER_MONGOOSE_LOCAL_SOURCE)
-            set(OPENEMBER_MONGOOSE_LOCAL_SOURCE
-                "${CMAKE_SOURCE_DIR}/download/_extracted/mongoose-${OPENEMBER_MONGOOSE_VERSION}"
-                CACHE PATH "Local source override for mongoose (VENDOR mode)" FORCE)
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_MONGOOSE)
+            message(FATAL_ERROR
+                "OPENEMBER_THIRD_PARTY_BUNDLE_MONGOOSE=OFF: install mongoose dev package or enable bundle (Third party).")
         endif()
     endif()
 
@@ -305,11 +350,10 @@ function(openember_transport_resolve_libzmq)
         return()
     endif()
 
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-        if(NOT OPENEMBER_LIBZMQ_LOCAL_SOURCE)
-            set(OPENEMBER_LIBZMQ_LOCAL_SOURCE
-                "${CMAKE_SOURCE_DIR}/download/_extracted/libzmq-${OPENEMBER_LIBZMQ_VERSION}"
-                CACHE PATH "Local source override for libzmq (VENDOR mode)" FORCE)
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_LIBZMQ)
+            message(FATAL_ERROR
+                "OPENEMBER_THIRD_PARTY_BUNDLE_LIBZMQ=OFF: install libzmq-dev or enable bundle (Third party).")
         endif()
     endif()
 
@@ -329,11 +373,10 @@ function(openember_transport_resolve_nng)
         return()
     endif()
 
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-        if(NOT OPENEMBER_NNG_LOCAL_SOURCE)
-            set(OPENEMBER_NNG_LOCAL_SOURCE
-                "${CMAKE_SOURCE_DIR}/download/_extracted/nng-${OPENEMBER_NNG_VERSION}"
-                CACHE PATH "Local source override for nng (VENDOR mode)" FORCE)
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_NNG)
+            message(FATAL_ERROR
+                "OPENEMBER_THIRD_PARTY_BUNDLE_NNG=OFF: install libnng-dev or enable bundle (Third party).")
         endif()
     endif()
 
@@ -353,11 +396,10 @@ function(openember_transport_resolve_lcm)
         return()
     endif()
 
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-        if(NOT OPENEMBER_LCM_LOCAL_SOURCE)
-            set(OPENEMBER_LCM_LOCAL_SOURCE
-                "${CMAKE_SOURCE_DIR}/download/_extracted/lcm-${OPENEMBER_LCM_VERSION}"
-                CACHE PATH "Local source override for lcm (VENDOR mode)" FORCE)
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_LCM)
+            message(FATAL_ERROR
+                "OPENEMBER_THIRD_PARTY_BUNDLE_LCM=OFF: install liblcm-dev or enable bundle (Third party).")
         endif()
     endif()
 
@@ -376,11 +418,10 @@ function(openember_transport_resolve_cppzmq)
         return()
     endif()
 
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-        if(NOT OPENEMBER_CPPZMQ_LOCAL_SOURCE)
-            set(OPENEMBER_CPPZMQ_LOCAL_SOURCE
-                "${CMAKE_SOURCE_DIR}/download/_extracted/cppzmq-${OPENEMBER_CPPZMQ_VERSION}"
-                CACHE PATH "Local source override for cppzmq (VENDOR mode)" FORCE)
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_CPPZMQ)
+            message(FATAL_ERROR
+                "OPENEMBER_THIRD_PARTY_BUNDLE_CPPZMQ=OFF: install cppzmq headers or enable bundle (Third party).")
         endif()
     endif()
 
@@ -393,14 +434,13 @@ function(openember_third_party_resolve_optional_cxx_deps)
     if(OPENEMBER_WITH_YAMLCPP)
         if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
             find_package(yaml-cpp REQUIRED)
-        elseif(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-            if(NOT OPENEMBER_YAMLCPP_LOCAL_SOURCE)
-                set(OPENEMBER_YAMLCPP_LOCAL_SOURCE
-                    "${CMAKE_SOURCE_DIR}/download/_extracted/yaml-cpp-${OPENEMBER_YAMLCPP_VERSION}"
-                    CACHE PATH "Local yaml-cpp sources (VENDOR)" FORCE)
-            endif()
-            openember_get_yaml_cpp()
         else()
+            if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+                if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_YAMLCPP)
+                    message(FATAL_ERROR
+                        "OPENEMBER_THIRD_PARTY_BUNDLE_YAMLCPP=OFF: install libyaml-cpp-dev or enable bundle (Third party).")
+                endif()
+            endif()
             openember_get_yaml_cpp()
         endif()
     endif()
@@ -419,14 +459,13 @@ function(openember_third_party_resolve_optional_cxx_deps)
                 find_package(Threads REQUIRED)
                 target_link_libraries(openember_asio_sys INTERFACE Threads::Threads)
             endif()
-        elseif(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-            if(NOT OPENEMBER_ASIO_LOCAL_SOURCE)
-                set(OPENEMBER_ASIO_LOCAL_SOURCE
-                    "${CMAKE_SOURCE_DIR}/download/_extracted/asio-${OPENEMBER_ASIO_TAG}"
-                    CACHE PATH "Local Asio sources (VENDOR)" FORCE)
-            endif()
-            openember_get_asio()
         else()
+            if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+                if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_ASIO)
+                    message(FATAL_ERROR
+                        "OPENEMBER_THIRD_PARTY_BUNDLE_ASIO=OFF: install Asio headers or enable bundle (Third party).")
+                endif()
+            endif()
             openember_get_asio()
         endif()
     endif()
@@ -434,16 +473,30 @@ function(openember_third_party_resolve_optional_cxx_deps)
     if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
         if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
             find_package(spdlog REQUIRED)
-        elseif(OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-            if(NOT OPENEMBER_SPDLOG_LOCAL_SOURCE)
-                set(OPENEMBER_SPDLOG_LOCAL_SOURCE
-                    "${CMAKE_SOURCE_DIR}/download/_extracted/spdlog-${OPENEMBER_SPDLOG_VERSION}"
-                    CACHE PATH "Local spdlog sources (VENDOR)" FORCE)
+        else()
+            if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+                if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG)
+                    message(FATAL_ERROR
+                        "OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG=OFF: install libspdlog-dev or enable bundle (Third party).")
+                endif()
             endif()
             openember_get_spdlog()
-        else()
-            openember_get_spdlog()
         endif()
+    endif()
+
+    if(OPENEMBER_WITH_RUCKIG)
+        if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
+            message(FATAL_ERROR
+                "OPENEMBER_WITH_RUCKIG=ON: SYSTEM 模式未配置 ruckig 探测，请改用 FETCH/VENDOR 或关闭该选项。")
+        endif()
+        if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+            if(NOT OPENEMBER_RUCKIG_LOCAL_SOURCE AND NOT OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG)
+                message(FATAL_ERROR
+                    "OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG=OFF but OPENEMBER_WITH_RUCKIG=ON. "
+                    "Enable bundle (Third party) or set OPENEMBER_RUCKIG_LOCAL_SOURCE.")
+            endif()
+        endif()
+        openember_get_ruckig()
     endif()
 endfunction()
 

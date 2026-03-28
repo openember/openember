@@ -1,29 +1,19 @@
-# spdlog（C++ 日志，header-only + 可选编译）
-include(FetchContent)
+# spdlog
 
-set(OPENEMBER_SPDLOG_VERSION "1.14.1" CACHE STRING "spdlog version")
-set(OPENEMBER_SPDLOG_URL
-    "https://github.com/gabime/spdlog/archive/refs/tags/v${OPENEMBER_SPDLOG_VERSION}.tar.gz"
-    CACHE STRING "spdlog archive URL")
+include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_get_spdlog)
     if(OPENEMBER_SPDLOG_LOCAL_SOURCE)
-        FetchContent_Declare(
-            spdlog
-            SOURCE_DIR "${OPENEMBER_SPDLOG_LOCAL_SOURCE}")
+        set(_src "${OPENEMBER_SPDLOG_LOCAL_SOURCE}")
     else()
-        FetchContent_Declare(
-            spdlog
-            URL ${OPENEMBER_SPDLOG_URL}
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+        openember_third_party_prepare_stage(_src "${OPENEMBER_SPDLOG_CACHE_KEY}" "${OPENEMBER_SPDLOG_STAGE_DIR_NAME}"
+            "${OPENEMBER_SPDLOG_URL}" "CMakeLists.txt" "")
     endif()
 
-    FetchContent_GetProperties(spdlog)
-    if(NOT spdlog_POPULATED)
-        set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
-        set(SPDLOG_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-        set(SPDLOG_BUILD_BENCH OFF CACHE BOOL "" FORCE)
-        set(SPDLOG_INSTALL OFF CACHE BOOL "" FORCE)
-        FetchContent_MakeAvailable(spdlog)
-    endif()
+    set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
+    set(SPDLOG_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(SPDLOG_BUILD_BENCH OFF CACHE BOOL "" FORCE)
+    set(SPDLOG_INSTALL OFF CACHE BOOL "" FORCE)
+
+    add_subdirectory("${_src}" "${CMAKE_BINARY_DIR}/_deps/${OPENEMBER_SPDLOG_STAGE_DIR_NAME}-build")
 endfunction()

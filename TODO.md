@@ -109,3 +109,15 @@ C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal
 
 - [x] 全量编译（含 `OPENEMBER_LOG_BACKEND=SPDLOG` 的 `Log`）+ `ctest`（`test_msgbus_transport`）
 - [ ] 手动：`msgbus_demo_*` 双进程、spdlog topic + `web_dashboard` 日志环（发布前建议跑通）
+
+## 第三方库管理重构（third_party/ + build/_deps 命名）
+
+目标：`third_party/` 作为归档缓存；`build/_deps/<package>-<version>/` 与上游压缩包一致；FETCH 先本地后网络；Kconfig 与依赖联动可逐步增强。
+
+### 阶段 1（已完成）
+
+- [x] 文档：`docs/third-party-management.md`、`docs/build.md`、`third_party/README.md`
+- [x] CMake 辅助：`cmake/ThirdPartyArchive.cmake`、`cmake/OpenEmberThirdPartyBundleDefaults.cmake`
+- [x] **全部 Get\*.cmake**：`third_party/` + `build/_deps/<上游目录名>/` + `add_subdirectory`（已去除 `openember_*-src` 风格命名）
+- [x] **Kconfig**：`third_party/Kconfig` 中 `OPENEMBER_THIRD_PARTY_BUNDLE_*`（仅开关，无版本）；`genconfig.sh` → `config.cmake`；`menuconfig.sh` 复制
+- [ ] **可选**：CI 中缓存 `third_party/` 归档的说明；按需增加「预取脚本」仅下载 Kconfig 勾选的包
