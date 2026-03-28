@@ -19,10 +19,6 @@
 
 #include "openember.h"
 
-#ifdef EMBER_LIBS_USING_MQTT
-#include "mqtt_wrapper.h"
-#endif
-
 #ifdef EMBER_LIBS_USING_ZEROMQ
 #include "zmq_wrapper.h"
 #endif

@@ -38,6 +38,7 @@ option( TESTS_ENABLED "Whether to build/register unit tests (test/); prefer Kcon
 option( OPENEMBER_ENABLE_OSAL "Build platform OSAL (Linux pthread)" ON)
 option( OPENEMBER_ENABLE_HAL "Build platform HAL (Linux file/uart; requires OSAL)" ON)
 option( EXAMPLES_ENABLED "Whether compile examples" ON)
+option( OPENEMBER_EXAMPLE_MQTT_EMQX "Build example mqtt_emqx_client (Paho MQTT C → broker)" OFF)
 option( BUILD_CJSON "Whether compile cJSON" OFF)
 option( BUILD_MQTT "Whether compile MQTT" OFF)
 option( BUILD_MD5 "Whether compile md5" OFF)

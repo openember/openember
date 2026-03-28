@@ -23,3 +23,34 @@ config OPENEMBER_EXAMPLE_NETWORK_SOCKETS
     depends on OPENEMBER_ENABLE_EXAMPLES
     help
       Build apps/examples/network_sockets demos for OSAL sockets and Components/Network wrapper.
+
+config OPENEMBER_EXAMPLE_MQTT_EMQX
+    bool "Build example: mqtt_emqx_client (Paho C client → EMQX / MQTT broker)"
+    default n
+    depends on OPENEMBER_ENABLE_EXAMPLES
+    help
+      Eclipse Paho MQTT C via openember::mqtt::Client. Configure broker URI and topic below.
+
+if OPENEMBER_EXAMPLE_MQTT_EMQX
+
+config OPENEMBER_MQTT_EMQX_BROKER_URI
+    string "MQTT broker URI (e.g. tcp://broker.emqx.io:1883)"
+    default "tcp://broker.emqx.io:1883"
+
+config OPENEMBER_MQTT_EMQX_CLIENT_ID
+    string "MQTT client id"
+    default "openember-mqtt-example"
+
+config OPENEMBER_MQTT_EMQX_USERNAME
+    string "MQTT username (optional; e.g. emqx for public broker)"
+    default "emqx"
+
+config OPENEMBER_MQTT_EMQX_PASSWORD
+    string "MQTT password (optional)"
+    default "public"
+
+config OPENEMBER_MQTT_EMQX_TOPIC
+    string "Subscribe/publish topic"
+    default "emqx/c-test"
+
+endif

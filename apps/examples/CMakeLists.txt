@@ -17,3 +17,7 @@ if(NOT DEFINED OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER OR OPENEMBER_EXAMPLE_MSGBU
         add_subdirectory(msgbus_nng_forwarder)
     endif()
 endif()
+
+if(OPENEMBER_EXAMPLE_MQTT_EMQX)
+    add_subdirectory(mqtt_emqx_client)
+endif()

@@ -1,14 +1,9 @@
-project(openember_mqtt C CXX)
+project(openember_mqtt CXX)
 
-set(MQTT_C_SRCS
-    mqtt_client_wrapper.c
-    mqtt_async_wrapper.c
-    mosquitto_wrapper.c
-)
-
+# Eclipse Paho MQTT C（MQTTClient）；应用请使用 mqtt_client.hpp，不再提供 msg_bus_* 形式的 MQTT 封装。
 OPENEMBER_ADD_STATIC_LIBRARY(
     TARGET ${PROJECT_NAME}
-    SRCS     ${MQTT_C_SRCS} mqtt_client.cpp
+    SRCS     mqtt_client.cpp
     LIBS     ${OPENEMBER_EXTERNAL_LIBRARIES}
     INCLUDES ${OPENEMBER_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}
     DESTINATION lib

@@ -19,10 +19,6 @@
  * Choose internal message queue backend.
  * Current default: NNG (pub/sub) transport.
  */
-//#define EMBER_LIBS_USING_MQTT
-//#define EMBER_LIBS_USING_MQTT_CLIENT
-//#define EMBER_LIBS_USING_MQTT_ASYNC
-//#define EMBER_LIBS_USING_MQTT_MOSQUITTO
 //#define EMBER_LIBS_USING_ZEROMQ
 
 /*
@@ -31,9 +27,9 @@
  * By default (no backend macro is provided), we use NNG.
  * When building with LCM, CMake should define EMBER_LIBS_USING_LCM
  * and the default NNG macro will not be enabled here.
+ * (MQTT 客户端见 components/mqtt/mqtt_client.hpp，不再作为 msgbus 后端宏。)
  */
-#if !defined(EMBER_LIBS_USING_MQTT) && !defined(EMBER_LIBS_USING_ZEROMQ) && \
-    !defined(EMBER_LIBS_USING_NNG) && !defined(EMBER_LIBS_USING_LCM)
+#if !defined(EMBER_LIBS_USING_ZEROMQ) && !defined(EMBER_LIBS_USING_NNG) && !defined(EMBER_LIBS_USING_LCM)
 #define EMBER_LIBS_USING_NNG
 #endif
 
