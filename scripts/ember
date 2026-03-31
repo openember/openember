@@ -10,6 +10,98 @@ resolve_realpath() {
   fi
 }
 
+REAL_USER="${SUDO_USER:-${USER}}"
+REAL_HOME="$(getent passwd "${REAL_USER}" | cut -d: -f6)"
+if [[ -z "${REAL_HOME}" ]]; then
+  REAL_HOME="${HOME}"
+fi
+
+ember_env_dir() {
+  echo "${REAL_HOME}/.openember/ember"
+}
+
+ember_envs_dir() {
+  echo "$(ember_env_dir)/envs"
+}
+
+ember_current_file() {
+  echo "$(ember_env_dir)/current"
+}
+
+ember_env_add() {
+  local name="${1:-}"
+  local root="${2:-}"
+  if [[ -z "${name}" || -z "${root}" ]]; then
+    echo "Usage: ember add <name> <project_root>" >&2
+    return 1
+  fi
+  root="$(resolve_realpath "${root}")"
+  if [[ ! -f "${root}/CMakeLists.txt" || ! -f "${root}/scripts/kconfig/menuconfig.sh" ]]; then
+    echo "Not a valid project root: ${root}" >&2
+    echo "Expected: ${root}/CMakeLists.txt and ${root}/scripts/kconfig/menuconfig.sh" >&2
+    return 1
+  fi
+  mkdir -p "$(ember_envs_dir)"
+  printf '%s\n' "${root}" > "$(ember_envs_dir)/${name}"
+  echo "[ember] added env ${name} -> ${root}"
+}
+
+ember_env_list() {
+  local envs_dir current name root
+  envs_dir="$(ember_envs_dir)"
+  current="$(ember_env_current || true)"
+  if [[ ! -d "${envs_dir}" ]]; then
+    echo "(no envs)"
+    return 0
+  fi
+  while IFS= read -r name; do
+    [[ -n "${name}" ]] || continue
+    root="$(cat "${envs_dir}/${name}" 2>/dev/null || true)"
+    if [[ -n "${current}" && "${name}" == "${current}" ]]; then
+      printf '* %s -> %s\n' "${name}" "${root}"
+    else
+      printf '  %s -> %s\n' "${name}" "${root}"
+    fi
+  done < <(ls -1 "${envs_dir}" 2>/dev/null | sort || true)
+}
+
+ember_env_current() {
+  local f
+  f="$(ember_current_file)"
+  if [[ -f "${f}" ]]; then
+    cat "${f}"
+  fi
+}
+
+ember_env_use() {
+  local name="${1:-}"
+  if [[ -z "${name}" ]]; then
+    echo "Usage: ember use <name>" >&2
+    return 1
+  fi
+  if [[ ! -f "$(ember_envs_dir)/${name}" ]]; then
+    echo "Unknown env: ${name}" >&2
+    echo "Run: ember list" >&2
+    return 1
+  fi
+  mkdir -p "$(ember_env_dir)"
+  printf '%s\n' "${name}" > "$(ember_current_file)"
+  echo "[ember] using env: ${name}"
+}
+
+ember_env_current_root() {
+  local name root
+  name="$(ember_env_current || true)"
+  if [[ -z "${name}" ]]; then
+    return 1
+  fi
+  root="$(cat "$(ember_envs_dir)/${name}" 2>/dev/null || true)"
+  if [[ -z "${root}" ]]; then
+    return 1
+  fi
+  echo "${root}"
+}
+
 find_project_root() {
   # 1) explicit override
   if [[ -n "${OPENEMBER_ROOT:-}" ]]; then
@@ -33,29 +125,34 @@ find_project_root() {
     return 0
   fi
 
+  # 4) use current env (nvm-like)
+  if root_from_env="$(ember_env_current_root 2>/dev/null)"; then
+    if [[ -f "${root_from_env}/CMakeLists.txt" && -f "${root_from_env}/scripts/kconfig/menuconfig.sh" ]]; then
+      echo "${root_from_env}"
+      return 0
+    fi
+  fi
+
   echo "Cannot locate OpenEmber project root." >&2
-  echo "Please run from project root, or set OPENEMBER_ROOT=/path/to/openember." >&2
+  echo "Please run from project root, set OPENEMBER_ROOT=/path/to/project," >&2
+  echo "or register an env and select it: ember add <name> <root>; ember use <name>." >&2
   return 1
 }
 
-ROOT_DIR="$(find_project_root)"
-BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
-JOBS="${OPENEMBER_JOBS:-$(nproc)}"
 EMBER_COMPLETION_BEGIN="# >>> openember ember completion >>>"
 EMBER_COMPLETION_END="# <<< openember ember completion <<<"
 EMBER_PATH_BEGIN="# >>> openember ember path >>>"
 EMBER_PATH_END="# <<< openember ember path <<<"
-REAL_USER="${SUDO_USER:-${USER}}"
-REAL_HOME="$(getent passwd "${REAL_USER}" | cut -d: -f6)"
-if [[ -z "${REAL_HOME}" ]]; then
-  REAL_HOME="${HOME}"
-fi
 
 usage() {
   cat <<EOF
 OpenEmber CLI — Kconfig + CMake helpers
 
 Usage:
+  ember list
+  ember use <name>
+  ember current
+  ember add <name> <project_root>
   ember menuconfig [build_dir]
   ember genconfig [build_dir]
   ember update [build_dir]
@@ -68,6 +165,10 @@ Usage:
   ember help
 
 Commands:
+  add         Register an environment name -> project root (nvm-like)
+  list        List registered environments
+  use         Select default environment (used when not running inside project root)
+  current     Print current environment name
   menuconfig   Interactive Kconfig UI; writes build/.config, then runs genconfig to refresh build/config.cmake
   genconfig    Map build/.config → build/config.cmake (CMake cache variables); use alone if .config was edited elsewhere
   update       Run CMake configure (cmake -S -B): applies config.cmake, may fetch/extract third-party sources
@@ -255,19 +356,47 @@ parse_prefix_arg() {
 
 cmd="${1:-help}"
 arg_build_dir="${2:-}"
-bd="$(resolve_build_dir "${arg_build_dir}")"
+bd=""
 
 case "${cmd}" in
+  list)
+    ember_env_list
+    ;;
+  use)
+    ember_env_use "${2:-}"
+    ;;
+  current)
+    ember_env_current || true
+    ;;
+  add)
+    ember_env_add "${2:-}" "${3:-}"
+    ;;
   menuconfig)
+    ROOT_DIR="$(find_project_root)"
+    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
+    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
+    bd="$(resolve_build_dir "${arg_build_dir}")"
     run_menuconfig_and_genconfig "${bd}"
     ;;
   genconfig)
+    ROOT_DIR="$(find_project_root)"
+    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
+    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
+    bd="$(resolve_build_dir "${arg_build_dir}")"
     bash "${ROOT_DIR}/scripts/kconfig/genconfig.sh" "${bd}"
     ;;
   update|configure)
+    ROOT_DIR="$(find_project_root)"
+    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
+    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
+    bd="$(resolve_build_dir "${arg_build_dir}")"
     cmake -S "${ROOT_DIR}" -B "${bd}"
     ;;
   build)
+    ROOT_DIR="$(find_project_root)"
+    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
+    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
+    bd="$(resolve_build_dir "${arg_build_dir}")"
     # Auto bootstrap config pipeline if needed.
     if [[ ! -f "${bd}/.config" ]]; then
       echo "[ember] ${bd}/.config not found, generating default config..." >&2
@@ -282,14 +411,25 @@ case "${cmd}" in
     cmake --build "${bd}" -j"${JOBS}"
     ;;
   all)
+    ROOT_DIR="$(find_project_root)"
+    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
+    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
+    bd="$(resolve_build_dir "${arg_build_dir}")"
     run_menuconfig_and_genconfig "${bd}"
     cmake -S "${ROOT_DIR}" -B "${bd}"
     cmake --build "${bd}" -j"${JOBS}"
     ;;
   clean)
+    ROOT_DIR="$(find_project_root)"
+    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
+    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
+    bd="$(resolve_build_dir "${arg_build_dir}")"
     rm -rf "${bd}"
     ;;
   completion)
+    ROOT_DIR="$(find_project_root)"
+    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
+    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
     shell_name="${2:-bash}"
     case "${shell_name}" in
       bash)
@@ -303,6 +443,9 @@ case "${cmd}" in
     esac
     ;;
   install)
+    ROOT_DIR="$(find_project_root)"
+    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
+    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
     if ! prefix="$(parse_prefix_arg "${REAL_HOME}/.local/bin" "${@:2}")"; then
       echo "Usage: ember install [--prefix <dir>]" >&2
       exit 1
@@ -310,6 +453,9 @@ case "${cmd}" in
     install_with_prefix "${prefix}"
     ;;
   uninstall)
+    ROOT_DIR="$(find_project_root)"
+    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
+    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
     if ! prefix="$(parse_prefix_arg "" "${@:2}")"; then
       echo "Usage: ember uninstall [--prefix <dir>]" >&2
       exit 1
