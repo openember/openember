@@ -251,7 +251,6 @@ endif()
 set( OPENEMBER_INTERNAL_INCLUDE_DIRS 
     ${CMAKE_BINARY_DIR}/include
     ${CMAKE_SOURCE_DIR}/core/inc
-    ${CMAKE_SOURCE_DIR}/components/GSDL/src
     ${CMAKE_SOURCE_DIR}/components/logging
     ${CMAKE_SOURCE_DIR}/components/ppool
     ${CMAKE_SOURCE_DIR}/components/msgbus
@@ -263,7 +262,6 @@ if(OPENEMBER_COMPONENT_MQTT)
 endif()
 
 set( OPENEMBER_INTERNAL_LIBRARIES 
-    gdsl
     logging
     ppool
     msgbus
