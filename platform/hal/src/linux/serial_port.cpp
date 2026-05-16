@@ -1,19 +1,34 @@
 #define _GNU_SOURCE
 
-#include "openember/hal/uart.hpp"
+#include "openember/hal/serial_port.hpp"
 
 #include <cerrno>
-#include <cstring>
 #include <fcntl.h>
-#include <termios.h>
 #include <unistd.h>
+
+#ifdef __linux__
+#include <asm/termbits.h>
+#include <sys/ioctl.h>
+#else
+#include <termios.h>
+#endif
 
 namespace openember::hal {
 
-struct Uart::Impl {
+struct SerialPort::Impl {
     int fd = -1;
     bool inited = false;
 };
+
+bool is_standard_serial_baud(uint32_t baud_rate)
+{
+    for (const SerialBaud b : kCommonSerialBaudRates) {
+        if (baud_rate == static_cast<uint32_t>(b)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 namespace {
 
@@ -37,17 +52,75 @@ speed_t baud_to_flag(uint32_t baud)
     case 921600:
         return B921600;
     default:
-        return B115200;
+        return static_cast<speed_t>(-1);
     }
 }
 
-Result apply_termios(int fd, const UartConfig& cfg)
+#ifdef __linux__
+void apply_frame_format(termios2& tio, const SerialPortConfig& cfg)
 {
-    termios tio {};
-    if (tcgetattr(fd, &tio) != 0) {
+    tio.c_iflag &=
+        ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON | IXOFF | IXANY);
+    tio.c_oflag &= ~OPOST;
+    tio.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+    tio.c_cflag |= CLOCAL | CREAD;
+
+    tio.c_cflag &= ~(CSIZE | PARENB | PARODD | CSTOPB);
+    if (cfg.data_bits == 7) {
+        tio.c_cflag |= CS7;
+    } else {
+        tio.c_cflag |= CS8;
+    }
+
+    if (cfg.stop_bits == 2) {
+        tio.c_cflag |= CSTOPB;
+    }
+
+    switch (cfg.parity) {
+    case SerialParity::None:
+        break;
+    case SerialParity::Even:
+        tio.c_cflag |= PARENB;
+        tio.c_cflag &= ~PARODD;
+        break;
+    case SerialParity::Odd:
+        tio.c_cflag |= PARENB | PARODD;
+        break;
+    default:
+        break;
+    }
+}
+
+Result apply_line_settings(int fd, const SerialPortConfig& cfg)
+{
+    if (cfg.baud_rate == 0) {
+        return osal::kErrInvalidArg;
+    }
+
+    termios2 tio {};
+    if (ioctl(fd, TCGETS2, &tio) != 0) {
         return osal::kErrInternal;
     }
 
+    apply_frame_format(tio, cfg);
+    tio.c_cflag &= ~static_cast<tcflag_t>(CBAUD);
+
+    const speed_t speed = baud_to_flag(cfg.baud_rate);
+    if (speed != static_cast<speed_t>(-1)) {
+        tio.c_cflag |= speed;
+    } else {
+        tio.c_cflag |= BOTHER;
+    }
+    tio.c_ispeed = cfg.baud_rate;
+    tio.c_ospeed = cfg.baud_rate;
+
+    return ioctl(fd, TCSETS2, &tio) == 0 ? osal::kOk : osal::kErrInternal;
+}
+
+#else
+
+void apply_frame_format(termios& tio, const SerialPortConfig& cfg)
+{
     cfmakeraw(&tio);
     tio.c_cflag |= CLOCAL | CREAD;
 
@@ -63,54 +136,68 @@ Result apply_termios(int fd, const UartConfig& cfg)
     }
 
     switch (cfg.parity) {
-    case UartParity::None:
+    case SerialParity::None:
         break;
-    case UartParity::Even:
+    case SerialParity::Even:
         tio.c_cflag |= PARENB;
         tio.c_cflag &= ~PARODD;
         break;
-    case UartParity::Odd:
+    case SerialParity::Odd:
         tio.c_cflag |= PARENB | PARODD;
         break;
     default:
+        break;
+    }
+}
+
+Result apply_line_settings(int fd, const SerialPortConfig& cfg)
+{
+    if (cfg.baud_rate == 0) {
         return osal::kErrInvalidArg;
     }
 
-    cfsetispeed(&tio, baud_to_flag(cfg.baud_rate));
-    cfsetospeed(&tio, baud_to_flag(cfg.baud_rate));
+    const speed_t speed = baud_to_flag(cfg.baud_rate);
+    if (speed == static_cast<speed_t>(-1)) {
+        return osal::kErrUnsupported;
+    }
+
+    termios tio {};
+    if (tcgetattr(fd, &tio) != 0) {
+        return osal::kErrInternal;
+    }
+
+    apply_frame_format(tio, cfg);
+    cfsetispeed(&tio, speed);
+    cfsetospeed(&tio, speed);
 
     return tcsetattr(fd, TCSANOW, &tio) == 0 ? osal::kOk : osal::kErrInternal;
 }
 
+#endif
+
 }  // namespace
 
-Uart::Uart() : impl_(std::make_unique<Impl>()) {}
+SerialPort::SerialPort() : impl_(std::make_unique<Impl>()) {}
 
-Uart::~Uart()
+SerialPort::~SerialPort()
 {
     (void)close();
 }
 
-Result Uart::query_caps(UartCaps* out_caps)
+Result SerialPort::query_caps(SerialPortCaps* out_caps)
 {
-    static const uint32_t rates[] = {9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600};
-
     if (!out_caps) {
         return osal::kErrInvalidArg;
     }
 
-    out_caps->baud_rate_count = static_cast<uint32_t>(sizeof(rates) / sizeof(rates[0]));
-    if (out_caps->baud_rate_count > kUartCapsMaxBaudRates) {
-        out_caps->baud_rate_count = kUartCapsMaxBaudRates;
-    }
-
+    out_caps->baud_rate_count = static_cast<uint32_t>(kCommonSerialBaudRates.size());
     for (uint32_t i = 0; i < out_caps->baud_rate_count; i++) {
-        out_caps->baud_rates[i] = rates[i];
+        out_caps->baud_rates[i] = static_cast<uint32_t>(kCommonSerialBaudRates[i]);
     }
 
-    out_caps->parity_mask = static_cast<uint32_t>(UartParityMask::None) |
-                            static_cast<uint32_t>(UartParityMask::Even) |
-                            static_cast<uint32_t>(UartParityMask::Odd);
+    out_caps->parity_mask = static_cast<uint32_t>(SerialParityMask::None) |
+                            static_cast<uint32_t>(SerialParityMask::Even) |
+                            static_cast<uint32_t>(SerialParityMask::Odd);
     out_caps->data_bits_min = 7;
     out_caps->data_bits_max = 8;
     out_caps->stop_bits_min = 1;
@@ -118,7 +205,7 @@ Result Uart::query_caps(UartCaps* out_caps)
     return osal::kOk;
 }
 
-Result Uart::open(const std::string& path, const UartConfig& cfg)
+Result SerialPort::open(const std::string& path, const SerialPortConfig& cfg)
 {
     if (path.empty()) {
         return osal::kErrInvalidArg;
@@ -130,6 +217,10 @@ Result Uart::open(const std::string& path, const UartConfig& cfg)
     if (cfg.stop_bits != 1 && cfg.stop_bits != 2) {
         return osal::kErrInvalidArg;
     }
+    if (cfg.parity != SerialParity::None && cfg.parity != SerialParity::Even &&
+        cfg.parity != SerialParity::Odd) {
+        return osal::kErrInvalidArg;
+    }
 
     (void)close();
 
@@ -138,7 +229,7 @@ Result Uart::open(const std::string& path, const UartConfig& cfg)
         return osal::kErrInternal;
     }
 
-    const Result r = apply_termios(fd, cfg);
+    const Result r = apply_line_settings(fd, cfg);
     if (r != osal::kOk) {
         ::close(fd);
         return r;
@@ -156,7 +247,7 @@ Result Uart::open(const std::string& path, const UartConfig& cfg)
     return osal::kOk;
 }
 
-Result Uart::close()
+Result SerialPort::close()
 {
     const int fd = impl_->fd;
     impl_->fd = -1;
@@ -168,13 +259,18 @@ Result Uart::close()
     return osal::kOk;
 }
 
-Result Uart::read(void* buf, size_t len, size_t* out_read)
+bool SerialPort::is_open() const
+{
+    return impl_ && impl_->inited && impl_->fd >= 0;
+}
+
+Result SerialPort::read(void* buf, size_t len, size_t* out_read)
 {
     if (!buf && len > 0) {
         return osal::kErrInvalidArg;
     }
 
-    if (!impl_->inited || impl_->fd < 0) {
+    if (!is_open()) {
         return osal::kErrInvalidArg;
     }
 
@@ -206,13 +302,13 @@ Result Uart::read(void* buf, size_t len, size_t* out_read)
     return osal::kOk;
 }
 
-Result Uart::write(const void* buf, size_t len, size_t* out_written)
+Result SerialPort::write(const void* buf, size_t len, size_t* out_written)
 {
     if (!buf && len > 0) {
         return osal::kErrInvalidArg;
     }
 
-    if (!impl_->inited || impl_->fd < 0) {
+    if (!is_open()) {
         return osal::kErrInvalidArg;
     }
 

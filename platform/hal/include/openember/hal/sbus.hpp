@@ -2,14 +2,11 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <string>
 
-#include "openember/osal/types.hpp"
+#include "openember/hal/serial_port.hpp"
 
 namespace openember::hal {
-
-using Result = osal::Result;
 
 struct SbusCaps {
     uint32_t channels_count = 0;
@@ -27,14 +24,15 @@ struct SbusFrame {
 };
 
 struct SbusConfig {
+    /** 0 表示默认 100000（SBUS 标准波特率，非 termios 预置常量） */
     uint32_t baud_rate = 0;
     uint8_t nonblocking = 0;
 };
 
-class Sbus {
+class Sbus : public SerialPort {
 public:
-    Sbus();
-    ~Sbus();
+    Sbus() = default;
+    ~Sbus() override = default;
 
     Sbus(const Sbus&) = delete;
     Sbus& operator=(const Sbus&) = delete;
@@ -43,13 +41,8 @@ public:
 
     static Result query_caps(SbusCaps* out_caps);
 
-    Result open(const std::string& uart_path, const SbusConfig& cfg);
-    Result close();
+    Result open(const std::string& uart_path, const SbusConfig& cfg = {});
     Result recv_frame(SbusFrame* out_frame, int timeout_ms);
-
-private:
-    struct Impl;
-    std::unique_ptr<Impl> impl_;
 };
 
 }  // namespace openember::hal

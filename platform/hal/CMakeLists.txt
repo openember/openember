@@ -1,7 +1,7 @@
 # OpenEmber HAL — Linux (C++17)
 add_library(openember_hal STATIC
     src/linux/file.cpp
-    src/linux/uart.cpp
+    src/linux/serial_port.cpp
     src/linux/gpio.cpp
     src/linux/i2c.cpp
     src/linux/spi.cpp

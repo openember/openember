@@ -25,10 +25,12 @@ using openember::hal::Sbus;
 using openember::hal::SbusCaps;
 using openember::hal::Spi;
 using openember::hal::SpiCaps;
-using openember::hal::Uart;
-using openember::hal::UartCaps;
-using openember::hal::UartConfig;
-using openember::hal::UartParity;
+using openember::hal::SerialBaud;
+using openember::hal::SerialParity;
+using openember::hal::SerialPort;
+using openember::hal::SerialPortCaps;
+using openember::hal::SerialPortConfig;
+using openember::hal::is_standard_serial_baud;
 using openember::osal::kOk;
 
 MU_TEST(test_hal_file_roundtrip)
@@ -68,23 +70,26 @@ MU_TEST(test_hal_file_roundtrip)
     unlink(path);
 }
 
-MU_TEST(test_hal_uart_open_invalid_path)
+MU_TEST(test_hal_serial_port_open_invalid_path)
 {
-    Uart u;
-    UartConfig cfg {};
-    cfg.baud_rate = 115200;
-    cfg.data_bits = 8;
-    cfg.stop_bits = 1;
-    cfg.parity = UartParity::None;
+    SerialPort sp;
+    auto cfg = SerialPortConfig::with_baud(SerialBaud::B115200);
+    cfg.parity = SerialParity::None;
 
-    const Result r = u.open("/dev/nonexistent_openember_uart", cfg);
+    const Result r = sp.open("/dev/nonexistent_openember_uart", cfg);
     mu_assert(r != kOk, "expect failure");
+}
+
+MU_TEST(test_hal_serial_port_arbitrary_baud_flag)
+{
+    mu_check(!is_standard_serial_baud(100000));
+    mu_check(is_standard_serial_baud(static_cast<uint32_t>(SerialBaud::B115200)));
 }
 
 MU_TEST(test_hal_caps)
 {
     FileCaps fc {};
-    UartCaps uc {};
+    SerialPortCaps uc {};
     GpioCaps gc {};
     Result r;
 
@@ -92,8 +97,8 @@ MU_TEST(test_hal_caps)
     mu_assert(r == kOk, "file query caps");
     mu_check(fc.flags != 0);
 
-    r = Uart::query_caps(&uc);
-    mu_assert(r == kOk, "uart query caps");
+    r = SerialPort::query_caps(&uc);
+    mu_assert(r == kOk, "serial port query caps");
     mu_check(uc.baud_rate_count > 0);
     mu_check(uc.parity_mask != 0);
 
@@ -146,7 +151,8 @@ MU_TEST_SUITE(hal_suite)
 {
     MU_SUITE_CONFIGURE(nullptr, nullptr);
     MU_RUN_TEST(test_hal_file_roundtrip);
-    MU_RUN_TEST(test_hal_uart_open_invalid_path);
+    MU_RUN_TEST(test_hal_serial_port_open_invalid_path);
+    MU_RUN_TEST(test_hal_serial_port_arbitrary_baud_flag);
     MU_RUN_TEST(test_hal_caps);
 }
 

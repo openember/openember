@@ -7,4 +7,4 @@
 #include "openember/hal/onewire.hpp"
 #include "openember/hal/sbus.hpp"
 #include "openember/hal/spi.hpp"
-#include "openember/hal/uart.hpp"
+#include "openember/hal/serial_port.hpp"

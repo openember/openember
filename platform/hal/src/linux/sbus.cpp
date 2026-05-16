@@ -1,21 +1,16 @@
 #define _GNU_SOURCE
 
 #include "openember/hal/sbus.hpp"
-#include "openember/hal/uart.hpp"
+
 #include "openember/osal/time.hpp"
 
 #include <cstring>
 
 namespace openember::hal {
 
-struct Sbus::Impl {
-    Uart uart;
-    bool inited = false;
-    uint32_t baud_rate = 100000;
-    uint8_t nonblocking = 0;
-};
-
 namespace {
+
+constexpr uint32_t kSbusDefaultBaud = 100000;
 
 Result decode_sbus_frame(const uint8_t raw[25], SbusFrame* out_frame)
 {
@@ -45,13 +40,6 @@ Result decode_sbus_frame(const uint8_t raw[25], SbusFrame* out_frame)
 
 }  // namespace
 
-Sbus::Sbus() : impl_(std::make_unique<Impl>()) {}
-
-Sbus::~Sbus()
-{
-    (void)close();
-}
-
 Result Sbus::query_caps(SbusCaps* out_caps)
 {
     if (!out_caps) {
@@ -61,7 +49,7 @@ Result Sbus::query_caps(SbusCaps* out_caps)
     out_caps->channels_count = 16;
     out_caps->switches_count = 2;
     out_caps->frame_len_bytes = 25;
-    out_caps->baud_rate = 100000;
+    out_caps->baud_rate = kSbusDefaultBaud;
     return osal::kOk;
 }
 
@@ -71,34 +59,14 @@ Result Sbus::open(const std::string& uart_path, const SbusConfig& cfg)
         return osal::kErrInvalidArg;
     }
 
-    (void)close();
+    SerialPortConfig sp {};
+    sp.baud_rate = (cfg.baud_rate != 0) ? cfg.baud_rate : kSbusDefaultBaud;
+    sp.data_bits = 8;
+    sp.stop_bits = 2;
+    sp.parity = SerialParity::Even;
+    sp.nonblocking = cfg.nonblocking;
 
-    impl_->baud_rate = (cfg.baud_rate != 0) ? cfg.baud_rate : 100000;
-    impl_->nonblocking = (cfg.nonblocking != 0) ? 1 : 0;
-
-    UartConfig ucfg {};
-    ucfg.baud_rate = impl_->baud_rate;
-    ucfg.data_bits = 8;
-    ucfg.stop_bits = 2;
-    ucfg.parity = UartParity::Even;
-    ucfg.nonblocking = impl_->nonblocking;
-
-    const Result r = impl_->uart.open(uart_path, ucfg);
-    if (r != osal::kOk) {
-        return r;
-    }
-
-    impl_->inited = true;
-    return osal::kOk;
-}
-
-Result Sbus::close()
-{
-    (void)impl_->uart.close();
-    impl_->inited = false;
-    impl_->baud_rate = 100000;
-    impl_->nonblocking = 0;
-    return osal::kOk;
+    return SerialPort::open(uart_path, sp);
 }
 
 Result Sbus::recv_frame(SbusFrame* out_frame, int timeout_ms)
@@ -107,7 +75,7 @@ Result Sbus::recv_frame(SbusFrame* out_frame, int timeout_ms)
         return osal::kErrInvalidArg;
     }
 
-    if (!impl_->inited) {
+    if (!is_open()) {
         return osal::kErrInvalidArg;
     }
 
@@ -124,7 +92,7 @@ Result Sbus::recv_frame(SbusFrame* out_frame, int timeout_ms)
     while (got < sizeof(raw)) {
         const size_t want = sizeof(raw) - got;
         size_t rd = 0;
-        const Result r = impl_->uart.read(raw + got, want, &rd);
+        const Result r = read(raw + got, want, &rd);
 
         if (r == osal::kOk) {
             if (rd == 0) {
