@@ -175,13 +175,6 @@ static void _msg_arrived_cb(void *user_data, char *topic, void *payload, size_t 
         }
     }
     
-#if 0
-    printf("[%s] %s\n", topic, (char *)payload);
-
-    cJSON *json = cJSON_Parse(payload);
-    printf("%s\n\n", cJSON_Print(json));
-    cJSON_Delete(json);
-#endif
 }
 
 static int msg_init(void)

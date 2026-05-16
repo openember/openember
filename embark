@@ -85,10 +85,6 @@ DeployHost() {
         sudo mkdir ${CONF_DIR}
     fi
 
-    # log file
-    sudo cp ../components/Log/zlog.conf ${CONF_DIR}
-    sudo chmod 777 ${CONF_DIR}/zlog.conf
-
     # web root
     sudo cp -r ${WEB_DIR}/dist ${DEPLOY_DIR}/web_root
     sudo cp -r ${BUILD_DIR}/bin ${DEPLOY_DIR}

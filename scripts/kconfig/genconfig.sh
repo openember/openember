@@ -12,7 +12,7 @@ fi
 
 backend=""
 backend="$(awk '
-  BEGIN { b="ZLOG" }
+  BEGIN { b="SPDLOG" }
   /^CONFIG_OPENEMBER_LOG_BACKEND_SPDLOG=y/ { b="SPDLOG" }
   /^CONFIG_OPENEMBER_LOG_BACKEND_BUILTIN=y/ { b="BUILTIN" }
   END { print b }
@@ -49,12 +49,6 @@ tp_mode="$(awk '
   /^CONFIG_OPENEMBER_TP_MODE_VENDOR=y/ { m="VENDOR" }
   /^CONFIG_OPENEMBER_TP_MODE_SYSTEM=y/ { m="SYSTEM" }
   END { print m }
-' "${CONFIG_FILE}")"
-
-json_lib="$(awk '
-  BEGIN { j="CJSON" }
-  /^CONFIG_OPENEMBER_JSON_LIBRARY_NLOHMANN=y/ { j="NLOHMANN_JSON" }
-  END { print j }
 ' "${CONFIG_FILE}")"
 
 msgbus_backend="$(awk '
@@ -139,20 +133,6 @@ fi
 enable_hal="$(onoff CONFIG_OPENEMBER_ENABLE_HAL)"
 if ! grep -q "^CONFIG_OPENEMBER_ENABLE_HAL=" "${CONFIG_FILE}"; then
   enable_hal=ON
-fi
-
-log_file="/etc/openember/zlog.conf"
-log_file="$(awk '
-  /^CONFIG_OPENEMBER_LOG_FILE=/ {
-    v=$0
-    sub(/^CONFIG_OPENEMBER_LOG_FILE=/,"",v)
-    gsub(/^"/,"",v); gsub(/"$/,"",v)
-    print v
-    exit
-  }
-' "${CONFIG_FILE}")"
-if [[ -z "${log_file}" ]]; then
-  log_file="/etc/openember/zlog.conf"
 fi
 
 spdlog_pattern="[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v"
@@ -536,9 +516,7 @@ kconfig_bundle_on() {
   fi
 }
 
-bundle_zlog="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_ZLOG)"
 bundle_spdlog="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG)"
-bundle_cjson="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_CJSON)"
 bundle_nlohmann="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON)"
 bundle_sqlite="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_SQLITE)"
 bundle_mongoose="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_MONGOOSE)"
@@ -559,7 +537,6 @@ cat > "${out_cmake}" <<EOF
 # Source: ${CONFIG_FILE}
 
 set(OPENEMBER_LOG_BACKEND "${backend}" CACHE STRING "OpenEmber logging backend" FORCE)
-set(OPENEMBER_LOG_FILE "${log_file}" CACHE STRING "zlog.conf path" FORCE)
 set(OPENEMBER_SPDLOG_LEVEL "${spdlog_level}" CACHE STRING "spdlog log level (debug/info/warn/error)" FORCE)
 set(OPENEMBER_SPDLOG_FLUSH_LEVEL "${spdlog_flush_level}" CACHE STRING "spdlog flush on level (info/warn/error)" FORCE)
 set(OPENEMBER_SPDLOG_PATTERN "${spdlog_pattern}" CACHE STRING "spdlog pattern" FORCE)
@@ -580,7 +557,6 @@ set(OPENEMBER_WEB_DASHBOARD_PORT ${web_port} CACHE STRING "web_dashboard HTTP po
 set(OPENEMBER_LOGGER_PORT ${logger_port} CACHE STRING "logger HTTP port" FORCE)
 set(OPENEMBER_LOGGER_LOG_DIR "${logger_log_dir}" CACHE STRING "logger source log directory" FORCE)
 set(OPENEMBER_THIRD_PARTY_MODE "${tp_mode}" CACHE STRING "Third-party source mode: FETCH/VENDOR/SYSTEM" FORCE)
-set(OPENEMBER_JSON_LIBRARY "${json_lib}" CACHE STRING "JSON implementation for OpenEmber" FORCE)
 set(OPENEMBER_WITH_YAMLCPP ${use_yamlcpp} CACHE BOOL "Fetch/use yaml-cpp (optional C++ dependency)" FORCE)
 set(OPENEMBER_WITH_ASIO ${use_asio} CACHE BOOL "Fetch/use standalone Asio (optional)" FORCE)
 set(OPENEMBER_COMPONENT_NETWORK ${component_network} CACHE BOOL "Build component: Network (high-level socket wrapper)" FORCE)
@@ -631,9 +607,7 @@ else()
   set(OPENEMBER_MSGBUS_USE_LCM OFF CACHE BOOL "Use LCM backend for internal msgbus" FORCE)
 endif()
 
-set(OPENEMBER_THIRD_PARTY_BUNDLE_ZLOG ${bundle_zlog} CACHE BOOL "Third-party bundle: zlog" FORCE)
 set(OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG ${bundle_spdlog} CACHE BOOL "Third-party bundle: spdlog" FORCE)
-set(OPENEMBER_THIRD_PARTY_BUNDLE_CJSON ${bundle_cjson} CACHE BOOL "Third-party bundle: cJSON" FORCE)
 set(OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON ${bundle_nlohmann} CACHE BOOL "Third-party bundle: nlohmann/json" FORCE)
 set(OPENEMBER_THIRD_PARTY_BUNDLE_SQLITE ${bundle_sqlite} CACHE BOOL "Third-party bundle: SQLite" FORCE)
 set(OPENEMBER_THIRD_PARTY_BUNDLE_MONGOOSE ${bundle_mongoose} CACHE BOOL "Third-party bundle: Mongoose" FORCE)

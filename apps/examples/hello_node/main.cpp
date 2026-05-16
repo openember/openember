@@ -22,13 +22,8 @@
 #include "openember.h"
 #include "ppool.h"
 
-#if OPENEMBER_JSON_USE_NLOHMANN_JSON
 #include <string>
 #include <nlohmann/json.hpp>
-#endif
-#if OPENEMBER_JSON_USE_CJSON
-#include "cJSON.h"
-#endif
 
 #include "yaml.h"
 
@@ -54,24 +49,12 @@ static void task_entry(void *args)
         return;
     }
 
-#if OPENEMBER_JSON_USE_CJSON
-    cJSON *json = cJSON_Parse((char *)args);
-    if (json) {
-        char *printed = cJSON_Print(json);
-        if (printed) {
-            LOG_I("%s", printed);
-            free(printed);
-        }
-        cJSON_Delete(json);
-    }
-#elif OPENEMBER_JSON_USE_NLOHMANN_JSON
     try {
         nlohmann::json j = nlohmann::json::parse(std::string(static_cast<char *>(args)));
         LOG_I("%s", j.dump(4).c_str());
     } catch (const std::exception &e) {
         LOG_E("JSON: %s", e.what());
     }
-#endif
     free(args);
 }
 

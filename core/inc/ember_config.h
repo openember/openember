@@ -37,19 +37,11 @@
 #define EMBER_LIBS_USING_LOG
 
 #include "ember_log_backend.h"
-#include "ember_log_path.h"
 
-/* JSON 实现选择：CMake OPENEMBER_JSON_LIBRARY → ember_json_config.h */
+/* JSON：nlohmann/json（ember_json_config.h） */
 #include "ember_json_config.h"
 
-#if EMBER_LOG_BACKEND_IS_ZLOG
-#define EMBER_LIBS_USING_ZLOG
-/* Allow Kconfig/CMake to override zlog.conf path */
-#ifndef OPENEMBER_LOG_FILE
-#define OPENEMBER_LOG_FILE "/etc/openember/zlog.conf"
-#endif
-#define LOG_FILE OPENEMBER_LOG_FILE
-#elif EMBER_LOG_BACKEND_IS_SPDLOG
+#if EMBER_LOG_BACKEND_IS_SPDLOG
 #define EMBER_LIBS_USING_SPDLOG
 #elif EMBER_LOG_BACKEND_IS_BUILTIN
 #define EMBER_LIBS_USING_LOG_BUILTIN

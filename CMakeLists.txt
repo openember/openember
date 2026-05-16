@@ -29,6 +29,9 @@ endif()
 
 include(${CMAKE_SOURCE_DIR}/cmake/OpenEmberThirdPartyBundleDefaults.cmake)
 
+# nlohmann/json 为唯一 JSON 实现（旧 config.cmake 可能仍关闭该 bundle）
+set(OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON ON CACHE BOOL "Third-party bundle: nlohmann/json" FORCE)
+
 ################################################################################
 # Options
 ################################################################################
@@ -44,10 +47,8 @@ option( OPENEMBER_COMPONENT_MQTT "Build MQTT component (Paho C + openember_mqtt)
 option( OPENEMBER_MQTT_PAHO_TLS "Build Paho with OpenSSL (TLS / ssl://)" ON)
 option( OPENEMBER_MQTT_PAHO_ASYNC "Link Paho MQTTAsync in addition to MQTTClient" OFF)
 option( OPENEMBER_EXAMPLE_MQTT_EMQX "Build example mqtt_emqx_client (Paho MQTT C → broker)" OFF)
-option( BUILD_CJSON "Whether compile cJSON" OFF)
 option( BUILD_MQTT "Whether compile MQTT" OFF)
 option( BUILD_MD5 "Whether compile md5" OFF)
-option( BUILD_ZLOG "Whether compile zlog" OFF)
 option( BUILD_EASYLOGGER "Whether compile EasyLogger (obsolete, currently disabled)" OFF)
 
 option( OPENEMBER_MSGBUS_USE_NNG "Use NNG backend for internal msgbus" ON)
@@ -108,34 +109,25 @@ if (OPENMP_ENABLED)
 endif()
 
 ################################################################################
-# Log backend (BUILTIN / ZLOG / SPDLOG) + generated ember_log_backend.h
+# Log backend (BUILTIN / SPDLOG) + generated ember_log_backend.h
 ################################################################################
 if(NOT DEFINED OPENEMBER_LOG_BACKEND)
-    set(OPENEMBER_LOG_BACKEND "ZLOG" CACHE STRING "OpenEmber logging backend")
+    set(OPENEMBER_LOG_BACKEND "SPDLOG" CACHE STRING "OpenEmber logging backend")
 endif()
-set_property(CACHE OPENEMBER_LOG_BACKEND PROPERTY STRINGS BUILTIN ZLOG SPDLOG)
+set_property(CACHE OPENEMBER_LOG_BACKEND PROPERTY STRINGS BUILTIN SPDLOG)
 
 option(OPENEMBER_WITH_YAMLCPP "Fetch/use yaml-cpp (optional C++ dependency)" ON)
 option(OPENEMBER_WITH_ASIO "Fetch/use standalone Asio (optional)" ON)
 option(OPENEMBER_WITH_RUCKIG "Fetch/use ruckig trajectory library (optional; C++20)" OFF)
 
 set(OPENEMBER_LOG_BACKEND_IS_BUILTIN 0)
-set(OPENEMBER_LOG_BACKEND_IS_ZLOG 0)
 set(OPENEMBER_LOG_BACKEND_IS_SPDLOG 0)
 if(OPENEMBER_LOG_BACKEND STREQUAL "BUILTIN")
     set(OPENEMBER_LOG_BACKEND_IS_BUILTIN 1)
-elseif(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
-    set(OPENEMBER_LOG_BACKEND_IS_ZLOG 1)
 elseif(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
     set(OPENEMBER_LOG_BACKEND_IS_SPDLOG 1)
 else()
-    message(FATAL_ERROR "OPENEMBER_LOG_BACKEND must be BUILTIN, ZLOG, or SPDLOG (got '${OPENEMBER_LOG_BACKEND}')")
-endif()
-
-if(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
-    if(NOT DEFINED OPENEMBER_LOG_FILE OR "${OPENEMBER_LOG_FILE}" STREQUAL "")
-        set(OPENEMBER_LOG_FILE "/etc/openember/zlog.conf" CACHE STRING "zlog.conf path" FORCE)
-    endif()
+    message(FATAL_ERROR "OPENEMBER_LOG_BACKEND must be BUILTIN or SPDLOG (got '${OPENEMBER_LOG_BACKEND}')")
 endif()
 
 configure_file(
@@ -143,28 +135,11 @@ configure_file(
     ${CMAKE_BINARY_DIR}/include/ember_log_backend.h
     @ONLY)
 
-configure_file(
-    ${CMAKE_SOURCE_DIR}/core/inc/ember_log_path.h.in
-    ${CMAKE_BINARY_DIR}/include/ember_log_path.h
-    @ONLY)
-
 ################################################################################
-# JSON 库选择：cJSON（C）或 nlohmann/json（C++）
+# JSON：nlohmann/json（C++）
 ################################################################################
-if(NOT DEFINED OPENEMBER_JSON_LIBRARY)
-    set(OPENEMBER_JSON_LIBRARY "CJSON" CACHE STRING "JSON implementation for OpenEmber")
-endif()
-set_property(CACHE OPENEMBER_JSON_LIBRARY PROPERTY STRINGS CJSON NLOHMANN_JSON)
-
 set(OPENEMBER_JSON_USE_CJSON 0)
-set(OPENEMBER_JSON_USE_NLOHMANN_JSON 0)
-if(OPENEMBER_JSON_LIBRARY STREQUAL "CJSON")
-    set(OPENEMBER_JSON_USE_CJSON 1)
-elseif(OPENEMBER_JSON_LIBRARY STREQUAL "NLOHMANN_JSON")
-    set(OPENEMBER_JSON_USE_NLOHMANN_JSON 1)
-else()
-    message(FATAL_ERROR "OPENEMBER_JSON_LIBRARY must be CJSON or NLOHMANN_JSON (got '${OPENEMBER_JSON_LIBRARY}')")
-endif()
+set(OPENEMBER_JSON_USE_NLOHMANN_JSON 1)
 
 configure_file(
     ${CMAKE_SOURCE_DIR}/core/inc/ember_json_config.h.in
@@ -175,27 +150,10 @@ configure_file(
 # Resolve third-party dependencies
 ################################################################################
 
-# zlog / cJSON: use OPENEMBER_THIRD_PARTY_MODE (FetchContent / Vendor / System)
-openember_third_party_resolve_zlog()
-if(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
-    message(STATUS "├── zlog: ${ZLOG_LIBRARIES}")
-    message(STATUS "└── zlog include: ${ZLOG_INCLUDE_DIRS}")
-else()
-    message(STATUS "├── zlog: (skipped, OPENEMBER_LOG_BACKEND=${OPENEMBER_LOG_BACKEND})")
-endif()
-
-if(OPENEMBER_JSON_LIBRARY STREQUAL "CJSON")
-    openember_third_party_resolve_cjson()
-    set(OPENEMBER_JSON_INCLUDE_DIRS ${CJSON_INCLUDE_DIRS})
-    set(OPENEMBER_JSON_LIBRARIES ${CJSON_LIBRARIES})
-    message(STATUS "├── JSON: cJSON (${CJSON_LIBRARIES})")
-    message(STATUS "└── JSON include: ${CJSON_INCLUDE_DIRS}")
-elseif(OPENEMBER_JSON_LIBRARY STREQUAL "NLOHMANN_JSON")
-    openember_third_party_resolve_nlohmann_json()
-    set(OPENEMBER_JSON_INCLUDE_DIRS "")
-    set(OPENEMBER_JSON_LIBRARIES nlohmann_json::nlohmann_json)
-    message(STATUS "├── JSON: nlohmann_json (target nlohmann_json::nlohmann_json)")
-endif()
+openember_third_party_resolve_nlohmann_json()
+set(OPENEMBER_JSON_INCLUDE_DIRS "")
+set(OPENEMBER_JSON_LIBRARIES nlohmann_json::nlohmann_json)
+message(STATUS "├── JSON: nlohmann_json (target nlohmann_json::nlohmann_json)")
 
 # EasyLogger 已删除：仅保留 CMake 选项占位，强制关闭。
 set(EASYLOGGER_INCLUDE_DIRS "")
@@ -260,10 +218,7 @@ openember_third_party_prefetch_unused_bundles()
 
 set(OPENEMBER_LOG_BACKEND_INCLUDES "")
 set(OPENEMBER_LOG_BACKEND_LIBS "")
-if(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
-    list(APPEND OPENEMBER_LOG_BACKEND_INCLUDES ${ZLOG_INCLUDE_DIRS})
-    list(APPEND OPENEMBER_LOG_BACKEND_LIBS ${ZLOG_LIBRARIES})
-elseif(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
+if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
     list(APPEND OPENEMBER_LOG_BACKEND_LIBS spdlog::spdlog)
 endif()
 

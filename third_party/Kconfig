@@ -5,23 +5,11 @@ comment "Required-by-current-config items are forced ON (shown as <*>, cannot tu
 comment "Optional ON = pre-fetch only (third_party/ + build/_deps/), no compile/link unless used."
 comment "FETCH/VENDOR: OFF = do not download; SYSTEM may ignore bundles (use distro packages)."
 
-config OPENEMBER_THIRD_PARTY_BUNDLE_ZLOG
-    bool "Include zlog sources"
-    default n
-    help
-      When log backend is ZLOG, this is forced ON. Otherwise optional: pre-fetch only.
-
 config OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG
     bool "Include spdlog sources"
     default n
     help
       When log backend is SPDLOG, forced ON. Otherwise optional pre-fetch.
-
-config OPENEMBER_THIRD_PARTY_BUNDLE_CJSON
-    bool "Include cJSON sources"
-    default n
-    help
-      When JSON library is cJSON, forced ON. Otherwise optional pre-fetch.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON
     bool "Include nlohmann/json sources"
@@ -104,24 +92,14 @@ config OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG
       When OPENEMBER_USE_RUCKIG, forced ON. Otherwise optional pre-fetch (C++20).
 
 # Hidden linkers: force bundle ON when the matching feature is active (Kconfig select = menu shows <*>).
-config OPENEMBER_TP_LINK_ZLOG
-    bool
-    default y if OPENEMBER_LOG_BACKEND_ZLOG
-    select OPENEMBER_THIRD_PARTY_BUNDLE_ZLOG
-
 config OPENEMBER_TP_LINK_SPDLOG
     bool
     default y if OPENEMBER_LOG_BACKEND_SPDLOG
     select OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG
 
-config OPENEMBER_TP_LINK_CJSON
-    bool
-    default y if OPENEMBER_JSON_LIBRARY_CJSON
-    select OPENEMBER_THIRD_PARTY_BUNDLE_CJSON
-
 config OPENEMBER_TP_LINK_NLOHMANN
     bool
-    default y if OPENEMBER_JSON_LIBRARY_NLOHMANN
+    default y
     select OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON
 
 config OPENEMBER_TP_LINK_SQLITE_MONGOOSE

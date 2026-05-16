@@ -12,10 +12,6 @@
 
 #include <stdio.h>
 
-#ifdef EMBER_LIBS_USING_ZLOG
-#include "zlog.h"
-#endif
-
 #if defined(EMBER_LIBS_USING_LOG_BUILTIN)
 #include <stdarg.h>
 #include <stdio.h>
@@ -67,15 +63,7 @@ extern void log_spdlog_deinit(void);
 
 int log_init(const char *name)
 {
-#if defined(EMBER_LIBS_USING_ZLOG)
-
-    int rc = dzlog_init(LOG_FILE, name);
-    if (rc) {
-        printf("init failed, please check file %s.\n", LOG_FILE);
-        return -EMBER_ERROR;
-    }
-
-#elif defined(EMBER_LIBS_USING_SPDLOG)
+#if defined(EMBER_LIBS_USING_SPDLOG)
 
     if (log_spdlog_init(name)) {
         printf("init failed (spdlog).\n");
@@ -92,9 +80,7 @@ int log_init(const char *name)
 
 void log_deinit(void)
 {
-#if defined(EMBER_LIBS_USING_ZLOG)
-    zlog_fini();
-#elif defined(EMBER_LIBS_USING_SPDLOG)
+#if defined(EMBER_LIBS_USING_SPDLOG)
     log_spdlog_deinit();
 #endif
 }

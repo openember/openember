@@ -117,7 +117,7 @@ function(openember_third_party_download_to_cache_key url cache_dir cache_key out
 endfunction()
 
 # openember_third_party_prepare_stage(out_source_dir cache_key stage_dir_name url marker_file [local_source])
-# marker_file：相对源码根的路径，用于判断解压是否成功（如 CMakeLists.txt、src/zlog.h）。
+# marker_file：相对源码根的路径，用于判断解压是否成功（如 CMakeLists.txt、sqlite3.c）。
 function(openember_third_party_prepare_stage _out _cache_key _stage_dir_name _url _marker)
     set(_local "")
     if(${ARGC} GREATER 5)

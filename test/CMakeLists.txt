@@ -12,10 +12,6 @@ if(OPENEMBER_ENABLE_HAL)
     list(APPEND _openember_tests test_hal.c)
 endif()
 
-if(OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
-    list(APPEND _openember_tests test_zlog_conf.c)
-endif()
-
 foreach(_t ${_openember_tests})
     set(TEST_NAME "${_t}")
     string(REPLACE ".cpp" "" TEST_NAME "${TEST_NAME}")

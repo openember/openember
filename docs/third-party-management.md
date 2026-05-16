@@ -27,9 +27,7 @@
 
 | 上游 | CMake 版本变量（节选） | 脚本 | 典型启用条件 / 备注 |
 |------|------------------------|------|---------------------|
-| [zlog](https://github.com/HardySimpson/zlog) | `OPENEMBER_ZLOG_VERSION` | `GetZlog.cmake` | `OPENEMBER_LOG_BACKEND=ZLOG` |
-| [cJSON](https://github.com/DaveGamble/cJSON) | `OPENEMBER_CJSON_VERSION` | `GetCjson.cmake` | `OPENEMBER_JSON_LIBRARY=CJSON` |
-| [nlohmann/json](https://github.com/nlohmann/json) | `OPENEMBER_NLOHMANN_JSON_VERSION` | `GetNlohmannJson.cmake` | `OPENEMBER_JSON_LIBRARY=NLOHMANN_JSON` |
+| [nlohmann/json](https://github.com/nlohmann/json) | `OPENEMBER_NLOHMANN_JSON_VERSION` | `GetNlohmannJson.cmake` | 全局 JSON（`ember_json_config.h`） |
 | [SQLite amalgamation](https://www.sqlite.org/) | `OPENEMBER_SQLITE_*` | `GetSqlite.cmake` | 全局解析（config 等使用） |
 | [yaml-cpp](https://github.com/jbeder/yaml-cpp) | `OPENEMBER_YAMLCPP_VERSION` | `GetYamlCpp.cmake` | `OPENEMBER_WITH_YAMLCPP=ON` |
 | [Asio](https://github.com/chriskohlhoff/asio) standalone | `OPENEMBER_ASIO_TAG` | `GetAsio.cmake` | `OPENEMBER_WITH_ASIO=ON` |
@@ -48,7 +46,7 @@
 
 ## Kconfig：`Third party (bundles)`
 
-- 菜单在 **`components/Kconfig` 与 `modules/Kconfig` 之后** 加载，以便 `OPENEMBER_LOG_BACKEND_*`、`OPENEMBER_JSON_LIBRARY_*`、`OPENEMBER_MSGBUS_BACKEND_*` 等符号已定义。
+- 菜单在 **`components/Kconfig` 与 `modules/Kconfig` 之后** 加载，以便 `OPENEMBER_LOG_BACKEND_*`、`OPENEMBER_MSGBUS_BACKEND_*` 等符号已定义。
 - **清单**：`Dependencies.cmake` 中钉死的第三方均在菜单中列出（不再用 `depends on` 隐藏条目）。
 - **必选**：与当前功能绑定的库由隐藏的 `OPENEMBER_TP_LINK_*` 配置通过 **`select`** 强制勾选；在 `menuconfig` 中表现为 **`<*>`（built-in）且不可取消**。
 - **可选**：未绑定当前功能的库默认为关；若手动勾选，则在 **FETCH/VENDOR** 下仅 **预取**（下载到 `third_party/`、解压到 `build/_deps/`），**不参与** 对应 `add_subdirectory` 编译，除非后续在别处启用该功能。实现见 `openember_third_party_prefetch_unused_bundles()`。
@@ -88,15 +86,14 @@
 
 | 值 | 说明 |
 |----|------|
-| `ZLOG` | 默认；`zlog` + `LOG_FILE` |
-| `SPDLOG` | C++ `spdlog` |
-| `BUILTIN` | 自研轻量实现 |
+| `SPDLOG` | 默认；C++ `spdlog` |
+| `BUILTIN` | 自研轻量实现（stderr） |
 
 生成头：`${CMAKE_BINARY_DIR}/include/ember_log_backend.h`。
 
-## JSON（`OPENEMBER_JSON_LIBRARY`）
+## JSON
 
-- `CJSON` / `NLOHMANN_JSON`：宏见 `ember_json_config.h`。
+- 固定使用 **nlohmann/json**；宏见 `ember_json_config.h`（`OPENEMBER_JSON_USE_NLOHMANN_JSON`）。
 
 ## 代码接入原则
 

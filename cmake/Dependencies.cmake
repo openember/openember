@@ -12,16 +12,6 @@ set_property(CACHE OPENEMBER_THIRD_PARTY_MODE PROPERTY STRINGS FETCH VENDOR SYST
 # -----------------------------
 # Version pins (可按需升级)
 # -----------------------------
-set(OPENEMBER_ZLOG_VERSION "1.2.16")
-set(OPENEMBER_ZLOG_URL
-    "https://github.com/HardySimpson/zlog/archive/refs/tags/${OPENEMBER_ZLOG_VERSION}.tar.gz")
-
-set(OPENEMBER_CJSON_VERSION "1.7.19")
-set(OPENEMBER_CJSON_URL
-    "https://github.com/DaveGamble/cJSON/archive/refs/tags/v${OPENEMBER_CJSON_VERSION}.tar.gz")
-
-include(${CMAKE_SOURCE_DIR}/cmake/GetZlog.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetCjson.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetPahoMqttC.cmake)
 
 # SQLite amalgamation（单文件 sqlite3.c 发布包）
@@ -116,10 +106,6 @@ set(OPENEMBER_RUCKIG_URL
     CACHE STRING "ruckig source archive URL")
 
 # 解压目录与 third_party 缓存文件名（与上游归档顶层目录一致）
-set(OPENEMBER_ZLOG_CACHE_KEY "zlog-${OPENEMBER_ZLOG_VERSION}")
-set(OPENEMBER_ZLOG_STAGE_DIR_NAME "${OPENEMBER_ZLOG_CACHE_KEY}")
-set(OPENEMBER_CJSON_CACHE_KEY "cJSON-${OPENEMBER_CJSON_VERSION}")
-set(OPENEMBER_CJSON_STAGE_DIR_NAME "${OPENEMBER_CJSON_CACHE_KEY}")
 set(OPENEMBER_NLOHMANN_JSON_CACHE_KEY "json-${OPENEMBER_NLOHMANN_JSON_VERSION}")
 set(OPENEMBER_NLOHMANN_JSON_STAGE_DIR_NAME "${OPENEMBER_NLOHMANN_JSON_CACHE_KEY}")
 set(OPENEMBER_SQLITE_CACHE_KEY "sqlite-amalgamation-${OPENEMBER_SQLITE_AMALGAMATION_NUM}")
@@ -149,8 +135,6 @@ set(OPENEMBER_PAHO_MQTT_C_STAGE_DIR_NAME "${OPENEMBER_PAHO_MQTT_C_CACHE_KEY}")
 set(OPENEMBER_RUCKIG_CACHE_KEY "ruckig-${OPENEMBER_RUCKIG_VERSION}")
 set(OPENEMBER_RUCKIG_STAGE_DIR_NAME "${OPENEMBER_RUCKIG_CACHE_KEY}")
 
-set(OPENEMBER_ZLOG_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted zlog tree")
-set(OPENEMBER_CJSON_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted cJSON tree")
 set(OPENEMBER_NLOHMANN_JSON_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted nlohmann/json tree")
 set(OPENEMBER_SQLITE_LOCAL_SOURCE "" CACHE PATH "Optional: SQLite amalgamation dir (sqlite3.c)")
 set(OPENEMBER_MONGOOSE_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted mongoose tree")
@@ -172,83 +156,6 @@ include(${CMAKE_SOURCE_DIR}/cmake/GetSpdlog.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetMongoose.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetRuckig.cmake)
 
-function(openember_third_party_resolve_zlog)
-    # 仅当 OPENEMBER_LOG_BACKEND=ZLOG 时解析 zlog（由根 CMakeLists 在 include 本文件前设置）
-    if(NOT OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
-        set(ZLOG_INCLUDE_DIRS "" PARENT_SCOPE)
-        set(ZLOG_LIBRARIES "" PARENT_SCOPE)
-        set(BUILD_ZLOG FALSE PARENT_SCOPE)
-        return()
-    endif()
-
-    # Prefer system package if available
-    find_package(ZLOG QUIET)
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
-        if(NOT ZLOG_FOUND)
-            message(FATAL_ERROR "ZLOG not found but OPENEMBER_THIRD_PARTY_MODE=SYSTEM")
-        endif()
-        set(BUILD_ZLOG FALSE PARENT_SCOPE)
-        set(ZLOG_INCLUDE_DIRS ${ZLOG_INCLUDE_DIRS} PARENT_SCOPE)
-        set(ZLOG_LIBRARIES ${ZLOG_LIBRARIES} PARENT_SCOPE)
-        return()
-    endif()
-
-    if(ZLOG_FOUND)
-        set(BUILD_ZLOG FALSE PARENT_SCOPE)
-        set(ZLOG_INCLUDE_DIRS ${ZLOG_INCLUDE_DIRS} PARENT_SCOPE)
-        set(ZLOG_LIBRARIES ${ZLOG_LIBRARIES} PARENT_SCOPE)
-        return()
-    endif()
-
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-        if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_ZLOG)
-            message(FATAL_ERROR
-                "OPENEMBER_THIRD_PARTY_BUNDLE_ZLOG=OFF but ZLOG backend needs zlog sources. "
-                "Install zlog system-wide, or enable the bundle in menuconfig (Third party).")
-        endif()
-    endif()
-
-    openember_get_zlog()
-    set(BUILD_ZLOG FALSE PARENT_SCOPE)
-    set(ZLOG_INCLUDE_DIRS ${ZLOG_INCLUDE_DIRS} PARENT_SCOPE)
-    set(ZLOG_LIBRARIES ${ZLOG_LIBRARIES} PARENT_SCOPE)
-endfunction()
-
-function(openember_third_party_resolve_cjson)
-    # Prefer system package if available
-    find_package(cJSON QUIET)
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
-        if(NOT cJSON_FOUND)
-            message(FATAL_ERROR "cJSON not found but OPENEMBER_THIRD_PARTY_MODE=SYSTEM")
-        endif()
-        set(BUILD_CJSON FALSE PARENT_SCOPE)
-        set(CJSON_INCLUDE_DIRS ${CJSON_INCLUDE_DIRS} PARENT_SCOPE)
-        set(CJSON_LIBRARIES ${CJSON_LIBRARIES} PARENT_SCOPE)
-        return()
-    endif()
-
-    if(cJSON_FOUND)
-        set(BUILD_CJSON FALSE PARENT_SCOPE)
-        set(CJSON_INCLUDE_DIRS ${CJSON_INCLUDE_DIRS} PARENT_SCOPE)
-        set(CJSON_LIBRARIES ${CJSON_LIBRARIES} PARENT_SCOPE)
-        return()
-    endif()
-
-    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
-        if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_CJSON)
-            message(FATAL_ERROR
-                "OPENEMBER_THIRD_PARTY_BUNDLE_CJSON=OFF but JSON library is cJSON. "
-                "Install libcjson system-wide or enable bundle (Third party).")
-        endif()
-    endif()
-
-    set(ENABLE_CJSON_TEST OFF CACHE BOOL "Disable cJSON test build" FORCE)
-    openember_get_cjson()
-    set(BUILD_CJSON FALSE PARENT_SCOPE)
-    set(CJSON_INCLUDE_DIRS ${CJSON_INCLUDE_DIRS} PARENT_SCOPE)
-    set(CJSON_LIBRARIES ${CJSON_LIBRARIES} PARENT_SCOPE)
-endfunction()
-
 function(openember_third_party_resolve_nlohmann_json)
     if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")
         find_package(nlohmann_json CONFIG REQUIRED)
@@ -263,8 +170,8 @@ function(openember_third_party_resolve_nlohmann_json)
     if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
         if(NOT OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON)
             message(FATAL_ERROR
-                "OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON=OFF but JSON library is nlohmann/json. "
-                "Install nlohmann-json3-dev package or enable bundle (Third party).")
+                "OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON=OFF but nlohmann/json is required. "
+                "Install nlohmann-json3-dev (SYSTEM mode) or enable bundle (Third party).")
         endif()
     endif()
 
@@ -586,31 +493,10 @@ function(openember_third_party_prefetch_unused_bundles)
         return()
     endif()
 
-    if(OPENEMBER_THIRD_PARTY_BUNDLE_ZLOG AND NOT OPENEMBER_LOG_BACKEND STREQUAL "ZLOG")
-        if(NOT OPENEMBER_ZLOG_LOCAL_SOURCE)
-            openember_prepare_zlog_source(_unused)
-            message(STATUS "Third-party: pre-fetch only (not built): zlog")
-        endif()
-    endif()
-
     if(OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG AND NOT OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
         if(NOT OPENEMBER_SPDLOG_LOCAL_SOURCE)
             openember_prepare_spdlog_source(_unused)
             message(STATUS "Third-party: pre-fetch only (not built): spdlog")
-        endif()
-    endif()
-
-    if(OPENEMBER_THIRD_PARTY_BUNDLE_CJSON AND NOT OPENEMBER_JSON_LIBRARY STREQUAL "CJSON")
-        if(NOT OPENEMBER_CJSON_LOCAL_SOURCE)
-            openember_prepare_cjson_source(_unused)
-            message(STATUS "Third-party: pre-fetch only (not built): cJSON")
-        endif()
-    endif()
-
-    if(OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON AND NOT OPENEMBER_JSON_LIBRARY STREQUAL "NLOHMANN_JSON")
-        if(NOT OPENEMBER_NLOHMANN_JSON_LOCAL_SOURCE)
-            openember_prepare_nlohmann_json_source(_unused)
-            message(STATUS "Third-party: pre-fetch only (not built): nlohmann/json")
         endif()
     endif()
 
