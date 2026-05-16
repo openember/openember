@@ -1,56 +1,29 @@
-/* OpenEmber OSAL — C++ wrapper: Event (RAII, auto-reset) */
-#ifndef OPENEMBER_OSAL_EVENT_HPP_
-#define OPENEMBER_OSAL_EVENT_HPP_
+#pragma once
 
-#include "openember/osal/event.h"
+#include <memory>
 
-namespace oe {
-namespace osal {
+#include "openember/osal/types.hpp"
+
+namespace openember::osal {
 
 class Event {
 public:
-    Event()
-    {
-        inited_ = (oe_event_init(&e_) == OE_OK);
-    }
+    Event();
+    ~Event();
 
-    ~Event()
-    {
-        if (inited_) {
-            (void)oe_event_destroy(&e_);
-        }
-    }
+    Event(const Event&) = delete;
+    Event& operator=(const Event&) = delete;
+    Event(Event&&) = delete;
+    Event& operator=(Event&&) = delete;
 
-    Event(const Event &) = delete;
-    Event &operator=(const Event &) = delete;
-
-    oe_result_t set()
-    {
-        return oe_event_set(&e_);
-    }
-
-    oe_result_t reset()
-    {
-        return oe_event_reset(&e_);
-    }
-
-    oe_result_t wait()
-    {
-        return oe_event_wait(&e_);
-    }
-
-    oe_result_t wait_timeout_ms(int timeout_ms)
-    {
-        return oe_event_wait_timeout_ms(&e_, timeout_ms);
-    }
+    Result set();
+    Result reset();
+    Result wait();
+    Result wait_timeout_ms(int timeout_ms);
 
 private:
-    oe_event_t e_ {};
-    bool inited_ = false;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
-} // namespace osal
-} // namespace oe
-
-#endif /* OPENEMBER_OSAL_EVENT_HPP_ */
-
+}  // namespace openember::osal

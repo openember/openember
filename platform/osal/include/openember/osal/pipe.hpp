@@ -1,51 +1,37 @@
-/* OpenEmber OSAL — C++ wrapper: Pipe (RAII) */
-#ifndef OPENEMBER_OSAL_PIPE_HPP_
-#define OPENEMBER_OSAL_PIPE_HPP_
-
-#include "openember/osal/pipe.h"
+#pragma once
 
 #include <cstddef>
+#include <cstdint>
+#include <memory>
 
-namespace oe {
-namespace osal {
+#include "openember/osal/types.hpp"
+
+namespace openember::osal {
+
+struct PipeCaps {
+    uint32_t supports_pipe = 0;
+};
 
 class Pipe {
 public:
-    Pipe() = default;
-    Pipe(const Pipe &) = delete;
-    Pipe &operator=(const Pipe &) = delete;
+    Pipe();
+    ~Pipe();
 
-    ~Pipe()
-    {
-        (void)oe_pipe_close(&p_);
-    }
+    Pipe(const Pipe&) = delete;
+    Pipe& operator=(const Pipe&) = delete;
+    Pipe(Pipe&&) = delete;
+    Pipe& operator=(Pipe&&) = delete;
 
-    oe_result_t create()
-    {
-        return oe_pipe_create(&p_);
-    }
+    static Result query_caps(PipeCaps* out_caps);
 
-    oe_result_t close()
-    {
-        return oe_pipe_close(&p_);
-    }
-
-    oe_result_t write(const void *buf, size_t len, size_t *out_written, int timeout_ms)
-    {
-        return oe_pipe_write(&p_, buf, len, out_written, timeout_ms);
-    }
-
-    oe_result_t read(void *buf, size_t len, size_t *out_read, int timeout_ms)
-    {
-        return oe_pipe_read(&p_, buf, len, out_read, timeout_ms);
-    }
+    Result create();
+    Result close();
+    Result write(const void* buf, size_t len, size_t* out_written, int timeout_ms);
+    Result read(void* buf, size_t len, size_t* out_read, int timeout_ms);
 
 private:
-    oe_pipe_t p_ {};
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
-} // namespace osal
-} // namespace oe
-
-#endif /* OPENEMBER_OSAL_PIPE_HPP_ */
-
+}  // namespace openember::osal

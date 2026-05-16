@@ -1,48 +1,30 @@
-/* OpenEmber OSAL — C++ wrapper: Cond (RAII) */
-#ifndef OPENEMBER_OSAL_COND_HPP_
-#define OPENEMBER_OSAL_COND_HPP_
+#pragma once
 
-#include "openember/osal/cond.h"
+#include <memory>
 
-#include "openember/osal/mutex.h"
+#include "openember/osal/mutex.hpp"
+#include "openember/osal/types.hpp"
 
-namespace oe {
-namespace osal {
+namespace openember::osal {
 
 class Cond {
 public:
-    Cond()
-    {
-        inited_ = (oe_cond_init(&c_) == OE_OK);
-    }
+    Cond();
+    ~Cond();
 
-    ~Cond()
-    {
-        if (inited_) {
-            (void)oe_cond_destroy(&c_);
-        }
-    }
+    Cond(const Cond&) = delete;
+    Cond& operator=(const Cond&) = delete;
+    Cond(Cond&&) = delete;
+    Cond& operator=(Cond&&) = delete;
 
-    Cond(const Cond &) = delete;
-    Cond &operator=(const Cond &) = delete;
-
-    oe_result_t wait(Mutex &m)
-    {
-        return oe_cond_wait(&c_, m.native_handle());
-    }
-
-    oe_result_t wait_timeout_ms(Mutex &m, int timeout_ms)
-    {
-        return oe_cond_wait_timeout_ms(&c_, m.native_handle(), timeout_ms);
-    }
+    Result wait(Mutex& mutex);
+    Result wait_timeout_ms(Mutex& mutex, int timeout_ms);
+    Result signal();
+    Result broadcast();
 
 private:
-    oe_cond_t c_ {};
-    bool inited_ = false;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
-} // namespace osal
-} // namespace oe
-
-#endif /* OPENEMBER_OSAL_COND_HPP_ */
-
+}  // namespace openember::osal

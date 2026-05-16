@@ -1,61 +1,34 @@
-/* OpenEmber OSAL — C++ wrapper: Thread */
-#ifndef OPENEMBER_OSAL_THREAD_HPP_
-#define OPENEMBER_OSAL_THREAD_HPP_
-
-#include "openember/osal/thread.h"
+#pragma once
 
 #include <functional>
-#include <utility>
+#include <memory>
 
-namespace oe {
-namespace osal {
+#include "openember/osal/types.hpp"
+
+namespace openember::osal {
 
 class Thread {
 public:
-    Thread() = default;
+    Thread();
+    ~Thread();
 
-    Thread(const Thread &) = delete;
-    Thread &operator=(const Thread &) = delete;
-
-    Thread(Thread &&) = delete;
-    Thread &operator=(Thread &&) = delete;
+    Thread(const Thread&) = delete;
+    Thread& operator=(const Thread&) = delete;
+    Thread(Thread&&) = delete;
+    Thread& operator=(Thread&&) = delete;
 
     template <typename F>
-    oe_result_t start(F &&fn)
+    Result start(F&& fn)
     {
-        using FnT = std::function<void()>;
-        FnT *heap_fn = new FnT(std::forward<F>(fn));
-        oe_result_t r = oe_thread_create(&t_, &Thread::trampoline, heap_fn);
-        started_ = (r == OE_OK);
-        if (r != OE_OK) {
-            delete heap_fn;
-        }
-        return r;
+        return start_impl(std::make_shared<std::function<void()>>(std::forward<F>(fn)));
     }
 
-    oe_result_t join()
-    {
-        started_ = false;
-        return oe_thread_join(&t_);
-    }
+    Result join();
 
 private:
-    static void trampoline(void *arg)
-    {
-        std::function<void()> *fn = (std::function<void()> *)arg;
-        if (fn) {
-            (*fn)();
-            delete fn;
-        }
-    }
-
-private:
-    oe_thread_t t_ {};
-    bool started_ = false;
+    struct Impl;
+    Result start_impl(std::shared_ptr<std::function<void()>> fn);
+    std::unique_ptr<Impl> impl_;
 };
 
-} // namespace osal
-} // namespace oe
-
-#endif /* OPENEMBER_OSAL_THREAD_HPP_ */
-
+}  // namespace openember::osal

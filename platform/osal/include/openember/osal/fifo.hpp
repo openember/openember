@@ -1,57 +1,45 @@
-/* OpenEmber OSAL — C++ wrapper: FIFO (RAII) */
-#ifndef OPENEMBER_OSAL_FIFO_HPP_
-#define OPENEMBER_OSAL_FIFO_HPP_
+#pragma once
 
-#include "openember/osal/fifo.h"
-
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 
-namespace oe {
-namespace osal {
+#include "openember/osal/types.hpp"
+
+namespace openember::osal {
+
+struct FifoCaps {
+    uint32_t supports_fifo = 0;
+};
+
+enum class FifoMode : uint32_t {
+    Read = 1u << 0,
+    Write = 1u << 1,
+    ReadWrite = Read | Write,
+};
 
 class Fifo {
 public:
-    Fifo() = default;
-    Fifo(const Fifo &) = delete;
-    Fifo &operator=(const Fifo &) = delete;
+    Fifo();
+    ~Fifo();
 
-    ~Fifo()
-    {
-        (void)oe_fifo_close(&f_);
-    }
+    Fifo(const Fifo&) = delete;
+    Fifo& operator=(const Fifo&) = delete;
+    Fifo(Fifo&&) = delete;
+    Fifo& operator=(Fifo&&) = delete;
 
-    oe_result_t open(const std::string &path, uint32_t mode)
-    {
-        return oe_fifo_open(&f_, path.c_str(), mode);
-    }
+    static Result query_caps(FifoCaps* out_caps);
+    static Result unlink(const std::string& path);
 
-    oe_result_t close()
-    {
-        return oe_fifo_close(&f_);
-    }
-
-    oe_result_t write(const void *buf, size_t len, size_t *out_written, int timeout_ms)
-    {
-        return oe_fifo_write(&f_, buf, len, out_written, timeout_ms);
-    }
-
-    oe_result_t read(void *buf, size_t len, size_t *out_read, int timeout_ms)
-    {
-        return oe_fifo_read(&f_, buf, len, out_read, timeout_ms);
-    }
-
-    static oe_result_t unlink(const std::string &path)
-    {
-        return oe_fifo_unlink(path.c_str());
-    }
+    Result open(const std::string& path, FifoMode mode);
+    Result close();
+    Result write(const void* buf, size_t len, size_t* out_written, int timeout_ms);
+    Result read(void* buf, size_t len, size_t* out_read, int timeout_ms);
 
 private:
-    oe_fifo_t f_ {};
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
-} // namespace osal
-} // namespace oe
-
-#endif /* OPENEMBER_OSAL_FIFO_HPP_ */
-
+}  // namespace openember::osal

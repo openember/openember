@@ -5,7 +5,7 @@ set(_openember_tests
 )
 
 if(OPENEMBER_ENABLE_OSAL)
-    list(APPEND _openember_tests test_osal.c)
+    list(APPEND _openember_tests test_osal.cpp)
 endif()
 
 if(OPENEMBER_ENABLE_HAL)

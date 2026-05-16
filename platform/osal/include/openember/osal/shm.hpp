@@ -1,57 +1,39 @@
-/* OpenEmber OSAL — C++ wrapper: Shared Memory (RAII) */
-#ifndef OPENEMBER_OSAL_SHM_HPP_
-#define OPENEMBER_OSAL_SHM_HPP_
-
-#include "openember/osal/shm.h"
+#pragma once
 
 #include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <string>
 
-namespace oe {
-namespace osal {
+#include "openember/osal/types.hpp"
 
-class Shm {
-public:
-    Shm() = default;
-    Shm(const Shm &) = delete;
-    Shm &operator=(const Shm &) = delete;
+namespace openember::osal {
 
-    ~Shm()
-    {
-        (void)oe_shm_close(&shm_);
-    }
-
-    oe_result_t create(const std::string &name, size_t size)
-    {
-        return oe_shm_create(&shm_, name.c_str(), size);
-    }
-
-    oe_result_t open(const std::string &name)
-    {
-        return oe_shm_open(&shm_, name.c_str());
-    }
-
-    oe_result_t close()
-    {
-        return oe_shm_close(&shm_);
-    }
-
-    oe_result_t query_caps(oe_shm_caps_t *out_caps) const
-    {
-        return oe_shm_query_caps(out_caps);
-    }
-
-    oe_result_t get_ptr(void **out_addr, size_t *out_size)
-    {
-        return oe_shm_get_ptr(&shm_, out_addr, out_size);
-    }
-
-private:
-    oe_shm_t shm_ {};
+struct ShmCaps {
+    uint32_t supports_shared_memory = 0;
 };
 
-} // namespace osal
-} // namespace oe
+class SharedMemory {
+public:
+    SharedMemory();
+    ~SharedMemory();
 
-#endif /* OPENEMBER_OSAL_SHM_HPP_ */
+    SharedMemory(const SharedMemory&) = delete;
+    SharedMemory& operator=(const SharedMemory&) = delete;
+    SharedMemory(SharedMemory&&) = delete;
+    SharedMemory& operator=(SharedMemory&&) = delete;
 
+    static Result query_caps(ShmCaps* out_caps);
+    static Result unlink(const std::string& name);
+
+    Result create(const std::string& name, size_t size);
+    Result open(const std::string& name);
+    Result close();
+    Result get_ptr(void** out_addr, size_t* out_size = nullptr);
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
+}  // namespace openember::osal

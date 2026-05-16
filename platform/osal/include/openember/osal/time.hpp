@@ -1,29 +1,13 @@
-/* OpenEmber OSAL — C++ wrapper: Time */
-#ifndef OPENEMBER_OSAL_TIME_HPP_
-#define OPENEMBER_OSAL_TIME_HPP_
+#pragma once
 
-#include "openember/osal/time.h"
+#include <cstdint>
 
-namespace oe {
-namespace osal {
+#include "openember/osal/types.hpp"
 
-inline oe_result_t sleep_ms(unsigned int ms)
-{
-    return oe_sleep_ms((uint32_t)ms);
-}
+namespace openember::osal {
 
-inline oe_result_t sleep_ns(unsigned long long ns)
-{
-    return oe_sleep_ns((uint64_t)ns);
-}
+Result sleep_ms(uint32_t ms);
+Result sleep_ns(uint64_t ns);
+Result clock_monotonic_ns(uint64_t* out_ns);
 
-inline oe_result_t clock_monotonic_ns(uint64_t *out_ns)
-{
-    return oe_clock_monotonic_ns(out_ns);
-}
-
-} // namespace osal
-} // namespace oe
-
-#endif /* OPENEMBER_OSAL_TIME_HPP_ */
-
+}  // namespace openember::osal

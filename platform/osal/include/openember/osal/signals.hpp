@@ -1,51 +1,42 @@
-/* OpenEmber OSAL — C++ wrapper: Signals (signalfd) */
-#ifndef OPENEMBER_OSAL_SIGNALS_HPP_
-#define OPENEMBER_OSAL_SIGNALS_HPP_
-
-#include "openember/osal/signals.h"
+#pragma once
 
 #include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <vector>
 
-namespace oe {
-namespace osal {
+#include "openember/osal/types.hpp"
 
-class Signals {
-public:
-    Signals() = default;
-    Signals(const Signals &) = delete;
-    Signals &operator=(const Signals &) = delete;
+namespace openember::osal {
 
-    ~Signals()
-    {
-        (void)oe_signals_close(&s_);
-    }
-
-    oe_result_t open(const int *signums, size_t count)
-    {
-        return oe_signals_open(&s_, signums, count);
-    }
-
-    oe_result_t wait(oe_signal_info_t *out_info, int timeout_ms)
-    {
-        return oe_signals_wait(&s_, out_info, timeout_ms);
-    }
-
-    oe_result_t close()
-    {
-        return oe_signals_close(&s_);
-    }
-
-    oe_result_t query_caps(oe_signals_caps_t *out_caps) const
-    {
-        return oe_signals_query_caps(out_caps);
-    }
-
-private:
-    oe_signals_t s_ {};
+struct SignalsCaps {
+    uint32_t supports_signalfd = 0;
 };
 
-} // namespace osal
-} // namespace oe
+struct SignalInfo {
+    int signum = 0;
+    int sender_pid = 0;
+};
 
-#endif /* OPENEMBER_OSAL_SIGNALS_HPP_ */
+class SignalWaiter {
+public:
+    SignalWaiter();
+    ~SignalWaiter();
 
+    SignalWaiter(const SignalWaiter&) = delete;
+    SignalWaiter& operator=(const SignalWaiter&) = delete;
+    SignalWaiter(SignalWaiter&&) = delete;
+    SignalWaiter& operator=(SignalWaiter&&) = delete;
+
+    static Result query_caps(SignalsCaps* out_caps);
+
+    Result open(const std::vector<int>& signums);
+    Result wait(SignalInfo* out_info, int timeout_ms);
+    Result close();
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
+}  // namespace openember::osal

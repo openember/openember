@@ -1,17 +1,18 @@
-# OpenEmber OSAL — Linux pthread 实现（初版）
+# OpenEmber OSAL — Linux C++17 实现
 add_library(openember_osal STATIC
-    src/linux/oe_mutex.c
-    src/linux/oe_thread.c
-    src/linux/oe_time.c
-    src/linux/oe_cond.c
-    src/linux/oe_event.c
-    src/linux/oe_sem.c
-    src/linux/oe_shm.c
-    src/linux/oe_socket.c
-    src/linux/oe_pipe.c
-    src/linux/oe_fifo.c
-    src/linux/oe_signals.c
-    src/linux/oe_mq.c
+    src/linux/mutex.cpp
+    src/linux/thread.cpp
+    src/linux/time.cpp
+    src/linux/cond.cpp
+    src/linux/event.cpp
+    src/linux/sem.cpp
+    src/linux/shm.cpp
+    src/linux/socket_ops.cpp
+    src/linux/socket.cpp
+    src/linux/pipe.cpp
+    src/linux/fifo.cpp
+    src/linux/signals.cpp
+    src/linux/mq.cpp
 )
 
 target_include_directories(openember_osal PUBLIC
@@ -19,13 +20,10 @@ target_include_directories(openember_osal PUBLIC
 )
 
 set_target_properties(openember_osal PROPERTIES
-    C_STANDARD 11
-    C_STANDARD_REQUIRED ON
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
 )
 
 find_package(Threads REQUIRED)
-target_link_libraries(openember_osal PUBLIC Threads::Threads)
-
-# POSIX message queues may require librt on some systems.
-target_link_libraries(openember_osal PUBLIC rt)
+target_link_libraries(openember_osal PUBLIC Threads::Threads rt)

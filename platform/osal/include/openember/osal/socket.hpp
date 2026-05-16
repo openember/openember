@@ -1,80 +1,54 @@
-/* OpenEmber OSAL — C++ wrapper: Socket (RAII) */
-#ifndef OPENEMBER_OSAL_SOCKET_HPP_
-#define OPENEMBER_OSAL_SOCKET_HPP_
+#pragma once
 
-#include "openember/osal/socket.h"
-
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <string>
 
-namespace oe {
-namespace osal {
+#include "openember/osal/types.hpp"
+
+namespace openember::osal {
+
+struct SocketCaps {
+    uint32_t supports_unix_domain = 0;
+    uint32_t supports_tcp = 0;
+    uint32_t supports_udp = 0;
+};
+
+struct SockAddr {
+    uint8_t storage[128] {};
+    uint32_t len = 0;
+};
 
 class Socket {
 public:
-    Socket() = default;
-    Socket(const Socket &) = delete;
-    Socket &operator=(const Socket &) = delete;
+    Socket();
+    ~Socket();
 
-    ~Socket()
-    {
-        (void)oe_socket_close(&s_);
-    }
+    Socket(const Socket&) = delete;
+    Socket& operator=(const Socket&) = delete;
+    Socket(Socket&&) = delete;
+    Socket& operator=(Socket&&) = delete;
 
-    oe_result_t query_caps(oe_socket_caps_t *out_caps) const
-    {
-        return oe_socket_query_caps(out_caps);
-    }
+    static Result query_caps(SocketCaps* out_caps);
 
-    oe_result_t open_unix_server(const std::string &path, uint32_t backlog = 16)
-    {
-        return oe_socket_open_unix_server(&s_, path.c_str(), backlog);
-    }
-
-    oe_result_t open_unix_client(const std::string &path)
-    {
-        return oe_socket_open_unix_client(&s_, path.c_str());
-    }
-
-    oe_result_t accept(Socket &client, int timeout_ms)
-    {
-        return oe_socket_accept(&s_, &client.s_, timeout_ms);
-    }
-
-    oe_result_t send(const void *buf, size_t len, size_t *out_sent, int timeout_ms)
-    {
-        return oe_socket_send(&s_, buf, len, out_sent, timeout_ms);
-    }
-
-    oe_result_t recv(void *buf, size_t len, size_t *out_received, int timeout_ms)
-    {
-        return oe_socket_recv(&s_, buf, len, out_received, timeout_ms);
-    }
-
-    oe_result_t sendto(const void *buf, size_t len, const oe_sockaddr_t *to, size_t *out_sent, int timeout_ms)
-    {
-        return oe_socket_sendto(&s_, buf, len, to, out_sent, timeout_ms);
-    }
-
-    oe_result_t recvfrom(void *buf,
-                         size_t len,
-                         size_t *out_received,
-                         oe_sockaddr_t *out_from,
-                         int timeout_ms)
-    {
-        return oe_socket_recvfrom(&s_, buf, len, out_received, out_from, timeout_ms);
-    }
-
-    oe_result_t close()
-    {
-        return oe_socket_close(&s_);
-    }
+    Result open_unix_server(const std::string& path, uint32_t backlog = 16);
+    Result open_unix_client(const std::string& path);
+    Result open_tcp_server(const std::string& bind_host, uint16_t port, uint32_t backlog = 16);
+    Result open_tcp_client(const std::string& host, uint16_t port, int timeout_ms = 5000);
+    Result open_udp(const std::string& bind_host, uint16_t port);
+    Result udp_connect(const std::string& host, uint16_t port);
+    Result get_local_port(uint16_t* out_port);
+    Result close();
+    Result accept(Socket& client, int timeout_ms);
+    Result send(const void* buf, size_t len, size_t* out_sent, int timeout_ms);
+    Result recv(void* buf, size_t len, size_t* out_received, int timeout_ms);
+    Result sendto(const void* buf, size_t len, const SockAddr* to, size_t* out_sent, int timeout_ms);
+    Result recvfrom(void* buf, size_t len, size_t* out_received, SockAddr* out_from, int timeout_ms);
 
 private:
-    oe_socket_t s_ {};
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
-} // namespace osal
-} // namespace oe
-
-#endif /* OPENEMBER_OSAL_SOCKET_HPP_ */
-
+}  // namespace openember::osal

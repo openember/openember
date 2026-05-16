@@ -1,86 +1,51 @@
-/* OpenEmber OSAL — C++ wrapper: Mutex (RAII) */
-#ifndef OPENEMBER_OSAL_MUTEX_HPP_
-#define OPENEMBER_OSAL_MUTEX_HPP_
+#pragma once
 
-#include "openember/osal/mutex.h"
+#include <memory>
+#include <pthread.h>
 
-namespace oe {
-namespace osal {
+#include "openember/osal/types.hpp"
+
+namespace openember::osal {
+
+class Cond;
 
 class Mutex {
 public:
-    Mutex()
-    {
-        oe_mutex_init(&m_);
-    }
+    Mutex();
+    ~Mutex();
 
-    ~Mutex()
-    {
-        /* Safe even if not initialized; keep C-side semantics. */
-        (void)oe_mutex_destroy(&m_);
-    }
+    Mutex(const Mutex&) = delete;
+    Mutex& operator=(const Mutex&) = delete;
+    Mutex(Mutex&&) = delete;
+    Mutex& operator=(Mutex&&) = delete;
 
-    Mutex(const Mutex &) = delete;
-    Mutex &operator=(const Mutex &) = delete;
-
-    Mutex(Mutex &&) = delete;
-    Mutex &operator=(Mutex &&) = delete;
-
-    oe_result_t lock()
-    {
-        return oe_mutex_lock(&m_);
-    }
-
-    oe_result_t try_lock()
-    {
-        return oe_mutex_trylock(&m_);
-    }
-
-    oe_result_t unlock()
-    {
-        return oe_mutex_unlock(&m_);
-    }
-
-    oe_mutex_t *native_handle()
-    {
-        return &m_;
-    }
+    Result lock();
+    Result try_lock();
+    Result unlock();
 
 private:
-    oe_mutex_t m_ {};
+    friend class Cond;
+
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+
+    pthread_mutex_t* native_handle() noexcept;
 };
 
 class MutexLock {
 public:
-    explicit MutexLock(Mutex &m) : m_(m)
-    {
-        r_ = m_.lock();
-        locked_ = (r_ == OE_OK);
-    }
+    explicit MutexLock(Mutex& mutex);
+    ~MutexLock();
 
-    ~MutexLock()
-    {
-        if (locked_) {
-            (void)m_.unlock();
-        }
-    }
+    MutexLock(const MutexLock&) = delete;
+    MutexLock& operator=(const MutexLock&) = delete;
 
-    MutexLock(const MutexLock &) = delete;
-    MutexLock &operator=(const MutexLock &) = delete;
-
-    oe_result_t result() const
-    {
-        return r_;
-    }
+    Result result() const { return result_; }
 
 private:
-    Mutex &m_;
+    Mutex& mutex_;
     bool locked_ = false;
-    oe_result_t r_ = OE_ERR_INTERNAL;
+    Result result_ = kErrInternal;
 };
 
-} // namespace osal
-} // namespace oe
-
-#endif /* OPENEMBER_OSAL_MUTEX_HPP_ */
-
+}  // namespace openember::osal

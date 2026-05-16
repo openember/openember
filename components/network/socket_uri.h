@@ -10,8 +10,8 @@
 #ifndef OPENEMBER_COMPONENTS_NETWORK_SOCKET_URI_H_
 #define OPENEMBER_COMPONENTS_NETWORK_SOCKET_URI_H_
 
-#include "openember/osal/socket.h"
-#include "openember/osal/types.h"
+#include "openember/osal/socket.hpp"
+#include "openember/osal/types.hpp"
 
 #include <cstdint>
 #include <string>
@@ -33,34 +33,33 @@ struct Endpoint {
     std::string path; /* for unix */
 };
 
-oe_result_t parse_endpoint(std::string_view uri, Endpoint &out);
+openember::osal::Result parse_endpoint(std::string_view uri, Endpoint& out);
 
 class Socket {
 public:
     Socket() = default;
-    Socket(const Socket &) = delete;
-    Socket &operator=(const Socket &) = delete;
+    Socket(const Socket&) = delete;
+    Socket& operator=(const Socket&) = delete;
 
-    Socket(Socket &&) = delete;
-    Socket &operator=(Socket &&) = delete;
+    Socket(Socket&&) = delete;
+    Socket& operator=(Socket&&) = delete;
 
-    ~Socket();
+    ~Socket() = default;
 
-    oe_result_t close();
+    openember::osal::Result close();
 
-    oe_result_t listen(std::string_view uri, uint32_t backlog = 16);
-    oe_result_t connect(std::string_view uri);
+    openember::osal::Result listen(std::string_view uri, uint32_t backlog = 16);
+    openember::osal::Result connect(std::string_view uri);
 
-    oe_result_t accept(Socket &out_client, int timeout_ms);
+    openember::osal::Result accept(Socket& out_client, int timeout_ms);
 
-    oe_result_t send(const void *buf, size_t len, size_t *out_sent, int timeout_ms);
-    oe_result_t recv(void *buf, size_t len, size_t *out_received, int timeout_ms);
+    openember::osal::Result send(const void* buf, size_t len, size_t* out_sent, int timeout_ms);
+    openember::osal::Result recv(void* buf, size_t len, size_t* out_received, int timeout_ms);
 
 private:
-    oe_socket_t s_ {};
+    openember::osal::Socket socket_;
 };
 
-} // namespace openember::network
+}  // namespace openember::network
 
 #endif /* OPENEMBER_COMPONENTS_NETWORK_SOCKET_URI_H_ */
-
