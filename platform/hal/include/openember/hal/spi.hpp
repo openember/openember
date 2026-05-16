@@ -1,56 +1,49 @@
-/* OpenEmber HAL — C++ wrapper: SPI (RAII) */
-#ifndef OPENEMBER_HAL_SPI_HPP_
-#define OPENEMBER_HAL_SPI_HPP_
+#pragma once
 
-#include "openember/hal/spi.h"
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <string>
 
-namespace oe {
-namespace hal {
+#include "openember/osal/types.hpp"
 
-class SPI {
-public:
-    SPI() = default;
-    SPI(const SPI &) = delete;
-    SPI &operator=(const SPI &) = delete;
-    SPI(SPI &&) = delete;
-    SPI &operator=(SPI &&) = delete;
+namespace openember::hal {
 
-    ~SPI()
-    {
-        (void)oe_spi_close(&s_);
-    }
+using Result = osal::Result;
 
-    oe_result_t open(const char *dev_path, const oe_spi_config_t &cfg)
-    {
-        opened_ = false;
-        oe_result_t r = oe_spi_open(&s_, dev_path, &cfg);
-        opened_ = (r == OE_OK);
-        return r;
-    }
-
-    oe_result_t close()
-    {
-        opened_ = false;
-        return oe_spi_close(&s_);
-    }
-
-    oe_result_t query_caps(oe_spi_caps_t *out_caps) const
-    {
-        return oe_spi_query_caps(out_caps);
-    }
-
-    oe_result_t transfer(const void *tx, void *rx, size_t len, size_t *out_transferred = nullptr)
-    {
-        return oe_spi_transfer(&s_, tx, rx, len, out_transferred);
-    }
-
-private:
-    oe_spi_t s_ {};
-    bool opened_ = false;
+struct SpiConfig {
+    uint32_t speed_hz = 0;
+    uint8_t mode = 0;
+    uint8_t bits_per_word = 8;
+    uint16_t delay_usecs = 0;
 };
 
-} // namespace hal
-} // namespace oe
+struct SpiCaps {
+    uint32_t supports_full_duplex = 0;
+    uint32_t supports_mode_count = 0;
+    uint32_t min_bits_per_word = 0;
+    uint32_t max_bits_per_word = 0;
+};
 
-#endif /* OPENEMBER_HAL_SPI_HPP_ */
+class Spi {
+public:
+    Spi();
+    ~Spi();
 
+    Spi(const Spi&) = delete;
+    Spi& operator=(const Spi&) = delete;
+    Spi(Spi&&) = delete;
+    Spi& operator=(Spi&&) = delete;
+
+    static Result query_caps(SpiCaps* out_caps);
+
+    Result open(const std::string& dev_path, const SpiConfig& cfg);
+    Result close();
+    Result transfer(const void* tx, void* rx, size_t len, size_t* out_transferred = nullptr);
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
+}  // namespace openember::hal

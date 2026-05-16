@@ -1,13 +1,13 @@
-# OpenEmber HAL — Linux 初版（file / uart）
+# OpenEmber HAL — Linux (C++17)
 add_library(openember_hal STATIC
-    src/linux/oe_file.c
-    src/linux/oe_uart.c
-    src/linux/oe_gpio.c
-    src/linux/oe_i2c.c
-    src/linux/oe_spi.c
-    src/linux/oe_can.c
-    src/linux/oe_sbus.c
-    src/linux/oe_onewire.c
+    src/linux/file.cpp
+    src/linux/uart.cpp
+    src/linux/gpio.cpp
+    src/linux/i2c.cpp
+    src/linux/spi.cpp
+    src/linux/can.cpp
+    src/linux/sbus.cpp
+    src/linux/onewire.cpp
 )
 
 target_include_directories(openember_hal PUBLIC
@@ -15,8 +15,8 @@ target_include_directories(openember_hal PUBLIC
 )
 
 set_target_properties(openember_hal PROPERTIES
-    C_STANDARD 11
-    C_STANDARD_REQUIRED ON
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
 )
 

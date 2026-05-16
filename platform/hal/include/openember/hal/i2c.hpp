@@ -1,69 +1,42 @@
-/* OpenEmber HAL — C++ wrapper: I2C (RAII) */
-#ifndef OPENEMBER_HAL_I2C_HPP_
-#define OPENEMBER_HAL_I2C_HPP_
-
-#include "openember/hal/i2c.h"
+#pragma once
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 
-namespace oe {
-namespace hal {
+#include "openember/osal/types.hpp"
 
-class I2C {
-public:
-    I2C() = default;
-    I2C(const I2C &) = delete;
-    I2C &operator=(const I2C &) = delete;
-    I2C(I2C &&) = delete;
-    I2C &operator=(I2C &&) = delete;
+namespace openember::hal {
 
-    ~I2C()
-    {
-        (void)oe_i2c_close(&i_);
-    }
+using Result = osal::Result;
 
-    oe_result_t open(uint32_t bus_num, uint8_t addr_7bit)
-    {
-        opened_ = false;
-        oe_result_t r = oe_i2c_open(&i_, bus_num, addr_7bit);
-        opened_ = (r == OE_OK);
-        return r;
-    }
-
-    oe_result_t close()
-    {
-        opened_ = false;
-        return oe_i2c_close(&i_);
-    }
-
-    oe_result_t write(const uint8_t *data, size_t len, size_t *out_written = nullptr)
-    {
-        return oe_i2c_write(&i_, data, len, out_written);
-    }
-
-    oe_result_t read(uint8_t *data, size_t len, size_t *out_read = nullptr)
-    {
-        return oe_i2c_read(&i_, data, len, out_read);
-    }
-
-    oe_result_t write_read(const uint8_t *wbuf, size_t wlen, uint8_t *rbuf, size_t rlen)
-    {
-        return oe_i2c_write_read(&i_, wbuf, wlen, rbuf, rlen);
-    }
-
-    oe_result_t query_caps(oe_i2c_caps_t *out_caps) const
-    {
-        return oe_i2c_query_caps(out_caps);
-    }
-
-private:
-    oe_i2c_t i_ {};
-    bool opened_ = false;
+struct I2cCaps {
+    uint32_t max_write_bytes = 0;
+    uint32_t max_read_bytes = 0;
+    uint32_t supports_write_read = 0;
 };
 
-} // namespace hal
-} // namespace oe
+class I2c {
+public:
+    I2c();
+    ~I2c();
 
-#endif /* OPENEMBER_HAL_I2C_HPP_ */
+    I2c(const I2c&) = delete;
+    I2c& operator=(const I2c&) = delete;
+    I2c(I2c&&) = delete;
+    I2c& operator=(I2c&&) = delete;
 
+    static Result query_caps(I2cCaps* out_caps);
+
+    Result open(uint32_t bus_num, uint8_t addr_7bit);
+    Result close();
+    Result write(const uint8_t* data, size_t len, size_t* out_written = nullptr);
+    Result read(uint8_t* data, size_t len, size_t* out_read = nullptr);
+    Result write_read(const uint8_t* wbuf, size_t wlen, uint8_t* rbuf, size_t rlen);
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
+}  // namespace openember::hal

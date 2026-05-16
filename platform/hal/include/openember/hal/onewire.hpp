@@ -1,58 +1,47 @@
-/* OpenEmber HAL — C++ wrapper: 1-Wire (RAII) */
-#ifndef OPENEMBER_HAL_ONEWIRE_HPP_
-#define OPENEMBER_HAL_ONEWIRE_HPP_
+#pragma once
 
-#include "openember/hal/onewire.h"
-
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <string>
 
-namespace oe {
-namespace hal {
+#include "openember/osal/types.hpp"
 
-class OneWire {
-public:
-    OneWire() = default;
-    OneWire(const OneWire &) = delete;
-    OneWire &operator=(const OneWire &) = delete;
-    OneWire(OneWire &&) = delete;
-    OneWire &operator=(OneWire &&) = delete;
+namespace openember::hal {
 
-    ~OneWire()
-    {
-        (void)oe_onewire_close(&w_);
-    }
+using Result = osal::Result;
 
-    oe_result_t open(const std::string &w1_slave_path)
-    {
-        return oe_onewire_open(&w_, w1_slave_path.c_str());
-    }
-
-    oe_result_t close()
-    {
-        return oe_onewire_close(&w_);
-    }
-
-    oe_result_t query_caps(oe_onewire_caps_t *out_caps) const
-    {
-        return oe_onewire_query_caps(out_caps);
-    }
-
-    oe_result_t read_temperature(oe_onewire_temp_t *out_temp)
-    {
-        return oe_onewire_read_temperature(&w_, out_temp);
-    }
-
-    oe_result_t read_raw(char *out_buf, size_t cap, size_t *out_len = nullptr)
-    {
-        return oe_onewire_read_raw(&w_, out_buf, cap, out_len);
-    }
-
-private:
-    oe_onewire_t w_ {};
+struct OnewireCaps {
+    uint32_t supports_temperature = 0;
+    uint32_t supports_raw_read = 0;
 };
 
-} // namespace hal
-} // namespace oe
+struct OnewireTemp {
+    uint8_t crc_ok = 0;
+    int32_t temperature_milli_c = 0;
+    float temperature_c = 0.0f;
+};
 
-#endif /* OPENEMBER_HAL_ONEWIRE_HPP_ */
+class Onewire {
+public:
+    Onewire();
+    ~Onewire();
 
+    Onewire(const Onewire&) = delete;
+    Onewire& operator=(const Onewire&) = delete;
+    Onewire(Onewire&&) = delete;
+    Onewire& operator=(Onewire&&) = delete;
+
+    static Result query_caps(OnewireCaps* out_caps);
+
+    Result open(const std::string& w1_slave_path);
+    Result close();
+    Result read_temperature(OnewireTemp* out_temp);
+    Result read_raw(char* out_buf, size_t cap, size_t* out_len = nullptr);
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
+}  // namespace openember::hal

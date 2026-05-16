@@ -1,68 +1,49 @@
-/* OpenEmber HAL — C++ wrapper: GPIO (RAII) */
-#ifndef OPENEMBER_HAL_GPIO_HPP_
-#define OPENEMBER_HAL_GPIO_HPP_
-
-#include "openember/hal/gpio.h"
+#pragma once
 
 #include <cstdint>
+#include <memory>
 
-namespace oe {
-namespace hal {
+#include "openember/osal/types.hpp"
 
-class GPIO {
-public:
-    GPIO() = default;
-    GPIO(const GPIO &) = delete;
-    GPIO &operator=(const GPIO &) = delete;
-    GPIO(GPIO &&) = delete;
-    GPIO &operator=(GPIO &&) = delete;
+namespace openember::hal {
 
-    ~GPIO()
-    {
-        (void)oe_gpio_close(&g_);
-    }
+using Result = osal::Result;
 
-    oe_result_t open(uint32_t gpio_num)
-    {
-        opened_ = false;
-        oe_result_t r = oe_gpio_open(&g_, gpio_num);
-        opened_ = (r == OE_OK);
-        return r;
-    }
-
-    oe_result_t close()
-    {
-        opened_ = false;
-        return oe_gpio_close(&g_);
-    }
-
-    oe_result_t set_direction(oe_gpio_direction_t dir)
-    {
-        return oe_gpio_set_direction(&g_, dir);
-    }
-
-    oe_result_t read(uint8_t *out_value)
-    {
-        return oe_gpio_read(&g_, out_value);
-    }
-
-    oe_result_t write(uint8_t value)
-    {
-        return oe_gpio_write(&g_, value);
-    }
-
-    oe_result_t query_caps(oe_gpio_caps_t *out_caps) const
-    {
-        return oe_gpio_query_caps(out_caps);
-    }
-
-private:
-    oe_gpio_t g_ {};
-    bool opened_ = false;
+enum class GpioDirection {
+    In = 0,
+    Out = 1,
 };
 
-} // namespace hal
-} // namespace oe
+enum class GpioCapsFlag : uint32_t {
+    DirIn = 1u << 0,
+    DirOut = 1u << 1,
+};
 
-#endif /* OPENEMBER_HAL_GPIO_HPP_ */
+struct GpioCaps {
+    uint32_t direction_mask = 0;
+};
 
+class Gpio {
+public:
+    Gpio();
+    ~Gpio();
+
+    Gpio(const Gpio&) = delete;
+    Gpio& operator=(const Gpio&) = delete;
+    Gpio(Gpio&&) = delete;
+    Gpio& operator=(Gpio&&) = delete;
+
+    static Result query_caps(GpioCaps* out_caps);
+
+    Result open(uint32_t gpio_num);
+    Result set_direction(GpioDirection dir);
+    Result read(uint8_t* out_value);
+    Result write(uint8_t value);
+    Result close();
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
+}  // namespace openember::hal

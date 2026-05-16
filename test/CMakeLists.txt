@@ -9,7 +9,7 @@ if(OPENEMBER_ENABLE_OSAL)
 endif()
 
 if(OPENEMBER_ENABLE_HAL)
-    list(APPEND _openember_tests test_hal.c)
+    list(APPEND _openember_tests test_hal.cpp)
 endif()
 
 foreach(_t ${_openember_tests})

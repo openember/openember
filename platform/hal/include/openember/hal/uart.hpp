@@ -1,87 +1,68 @@
-/* OpenEmber HAL — C++ wrapper: UART (RAII)
- *
- * This header provides a thin C++ layer on top of the C ABI in uart.h.
- */
-#ifndef OPENEMBER_HAL_UART_HPP_
-#define OPENEMBER_HAL_UART_HPP_
+#pragma once
 
-#include "openember/hal/uart.h"
-
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <string>
 
-namespace oe {
-namespace hal {
+#include "openember/osal/types.hpp"
 
-class UART {
-public:
-    UART() = default;
+namespace openember::hal {
 
-    UART(const std::string &path, const oe_uart_config_t &cfg)
-    {
-        (void)open(path, cfg);
-    }
+using Result = osal::Result;
 
-    ~UART()
-    {
-        (void)oe_uart_close(&u_);
-    }
+inline constexpr uint32_t kUartCapsMaxBaudRates = 8;
 
-    UART(const UART &) = delete;
-    UART &operator=(const UART &) = delete;
-
-    UART(UART &&other) noexcept
-    {
-        u_ = other.u_;
-        opened_ = other.opened_;
-        other.opened_ = false;
-    }
-
-    UART &operator=(UART &&other) noexcept
-    {
-        if (this != &other) {
-            (void)oe_uart_close(&u_);
-            u_ = other.u_;
-            opened_ = other.opened_;
-            other.opened_ = false;
-        }
-        return *this;
-    }
-
-    oe_result_t open(const std::string &path, const oe_uart_config_t &cfg)
-    {
-        oe_result_t r = oe_uart_open(&u_, path.c_str(), &cfg);
-        opened_ = (r == OE_OK);
-        return r;
-    }
-
-    oe_result_t close()
-    {
-        opened_ = false;
-        return oe_uart_close(&u_);
-    }
-
-    oe_result_t read(void *buf, size_t len, size_t *out_read = nullptr)
-    {
-        return oe_uart_read(&u_, buf, len, out_read);
-    }
-
-    oe_result_t write(const void *buf, size_t len, size_t *out_written = nullptr)
-    {
-        return oe_uart_write(&u_, buf, len, out_written);
-    }
-
-    oe_result_t query_caps(oe_uart_caps_t *out_caps) const
-    {
-        return oe_uart_query_caps(out_caps);
-    }
-
-private:
-    oe_uart_t u_ {};
-    bool opened_ = false;
+enum class UartParity {
+    None = 0,
+    Even = 1,
+    Odd = 2,
 };
 
-} // namespace hal
-} // namespace oe
+enum class UartParityMask : uint32_t {
+    None = 1u << 0,
+    Even = 1u << 1,
+    Odd = 1u << 2,
+};
 
-#endif /* OPENEMBER_HAL_UART_HPP_ */
+struct UartCaps {
+    uint32_t baud_rate_count = 0;
+    uint32_t baud_rates[kUartCapsMaxBaudRates] {};
+    uint32_t parity_mask = 0;
+    uint32_t data_bits_min = 0;
+    uint32_t data_bits_max = 0;
+    uint32_t stop_bits_min = 0;
+    uint32_t stop_bits_max = 0;
+};
 
+struct UartConfig {
+    uint32_t baud_rate = 115200;
+    uint8_t data_bits = 8;
+    uint8_t stop_bits = 1;
+    UartParity parity = UartParity::None;
+    uint8_t nonblocking = 0;
+};
+
+class Uart {
+public:
+    Uart();
+    ~Uart();
+
+    Uart(const Uart&) = delete;
+    Uart& operator=(const Uart&) = delete;
+    Uart(Uart&&) = delete;
+    Uart& operator=(Uart&&) = delete;
+
+    static Result query_caps(UartCaps* out_caps);
+
+    Result open(const std::string& path, const UartConfig& cfg);
+    Result close();
+    Result read(void* buf, size_t len, size_t* out_read = nullptr);
+    Result write(const void* buf, size_t len, size_t* out_written = nullptr);
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
+}  // namespace openember::hal
