@@ -40,6 +40,8 @@
 | [LCM](https://github.com/lcm-proj/lcm) | `OPENEMBER_LCM_VERSION` | `GetLcm.cmake` | `OPENEMBER_MSGBUS_USE_LCM=ON` |
 | [libzmq](https://github.com/zeromq/libzmq) | `OPENEMBER_LIBZMQ_VERSION` | `GetLibzmq.cmake` | msgbus ZMQ 后端选用时 |
 | [cppzmq](https://github.com/zeromq/cppzmq) | `OPENEMBER_CPPZMQ_VERSION` | `GetCppZmq.cmake` | 同上 |
+| [zenoh-c](https://github.com/eclipse-zenoh/zenoh-c) | `OPENEMBER_ZENOHC_VERSION` | `GetZenohC.cmake` | `OPENEMBER_MSGBUS_USE_ZENOH=ON` 或 `OPENEMBER_WITH_ZENOHCXX=ON`；需 **Rust/Cargo** |
+| [zenoh-cpp](https://github.com/eclipse-zenoh/zenoh-cpp) | `OPENEMBER_ZENOHCXX_VERSION` | `GetZenohCpp.cmake` | `OPENEMBER_WITH_ZENOHCXX=ON`（依赖 zenoh-c；C++17 头文件库） |
 | [ruckig](https://github.com/pantor/ruckig) | `OPENEMBER_RUCKIG_VERSION` | `GetRuckig.cmake` | `OPENEMBER_WITH_RUCKIG=ON`（默认关；C++20 库） |
 
 > 链接业务目标时按需 `target_link_libraries(... yaml-cpp::yaml-cpp)`、`target_link_libraries(... ruckig::ruckig)` 等；并非所有目标都会自动链接全部可选库。

@@ -83,6 +83,20 @@ config OPENEMBER_THIRD_PARTY_BUNDLE_CPPZMQ
     help
       When msgbus backend is ZeroMQ, forced ON (with libzmq). Otherwise optional pre-fetch.
 
+config OPENEMBER_THIRD_PARTY_BUNDLE_ZENOH_C
+    bool "Include zenoh-c sources"
+    default n
+    help
+      When msgbus backend is Zenoh (or zenoh-cpp is enabled), forced ON.
+      zenoh-c build requires Rust/Cargo on the host. Otherwise optional pre-fetch.
+
+config OPENEMBER_THIRD_PARTY_BUNDLE_ZENOHCXX
+    bool "Include zenoh-cpp headers"
+    default n
+    help
+      When OPENEMBER_WITH_ZENOHCXX is enabled, forced ON (with zenoh-c).
+      Otherwise optional pre-fetch.
+
 config OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG
     bool "Include ruckig sources"
     default n

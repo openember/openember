@@ -541,6 +541,8 @@ bundle_nng="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_NNG)"
 bundle_lcm="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_LCM)"
 bundle_libzmq="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_LIBZMQ)"
 bundle_cppzmq="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_CPPZMQ)"
+bundle_zenoh_c="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_ZENOH_C)"
+bundle_zenohcxx="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_ZENOHCXX)"
 bundle_ruckig="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG)"
 
 out_cmake="${BUILD_DIR}/config.cmake"
@@ -632,6 +634,8 @@ set(OPENEMBER_THIRD_PARTY_BUNDLE_NNG ${bundle_nng} CACHE BOOL "Third-party bundl
 set(OPENEMBER_THIRD_PARTY_BUNDLE_LCM ${bundle_lcm} CACHE BOOL "Third-party bundle: LCM" FORCE)
 set(OPENEMBER_THIRD_PARTY_BUNDLE_LIBZMQ ${bundle_libzmq} CACHE BOOL "Third-party bundle: libzmq" FORCE)
 set(OPENEMBER_THIRD_PARTY_BUNDLE_CPPZMQ ${bundle_cppzmq} CACHE BOOL "Third-party bundle: cppzmq" FORCE)
+set(OPENEMBER_THIRD_PARTY_BUNDLE_ZENOH_C ${bundle_zenoh_c} CACHE BOOL "Third-party bundle: zenoh-c" FORCE)
+set(OPENEMBER_THIRD_PARTY_BUNDLE_ZENOHCXX ${bundle_zenohcxx} CACHE BOOL "Third-party bundle: zenoh-cpp" FORCE)
 set(OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG ${bundle_ruckig} CACHE BOOL "Third-party bundle: ruckig" FORCE)
 EOF
 

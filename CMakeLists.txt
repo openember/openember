@@ -53,8 +53,10 @@ option( BUILD_EASYLOGGER "Whether compile EasyLogger (obsolete, currently disabl
 option( OPENEMBER_MSGBUS_USE_NNG "Use NNG backend for internal msgbus" ON)
 option( OPENEMBER_MSGBUS_USE_LCM "Use LCM backend for internal msgbus" OFF)
 option( OPENEMBER_MSGBUS_USE_ZMQ "Use ZeroMQ for internal msgbus (experimental; not all CMake paths wired)" OFF)
+option( OPENEMBER_MSGBUS_USE_ZENOH "Use Zenoh (zenoh-c) for internal msgbus (experimental)" OFF)
 # When LCM is selected: use C++ lcm::LCM for TransportBackend (MsgBusNode); C msg_bus_* still uses lcm_wrapper.c
 option( OPENEMBER_MSGBUS_LCM_USE_CPP "Use C++ lcm::LCM for TransportBackend when LCM msgbus is enabled" ON)
+option( OPENEMBER_WITH_ZENOHCXX "Use zenoh-cpp C++ bindings (requires zenoh-c; experimental)" OFF)
 
 if(OPENEMBER_MSGBUS_USE_NNG AND OPENEMBER_MSGBUS_USE_LCM)
     message(FATAL_ERROR "OPENEMBER_MSGBUS_USE_NNG and OPENEMBER_MSGBUS_USE_LCM cannot both be ON. Please select exactly one.")
@@ -241,6 +243,11 @@ elseif(OPENEMBER_MSGBUS_USE_NNG)
     message(STATUS "└── nng include: ${OPENEMBER_NNG_INCLUDE_DIRS}")
 endif()
 
+if(OPENEMBER_MSGBUS_USE_ZENOH)
+    openember_transport_resolve_zenoh_c()
+    message(STATUS "├── zenoh-c: ${OPENEMBER_ZENOHC_LIBRARIES}")
+endif()
+
 openember_third_party_prefetch_unused_bundles()
 
 set(OPENEMBER_LOG_BACKEND_INCLUDES "")
@@ -282,7 +289,7 @@ set( OPENEMBER_INTERNAL_INCLUDE_DIRS
     ${CMAKE_BINARY_DIR}/include
     ${CMAKE_SOURCE_DIR}/core/inc
     ${CMAKE_SOURCE_DIR}/components/GSDL/src
-    ${CMAKE_SOURCE_DIR}/components/Log
+    ${CMAKE_SOURCE_DIR}/components/logging
     ${CMAKE_SOURCE_DIR}/components/ppool
     ${CMAKE_SOURCE_DIR}/components/msgbus
     ${CMAKE_SOURCE_DIR}/components/Common
@@ -296,7 +303,7 @@ endif()
 
 set( OPENEMBER_INTERNAL_LIBRARIES 
     gdsl
-    Log
+    logging
     ppool
     msgbus
     Common
@@ -309,8 +316,8 @@ if(OPENEMBER_COMPONENT_MQTT)
 endif()
 
 if(NOT DEFINED OPENEMBER_COMPONENT_NETWORK OR OPENEMBER_COMPONENT_NETWORK)
-    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/Network)
-    list(APPEND OPENEMBER_INTERNAL_LIBRARIES Network)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/network)
+    list(APPEND OPENEMBER_INTERNAL_LIBRARIES network)
 endif()
 
 add_subdirectory(platform)

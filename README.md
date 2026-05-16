@@ -15,75 +15,39 @@ OpenEmber 不只是 Robot Application Framework，而是一个通用的 Middlewa
 ## 框架结构
 
 ```bash
-┌──────────────────────────────────────────────┐
-│                  Applications                │
-│──────────────────────────────────────────────│
-│ launch / demos / tools / robot nodes / apps  │
-└──────────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│ Applications                                   │
+│ demos / tools / robot apps / launch entry      │
+└────────────────────────────────────────────────┘
                      │
                      ▼
-┌──────────────────────────────────────────────┐
-│                    Modules                   │
-│──────────────────────────────────────────────│
-│ 插件层（功能扩展层，可裁剪，可选启用）             │
-│                                              │
-│ transport backends:  nng / zmq / lcm         │
-│ drivers:             imu / lidar / motor     │
-│ algorithms:          slam / navigation       │
-│ middleware adaptors: fastdds / ros bridge    │
-└──────────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│ Modules                                        │
+│ drivers / algorithms / bridges / app modules   │
+└────────────────────────────────────────────────┘
                      │
                      ▼
-┌──────────────────────────────────────────────┐
-│                  Components                  │
-│──────────────────────────────────────────────│
-│ 基础设施组件层（跨模块复用能力）                  │
-│                                              │
-│ logging                                      │
-│ serialization                                │
-│ container (ringbuffer / queue)               │
-│ database (sqlite wrapper)                    │
-│ transport abstraction                        │
-│ config parser                                │
-└──────────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│ Core / Runtime                                 │
+│ Node / Topic / Service / Parameter / Lifecycle │
+│ Launch / Executor / Diagnostics / Introspection│
+└────────────────────────────────────────────────┘
                      │
                      ▼
-┌──────────────────────────────────────────────┐
-│                     Core                     │
-│──────────────────────────────────────────────│
-│ 框架运行核心机制（middleware runtime）          │
-│                                              │
-│ node lifecycle                               │
-│ executor scheduler                           │
-│ topic manager                                │
-│ parameter system                             │
-│ service framework                            │
-└──────────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│ Components                                     │
+│ logging / serialization / transport / config   │
+│ containers / sqlite / utility libraries        │
+└────────────────────────────────────────────────┘
                      │
                      ▼
-┌──────────────────────────────────────────────┐
-│                   Platform                   │
-│──────────────────────────────────────────────│
-│ OS abstraction + HAL abstraction             │
-│                                              │
-│ platform/os                                  │
-│   thread / mutex / timer / socket            │
-│                                              │
-│ platform/hal                                 │
-│   uart / spi / can / gpio / i2c              │
-└──────────────────────────────────────────────┘
-                     │
-                     ▼
-┌──────────────────────────────────────────────┐
-│                Operating System              │
-│──────────────────────────────────────────────│
-│  Linux / RTOS / Windows / macOS（未来支持）    │
-└──────────────────────────────────────────────┘
+┌────────────────────────────────────────────────┐
+│ Platform                                       │
+│ osal / hal / thread / timer / can / uart       │
+└────────────────────────────────────────────────┘
 ```
 
 
-
-![](./docs/images/Architecture_diagram.png)
 
 ## 设计思想
 
