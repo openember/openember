@@ -47,11 +47,18 @@ public:
 
             auto on_done = []() {};
 
+            zenoh::Session::GetOptions opts;
+            opts.payload = zenoh::Bytes(request);
+            if (timeout.count() > 0) {
+                opts.timeout_ms = static_cast<uint64_t>(timeout.count());
+            }
+
             session_->get(
                 zenoh::KeyExpr(key_),
                 "",
                 on_reply,
-                on_done
+                on_done,
+                std::move(opts)
             );
 
             if (future.wait_for(timeout) != std::future_status::ready) {

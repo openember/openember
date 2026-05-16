@@ -36,12 +36,20 @@ Result<ServiceServer> Session::CreateServiceServer(
     try {
         const auto key = Keys().ServiceKey(options.name);
 
+        zenoh::Session::QueryableOptions qopts;
+        qopts.complete = true;
+
         auto queryable = transport_internal::RawZenohSession(*this).declare_queryable(
             zenoh::KeyExpr(key),
             [key, callback = std::move(callback)](const zenoh::Query& query) {
                 Message request;
                 request.key = std::string(query.get_keyexpr().as_string_view());
                 request.receive_time = std::chrono::steady_clock::now();
+
+                if (const auto payload = query.get_payload()) {
+                    const auto bytes = payload->get().as_vector();
+                    request.payload.assign(bytes.begin(), bytes.end());
+                }
 
                 auto response = callback(request);
                 if (!response.Ok()) {
@@ -57,7 +65,8 @@ Result<ServiceServer> Session::CreateServiceServer(
                     zenoh::Bytes(response.Value())
                 );
             },
-            zenoh::closures::none
+            []() {},
+            std::move(qopts)
         );
 
         return ServiceServer(std::make_unique<ServiceServer::Impl>(std::move(queryable)));
