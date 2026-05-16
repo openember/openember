@@ -63,6 +63,13 @@ if(NOT DEFINED OPENEMBER_COMPONENT_TRANSPORT)
     set(OPENEMBER_COMPONENT_TRANSPORT ON CACHE BOOL "Build component: Transport (Zenoh)" FORCE)
 endif()
 
+# Core 与 Transport 绑定：Transport 开启时始终构建 openember::core
+if(OPENEMBER_COMPONENT_TRANSPORT)
+    set(OPENEMBER_ENABLE_CORE ON CACHE BOOL "Build C++ core (Node/Topic/Service)" FORCE)
+else()
+    set(OPENEMBER_ENABLE_CORE OFF CACHE BOOL "Build C++ core (Node/Topic/Service)" FORCE)
+endif()
+
 if(OPENEMBER_MSGBUS_USE_NNG AND OPENEMBER_MSGBUS_USE_LCM)
     message(FATAL_ERROR "OPENEMBER_MSGBUS_USE_NNG and OPENEMBER_MSGBUS_USE_LCM cannot both be ON. Please select exactly one.")
 endif()
@@ -303,8 +310,8 @@ set( OPENEMBER_LIBRARIES
 
 add_subdirectory(components)
 add_subdirectory(modules)
-add_subdirectory(apps)
 add_subdirectory(core)
+add_subdirectory(apps)
 
 #========================================================
 # for unittest, call "cmake .. -DUNIT_TEST=ON"

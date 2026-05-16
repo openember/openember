@@ -116,6 +116,19 @@ example_transport="$(onoff CONFIG_OPENEMBER_EXAMPLE_TRANSPORT)"
 if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_TRANSPORT=" "${CONFIG_FILE}"; then
   example_transport=ON
 fi
+# Core 与 Transport 绑定：Transport 开启时 Core 必选
+if [[ "${component_transport}" == "ON" ]]; then
+  enable_core=ON
+else
+  enable_core=OFF
+fi
+example_core="$(onoff CONFIG_OPENEMBER_EXAMPLE_CORE)"
+if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_CORE=" "${CONFIG_FILE}"; then
+  example_core=ON
+fi
+if [[ "${component_transport}" == "OFF" ]] || [[ "${examples_enabled}" == "OFF" ]]; then
+  example_core=OFF
+fi
 if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS=" "${CONFIG_FILE}"; then
   example_network_sockets=ON
 fi
@@ -561,6 +574,7 @@ set(OPENEMBER_WITH_YAMLCPP ${use_yamlcpp} CACHE BOOL "Fetch/use yaml-cpp (option
 set(OPENEMBER_WITH_ASIO ${use_asio} CACHE BOOL "Fetch/use standalone Asio (optional)" FORCE)
 set(OPENEMBER_COMPONENT_NETWORK ${component_network} CACHE BOOL "Build component: Network (high-level socket wrapper)" FORCE)
 set(OPENEMBER_COMPONENT_TRANSPORT ${component_transport} CACHE BOOL "Build component: Transport (Zenoh)" FORCE)
+set(OPENEMBER_ENABLE_CORE ${enable_core} CACHE BOOL "Build C++ core (Node/Topic/Service)" FORCE)
 set(OPENEMBER_COMPONENT_MQTT ${component_mqtt} CACHE BOOL "Build component: MQTT (Paho C)" FORCE)
 set(OPENEMBER_MQTT_PAHO_TLS ${mqtt_paho_tls} CACHE BOOL "Build Paho MQTT C with OpenSSL (TLS)" FORCE)
 set(OPENEMBER_MQTT_PAHO_ASYNC ${mqtt_paho_async} CACHE BOOL "Link Paho MQTTAsync library" FORCE)
@@ -587,6 +601,7 @@ set(OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES ${example_msgbus_two_nodes} CACHE BOOL "B
 set(OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER ${example_msgbus_nng_forwarder} CACHE BOOL "Build example msgbus_nng_forwarder" FORCE)
 set(OPENEMBER_EXAMPLE_NETWORK_SOCKETS ${example_network_sockets} CACHE BOOL "Build example network_sockets" FORCE)
 set(OPENEMBER_EXAMPLE_TRANSPORT ${example_transport} CACHE BOOL "Build examples transport_talker/listener" FORCE)
+set(OPENEMBER_EXAMPLE_CORE ${example_core} CACHE BOOL "Build examples openember_topic_* / openember_service_*" FORCE)
 set(OPENEMBER_EXAMPLE_MQTT_EMQX ${example_mqtt_emqx} CACHE BOOL "Build example mqtt_emqx_client" FORCE)
 set(OPENEMBER_MQTT_EMQX_BROKER_URI "${mqtt_emqx_broker_uri}" CACHE STRING "MQTT broker URI for mqtt_emqx example" FORCE)
 set(OPENEMBER_MQTT_EMQX_CLIENT_ID "${mqtt_emqx_client_id}" CACHE STRING "MQTT client id for mqtt_emqx example" FORCE)

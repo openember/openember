@@ -32,6 +32,16 @@ config OPENEMBER_EXAMPLE_TRANSPORT
     help
       Pub/sub demo using openember::transport on top of zenoh-cpp / zenoh-c.
 
+config OPENEMBER_EXAMPLE_CORE
+    bool "Build examples: core (Node Topic/Service on openember::core)"
+    default y
+    depends on OPENEMBER_ENABLE_EXAMPLES
+    depends on OPENEMBER_COMPONENT_TRANSPORT
+    help
+      openember_topic_talker/listener and openember_service_server/client.
+      Requires openember::core (always built with Transport).
+      Start listener/server first (router + listen), then talker/client (peer + connect).
+
 config OPENEMBER_EXAMPLE_MQTT_EMQX
     bool "Build example: mqtt_emqx_client (Paho C client → EMQX / MQTT broker)"
     default n

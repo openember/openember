@@ -25,8 +25,8 @@ endmenu
 
 source "apps/Kconfig"
 source "modules/Kconfig"
-source "components/Kconfig"
 source "core/Kconfig"
+source "components/Kconfig"
 source "platform/Kconfig"
 source "test/Kconfig"
 source "third_party/Kconfig"
