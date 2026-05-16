@@ -88,6 +88,10 @@ if ! grep -q "^CONFIG_OPENEMBER_USE_RUCKIG=" "${CONFIG_FILE}"; then
   use_ruckig=OFF
 fi
 component_network="$(onoff CONFIG_OPENEMBER_COMPONENT_NETWORK)"
+component_transport="$(onoff CONFIG_OPENEMBER_COMPONENT_TRANSPORT)"
+if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_TRANSPORT=" "${CONFIG_FILE}"; then
+  component_transport=ON
+fi
 component_mqtt="$(onoff CONFIG_OPENEMBER_COMPONENT_MQTT)"
 if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_MQTT=" "${CONFIG_FILE}"; then
   component_mqtt=ON
@@ -114,6 +118,10 @@ feature_algorithm="$(onoff CONFIG_OPENEMBER_FEATURE_ALGORITHM)"
 example_msgbus_two_nodes="$(onoff CONFIG_OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES)"
 example_msgbus_nng_forwarder="$(onoff CONFIG_OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER)"
 example_network_sockets="$(onoff CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS)"
+example_transport="$(onoff CONFIG_OPENEMBER_EXAMPLE_TRANSPORT)"
+if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_TRANSPORT=" "${CONFIG_FILE}"; then
+  example_transport=ON
+fi
 if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS=" "${CONFIG_FILE}"; then
   example_network_sockets=ON
 fi
@@ -576,6 +584,7 @@ set(OPENEMBER_JSON_LIBRARY "${json_lib}" CACHE STRING "JSON implementation for O
 set(OPENEMBER_WITH_YAMLCPP ${use_yamlcpp} CACHE BOOL "Fetch/use yaml-cpp (optional C++ dependency)" FORCE)
 set(OPENEMBER_WITH_ASIO ${use_asio} CACHE BOOL "Fetch/use standalone Asio (optional)" FORCE)
 set(OPENEMBER_COMPONENT_NETWORK ${component_network} CACHE BOOL "Build component: Network (high-level socket wrapper)" FORCE)
+set(OPENEMBER_COMPONENT_TRANSPORT ${component_transport} CACHE BOOL "Build component: Transport (Zenoh)" FORCE)
 set(OPENEMBER_COMPONENT_MQTT ${component_mqtt} CACHE BOOL "Build component: MQTT (Paho C)" FORCE)
 set(OPENEMBER_MQTT_PAHO_TLS ${mqtt_paho_tls} CACHE BOOL "Build Paho MQTT C with OpenSSL (TLS)" FORCE)
 set(OPENEMBER_MQTT_PAHO_ASYNC ${mqtt_paho_async} CACHE BOOL "Link Paho MQTTAsync library" FORCE)
@@ -601,6 +610,7 @@ set(OPENEMBER_FEATURE_ALGORITHM ${feature_algorithm} CACHE BOOL "Enable Algorith
 set(OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES ${example_msgbus_two_nodes} CACHE BOOL "Build example msgbus_two_nodes" FORCE)
 set(OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER ${example_msgbus_nng_forwarder} CACHE BOOL "Build example msgbus_nng_forwarder" FORCE)
 set(OPENEMBER_EXAMPLE_NETWORK_SOCKETS ${example_network_sockets} CACHE BOOL "Build example network_sockets" FORCE)
+set(OPENEMBER_EXAMPLE_TRANSPORT ${example_transport} CACHE BOOL "Build examples transport_talker/listener" FORCE)
 set(OPENEMBER_EXAMPLE_MQTT_EMQX ${example_mqtt_emqx} CACHE BOOL "Build example mqtt_emqx_client" FORCE)
 set(OPENEMBER_MQTT_EMQX_BROKER_URI "${mqtt_emqx_broker_uri}" CACHE STRING "MQTT broker URI for mqtt_emqx example" FORCE)
 set(OPENEMBER_MQTT_EMQX_CLIENT_ID "${mqtt_emqx_client_id}" CACHE STRING "MQTT client id for mqtt_emqx example" FORCE)

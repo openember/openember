@@ -1,4 +1,4 @@
-project(Log VERSION 1.0.0)
+project(logging VERSION 1.0.0)
 
 set(LIB_LOG_SRCS
     log_wrapper.c
@@ -16,8 +16,8 @@ OPENEMBER_ADD_STATIC_LIBRARY(TARGET ${PROJECT_NAME}
 )
 
 if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
-    set_property(TARGET Log PROPERTY CXX_STANDARD 17)
-    set_property(TARGET Log PROPERTY CXX_STANDARD_REQUIRED ON)
+    set_property(TARGET logging PROPERTY CXX_STANDARD 17)
+    set_property(TARGET logging PROPERTY CXX_STANDARD_REQUIRED ON)
 
     if(NOT DEFINED OPENEMBER_SPDLOG_LEVEL OR "${OPENEMBER_SPDLOG_LEVEL}" STREQUAL "")
         set(OPENEMBER_SPDLOG_LEVEL "info")
@@ -77,7 +77,7 @@ if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
     # Stale CMake cache often leaves tcp:// here; LCM lcm_create() does not support provider "tcp".
     if(OPENEMBER_MSGBUS_USE_LCM)
         if(OPENEMBER_SPDLOG_TOPIC_PUB_URL MATCHES "^tcp://")
-            message(STATUS "Log: spdlog topic PUB URL was tcp (invalid for LCM); overriding to udpm multicast")
+            message(STATUS "logging: spdlog topic PUB URL was tcp (invalid for LCM); overriding to udpm multicast")
             set(OPENEMBER_SPDLOG_TOPIC_PUB_URL "udpm://239.255.76.67:7667?ttl=1")
         endif()
         if(OPENEMBER_SPDLOG_TOPIC_SUB_URL MATCHES "^tcp://")
@@ -85,7 +85,7 @@ if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
         endif()
     endif()
 
-    target_compile_definitions(Log PRIVATE
+    target_compile_definitions(logging PRIVATE
         OPENEMBER_SPDLOG_LEVEL="${OPENEMBER_SPDLOG_LEVEL}"
         OPENEMBER_SPDLOG_FLUSH_LEVEL="${OPENEMBER_SPDLOG_FLUSH_LEVEL}"
         OPENEMBER_SPDLOG_PATTERN="${OPENEMBER_SPDLOG_PATTERN}"

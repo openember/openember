@@ -56,7 +56,11 @@ option( OPENEMBER_MSGBUS_USE_ZMQ "Use ZeroMQ for internal msgbus (experimental; 
 option( OPENEMBER_MSGBUS_USE_ZENOH "Use Zenoh (zenoh-c) for internal msgbus (experimental)" OFF)
 # When LCM is selected: use C++ lcm::LCM for TransportBackend (MsgBusNode); C msg_bus_* still uses lcm_wrapper.c
 option( OPENEMBER_MSGBUS_LCM_USE_CPP "Use C++ lcm::LCM for TransportBackend when LCM msgbus is enabled" ON)
-option( OPENEMBER_WITH_ZENOHCXX "Use zenoh-cpp C++ bindings (requires zenoh-c; experimental)" OFF)
+option( OPENEMBER_WITH_ZENOHCXX "Use zenoh-cpp C++ bindings without Transport component (requires zenoh-c; experimental)" OFF)
+
+if(NOT DEFINED OPENEMBER_COMPONENT_TRANSPORT)
+    set(OPENEMBER_COMPONENT_TRANSPORT ON CACHE BOOL "Build component: Transport (Zenoh)" FORCE)
+endif()
 
 if(OPENEMBER_MSGBUS_USE_NNG AND OPENEMBER_MSGBUS_USE_LCM)
     message(FATAL_ERROR "OPENEMBER_MSGBUS_USE_NNG and OPENEMBER_MSGBUS_USE_LCM cannot both be ON. Please select exactly one.")
@@ -243,7 +247,11 @@ elseif(OPENEMBER_MSGBUS_USE_NNG)
     message(STATUS "└── nng include: ${OPENEMBER_NNG_INCLUDE_DIRS}")
 endif()
 
-if(OPENEMBER_MSGBUS_USE_ZENOH)
+if(NOT DEFINED OPENEMBER_COMPONENT_TRANSPORT OR OPENEMBER_COMPONENT_TRANSPORT)
+    openember_transport_resolve_zenoh_cpp()
+    message(STATUS "├── zenoh-c: ${OPENEMBER_ZENOHC_LIBRARIES}")
+    message(STATUS "└── zenoh-cpp: ${OPENEMBER_ZENOHCXX_LIBRARIES}")
+elseif(OPENEMBER_MSGBUS_USE_ZENOH)
     openember_transport_resolve_zenoh_c()
     message(STATUS "├── zenoh-c: ${OPENEMBER_ZENOHC_LIBRARIES}")
 endif()
@@ -311,6 +319,10 @@ set( OPENEMBER_INTERNAL_LIBRARIES
     csv
     yaml
 )
+if(NOT DEFINED OPENEMBER_COMPONENT_TRANSPORT OR OPENEMBER_COMPONENT_TRANSPORT)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/transport/include)
+    list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_transport)
+endif()
 if(OPENEMBER_COMPONENT_MQTT)
     list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_mqtt)
 endif()

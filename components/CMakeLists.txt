@@ -1,5 +1,8 @@
 set(FOLDER_NAME "components")
 
+if(NOT DEFINED OPENEMBER_COMPONENT_TRANSPORT OR OPENEMBER_COMPONENT_TRANSPORT)
+    add_subdirectory(transport)
+endif()
 if(NOT DEFINED OPENEMBER_COMPONENT_MQTT OR OPENEMBER_COMPONENT_MQTT)
     add_subdirectory(mqtt)
 endif()

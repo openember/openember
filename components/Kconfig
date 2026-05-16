@@ -193,6 +193,16 @@ config OPENEMBER_USE_RUCKIG
 
 endmenu
 
+menu "Transport (Zenoh)"
+
+comment "Mandatory framework component (openember::transport). Always built; not user-disableable."
+
+config OPENEMBER_COMPONENT_TRANSPORT
+    bool
+    default y
+
+endmenu
+
 menu "Network"
 
 config OPENEMBER_COMPONENT_NETWORK

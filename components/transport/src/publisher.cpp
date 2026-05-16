@@ -16,12 +16,7 @@ public:
 
     Result<void> Publish(const ByteBuffer& payload) {
         try {
-            publisher_.put(
-                zenoh::Bytes(
-                    reinterpret_cast<const uint8_t*>(payload.data()),
-                    payload.size()
-                )
-            );
+            publisher_.put(zenoh::Bytes(payload));
             return {};
         } catch (const std::exception& e) {
             return Error{
@@ -52,13 +47,13 @@ Result<void> Publisher::Publish(const ByteBuffer& payload) {
 }
 
 Result<Publisher> Session::CreatePublisher(const TopicOptions& options) {
-    if (!impl_->IsOpen()) {
+    if (!IsOpen()) {
         return Error{ErrorCode::kNotInitialized, "session is not open"};
     }
 
     try {
-        const auto key = impl_->Keys().TopicKey(options.name);
-        auto publisher = impl_->RawSession().declare_publisher(
+        const auto key = Keys().TopicKey(options.name);
+        auto publisher = transport_internal::RawZenohSession(*this).declare_publisher(
             zenoh::KeyExpr(key)
         );
 

@@ -7,6 +7,46 @@
 #include "zenoh.hxx"
 
 namespace openember::transport {
+namespace {
+
+std::string ZenohJsonString(const std::string& value) {
+    return "\"" + value + "\"";
+}
+
+std::string ZenohEndpointArrayJson(const std::string& endpoint) {
+    return "[\"" + endpoint + "\"]";
+}
+
+const char* ZenohModeString(ZenohMode mode) {
+    switch (mode) {
+        case ZenohMode::kClient:
+            return "client";
+        case ZenohMode::kRouter:
+            return "router";
+        case ZenohMode::kPeer:
+        default:
+            return "peer";
+    }
+}
+
+void ApplySessionOptions(zenoh::Config& config, const SessionOptions& options) {
+    config.insert_json5("mode", ZenohJsonString(ZenohModeString(options.mode)));
+
+    if (!options.listen.empty()) {
+        config.insert_json5("listen/endpoints", ZenohEndpointArrayJson(options.listen));
+    }
+    if (!options.connect.empty()) {
+        config.insert_json5("connect/endpoints", ZenohEndpointArrayJson(options.connect));
+    }
+
+    // 显式 TCP 时关闭组播 scouting，与 zenoh-cpp 连通性测试一致，避免本机双进程发现失败。
+    if (!options.listen.empty() || !options.connect.empty()) {
+        config.insert_json5("scouting/multicast/enabled", "false");
+        config.insert_json5("scouting/gossip/enabled", "false");
+    }
+}
+
+}  // namespace
 
 class Session::Impl {
 public:
@@ -23,11 +63,7 @@ public:
 
         try {
             zenoh::Config config = zenoh::Config::create_default();
-
-            // 第一版可以先不处理 mode/connect/listen。
-            // 等基本 pub/sub 跑通后，再补：
-            // config.insert_json5("mode", "\"peer\"");
-            // config.insert_json5("connect/endpoints", "[\"tcp/127.0.0.1:7447\"]");
+            ApplySessionOptions(config, options_);
 
             session_ = std::make_unique<zenoh::Session>(
                 zenoh::Session::open(std::move(config))
@@ -62,18 +98,20 @@ public:
     }
 
 private:
-    friend class Session;
-    friend class Publisher;
-    friend class Subscriber;
-    friend class ServiceServer;
-    friend class ServiceClient;
-
     SessionOptions options_;
     KeyBuilder key_builder_;
     std::unique_ptr<zenoh::Session> session_;
     bool opened_ = false;
     mutable std::mutex mutex_;
 };
+
+namespace transport_internal {
+
+zenoh::Session& RawZenohSession(Session& session) {
+    return session.impl_->RawSession();
+}
+
+}  // namespace transport_internal
 
 Session::Session(const SessionOptions& options)
     : impl_(std::make_unique<Impl>(options)) {}

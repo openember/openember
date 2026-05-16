@@ -36,7 +36,7 @@ public:
                 }
 
                 const auto& sample = reply.get_ok();
-                const auto payload = sample.get_payload();
+                const auto& payload = sample.get_payload();
                 const auto bytes = payload.as_vector();
 
                 ByteBuffer buffer;
@@ -47,8 +47,6 @@ public:
 
             auto on_done = []() {};
 
-            // 不同 zenoh-cpp 版本对 query payload 的支持方式可能不同。
-            // 第一版可以先将 request 编码到 parameters。
             session_->get(
                 zenoh::KeyExpr(key_),
                 "",
@@ -92,15 +90,15 @@ Result<ByteBuffer> ServiceClient::Call(const ByteBuffer& request,
 }
 
 Result<ServiceClient> Session::CreateServiceClient(const ServiceOptions& options) {
-    if (!impl_->IsOpen()) {
+    if (!IsOpen()) {
         return Error{ErrorCode::kNotInitialized, "session is not open"};
     }
 
     try {
-        const auto key = impl_->Keys().ServiceKey(options.name);
+        const auto key = Keys().ServiceKey(options.name);
 
         return ServiceClient(std::make_unique<ServiceClient::Impl>(
-            &impl_->RawSession(),
+            &transport_internal::RawZenohSession(*this),
             key
         ));
     } catch (const std::exception& e) {

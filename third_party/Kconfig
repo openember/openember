@@ -87,14 +87,14 @@ config OPENEMBER_THIRD_PARTY_BUNDLE_ZENOH_C
     bool "Include zenoh-c sources"
     default n
     help
-      When msgbus backend is Zenoh (or zenoh-cpp is enabled), forced ON.
+      When Transport component or zenoh-cpp is enabled, forced ON.
       zenoh-c build requires Rust/Cargo on the host. Otherwise optional pre-fetch.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_ZENOHCXX
     bool "Include zenoh-cpp headers"
     default n
     help
-      When OPENEMBER_WITH_ZENOHCXX is enabled, forced ON (with zenoh-c).
+      When Transport component or OPENEMBER_WITH_ZENOHCXX is enabled, forced ON (with zenoh-c).
       Otherwise optional pre-fetch.
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG
@@ -165,5 +165,11 @@ config OPENEMBER_TP_LINK_RUCKIG
     bool
     default y if OPENEMBER_USE_RUCKIG
     select OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG
+
+config OPENEMBER_TP_LINK_TRANSPORT
+    bool
+    default y if OPENEMBER_COMPONENT_TRANSPORT
+    select OPENEMBER_THIRD_PARTY_BUNDLE_ZENOH_C
+    select OPENEMBER_THIRD_PARTY_BUNDLE_ZENOHCXX
 
 endmenu

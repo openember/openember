@@ -24,6 +24,14 @@ config OPENEMBER_EXAMPLE_NETWORK_SOCKETS
     help
       Build apps/examples/network_sockets demos for OSAL sockets and Components/Network wrapper.
 
+config OPENEMBER_EXAMPLE_TRANSPORT
+    bool "Build examples: transport_talker / transport_listener (Zenoh)"
+    default y
+    depends on OPENEMBER_ENABLE_EXAMPLES
+    depends on OPENEMBER_COMPONENT_TRANSPORT
+    help
+      Pub/sub demo using openember::transport on top of zenoh-cpp / zenoh-c.
+
 config OPENEMBER_EXAMPLE_MQTT_EMQX
     bool "Build example: mqtt_emqx_client (Paho C client → EMQX / MQTT broker)"
     default n

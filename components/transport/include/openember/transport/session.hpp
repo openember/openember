@@ -10,7 +10,17 @@
 #include "openember/transport/service_server.hpp"
 #include "openember/transport/subscriber.hpp"
 
+namespace zenoh {
+class Session;
+}
+
 namespace openember::transport {
+
+class Session;
+
+namespace transport_internal {
+zenoh::Session& RawZenohSession(Session& session);
+}
 
 class Session {
 public:
@@ -43,6 +53,8 @@ public:
 private:
     class Impl;
     std::unique_ptr<Impl> impl_;
+
+    friend zenoh::Session& transport_internal::RawZenohSession(Session& session);
 };
 
 }  // namespace openember::transport
