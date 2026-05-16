@@ -15,8 +15,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <cassert>
-
 #define MODULE_NAME            "hello_node"
 #define LOG_TAG                MODULE_NAME
 #include "openember.h"
@@ -24,8 +22,6 @@
 
 #include <string>
 #include <nlohmann/json.hpp>
-
-#include "yaml.h"
 
 //#define TEMPLATE_RAW_MSG
 
@@ -112,25 +108,6 @@ static int msg_init(void)
     return EMBER_EOK;
 }
 
-void yaml_test(void)
-{
-    int major = -1;
-    int minor = -1;
-    int patch = -1;
-    char buf[64];
-
-    yaml_get_version(&major, &minor, &patch);
-    sprintf(buf, "%d.%d.%d", major, minor, patch);
-    assert(strcmp(buf, yaml_get_version_string()) == 0);
-    
-    LOG_I("libyaml version %s", buf);
-
-    /* Print structure sizes. */
-    LOG_I("sizeof(token) = %ld", (long)sizeof(yaml_token_t));
-    LOG_I("sizeof(event) = %ld", (long)sizeof(yaml_event_t));
-    LOG_I("sizeof(parser) = %ld", (long)sizeof(yaml_parser_t));
-}
-
 int main(void)
 {
     int rc;
@@ -145,8 +122,6 @@ int main(void)
     LOG_E("Hello OpenEmber!");
 
     LOG_I("Version: %lu.%lu.%lu", EMBER_VERSION, EMBER_SUBVERSION, EMBER_REVISION);
-
-    yaml_test();
 
     rc = msg_init();
     if (rc != EMBER_EOK) {

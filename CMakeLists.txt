@@ -257,8 +257,6 @@ set( OPENEMBER_INTERNAL_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/components/msgbus
     ${CMAKE_SOURCE_DIR}/components/Common
     ${CMAKE_SOURCE_DIR}/modules/Algorithm
-    ${CMAKE_SOURCE_DIR}/components/libcsv
-    ${CMAKE_SOURCE_DIR}/components/libyaml
 )
 if(OPENEMBER_COMPONENT_MQTT)
     list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/mqtt)
@@ -271,8 +269,6 @@ set( OPENEMBER_INTERNAL_LIBRARIES
     msgbus
     Common
     Algorithm
-    csv
-    yaml
 )
 if(NOT DEFINED OPENEMBER_COMPONENT_TRANSPORT OR OPENEMBER_COMPONENT_TRANSPORT)
     list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/transport/include)
