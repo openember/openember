@@ -158,6 +158,16 @@ if ! grep -q "^CONFIG_OPENEMBER_ENABLE_LPIO_EXAMPLES=" "${CONFIG_FILE}"; then
   enable_lpio_examples=OFF
 fi
 
+enable_tools="$(onoff CONFIG_OPENEMBER_ENABLE_TOOLS)"
+if ! grep -q "^CONFIG_OPENEMBER_ENABLE_TOOLS=" "${CONFIG_FILE}"; then
+  enable_tools=ON
+fi
+
+enable_tools_emcom="$(onoff CONFIG_OPENEMBER_ENABLE_TOOLS_EMCOM)"
+if ! grep -q "^CONFIG_OPENEMBER_ENABLE_TOOLS_EMCOM=" "${CONFIG_FILE}"; then
+  enable_tools_emcom=ON
+fi
+
 spdlog_pattern="[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v"
 spdlog_pattern="$(awk '
   /^CONFIG_OPENEMBER_SPDLOG_PATTERN=/ {
@@ -625,6 +635,8 @@ set(OPENEMBER_ENABLE_OSAL ${enable_osal} CACHE BOOL "Build platform OSAL (Linux 
 set(OPENEMBER_ENABLE_HAL ${enable_hal} CACHE BOOL "Build platform HAL (Linux file/uart; requires OSAL)" FORCE)
 set(OPENEMBER_ENABLE_LPIO ${enable_lpio} CACHE BOOL "Build platform LPIO (C++ Linux peripherals)" FORCE)
 set(OPENEMBER_ENABLE_LPIO_EXAMPLES ${enable_lpio_examples} CACHE BOOL "Build platform LPIO examples" FORCE)
+set(OPENEMBER_ENABLE_TOOLS ${enable_tools} CACHE BOOL "Build OpenEmber utilities (tools/)" FORCE)
+set(OPENEMBER_ENABLE_TOOLS_EMCOM ${enable_tools_emcom} CACHE BOOL "Build emcom serial console tool" FORCE)
 
 if("${msgbus_backend}" STREQUAL "LCM")
   set(OPENEMBER_MSGBUS_USE_NNG OFF CACHE BOOL "Use NNG backend for internal msgbus" FORCE)

@@ -1,0 +1,7 @@
+# Host / target utilities (see tools/Kconfig)
+if(OPENEMBER_ENABLE_TOOLS_EMCOM)
+    if(NOT OPENEMBER_ENABLE_LPIO)
+        message(FATAL_ERROR "OPENEMBER_ENABLE_TOOLS_EMCOM requires OPENEMBER_ENABLE_LPIO")
+    endif()
+    add_subdirectory(emcom)
+endif()

@@ -17,6 +17,7 @@ _layer_kconfigs=(
   "components/Kconfig"
   "core/Kconfig"
   "platform/Kconfig"
+  "tools/Kconfig"
   "test/Kconfig"
 )
 for rel in "${_layer_kconfigs[@]}"; do

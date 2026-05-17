@@ -1,0 +1,19 @@
+menu "Tools"
+
+config OPENEMBER_ENABLE_TOOLS
+    bool "Build OpenEmber utilities (tools/)"
+    default y
+    help
+      Host-side command-line utilities shipped with OpenEmber.
+      Individual tools may require platform libraries (e.g. LPIO).
+
+config OPENEMBER_ENABLE_TOOLS_EMCOM
+    bool "Build emcom (picocom-like serial console)"
+    depends on OPENEMBER_ENABLE_TOOLS
+    depends on OPENEMBER_ENABLE_LPIO
+    default y
+    help
+      Interactive serial terminal using LPIO SerialPort.
+      Installed as executable emcom. Requires OPENEMBER_ENABLE_LPIO.
+
+endmenu
