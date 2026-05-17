@@ -148,6 +148,16 @@ if ! grep -q "^CONFIG_OPENEMBER_ENABLE_HAL=" "${CONFIG_FILE}"; then
   enable_hal=ON
 fi
 
+enable_lpio="$(onoff CONFIG_OPENEMBER_ENABLE_LPIO)"
+if ! grep -q "^CONFIG_OPENEMBER_ENABLE_LPIO=" "${CONFIG_FILE}"; then
+  enable_lpio=ON
+fi
+
+enable_lpio_examples="$(onoff CONFIG_OPENEMBER_ENABLE_LPIO_EXAMPLES)"
+if ! grep -q "^CONFIG_OPENEMBER_ENABLE_LPIO_EXAMPLES=" "${CONFIG_FILE}"; then
+  enable_lpio_examples=OFF
+fi
+
 spdlog_pattern="[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v"
 spdlog_pattern="$(awk '
   /^CONFIG_OPENEMBER_SPDLOG_PATTERN=/ {
@@ -613,6 +623,8 @@ set(OPENEMBER_MQTT_EMQX_SSL_VERIFY ${mqtt_emqx_ssl_verify} CACHE BOOL "Verify MQ
 
 set(OPENEMBER_ENABLE_OSAL ${enable_osal} CACHE BOOL "Build platform OSAL (Linux pthread)" FORCE)
 set(OPENEMBER_ENABLE_HAL ${enable_hal} CACHE BOOL "Build platform HAL (Linux file/uart; requires OSAL)" FORCE)
+set(OPENEMBER_ENABLE_LPIO ${enable_lpio} CACHE BOOL "Build platform LPIO (C++ Linux peripherals)" FORCE)
+set(OPENEMBER_ENABLE_LPIO_EXAMPLES ${enable_lpio_examples} CACHE BOOL "Build platform LPIO examples" FORCE)
 
 if("${msgbus_backend}" STREQUAL "LCM")
   set(OPENEMBER_MSGBUS_USE_NNG OFF CACHE BOOL "Use NNG backend for internal msgbus" FORCE)
