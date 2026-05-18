@@ -16,4 +16,13 @@ config OPENEMBER_ENABLE_TOOLS_EMCOM
       Interactive serial terminal using LPIO SerialPort.
       Installed as executable emcom. Requires OPENEMBER_ENABLE_LPIO.
 
+config OPENEMBER_ENABLE_TOOLS_SBUS_RECEIVER
+    bool "Build sbus-receiver (SBUS channel monitor)"
+    depends on OPENEMBER_ENABLE_TOOLS
+    depends on OPENEMBER_ENABLE_LPIO
+    default y
+    help
+      Receive Futaba SBUS frames and print PWM / switch channels.
+      Installed as executable sbus-receiver. Requires OPENEMBER_ENABLE_LPIO.
+
 endmenu

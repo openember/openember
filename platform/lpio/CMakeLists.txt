@@ -10,6 +10,7 @@ add_library(openember_lpio STATIC
     src/OneWire.cpp
     src/PWM.cpp
     src/RS485.cpp
+    src/SBUS.cpp
 )
 
 target_include_directories(openember_lpio PUBLIC
