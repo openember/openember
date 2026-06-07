@@ -44,4 +44,4 @@ lpio/
 
 **异步支持** — 初期用同步阻塞 + select/poll 超时参数，后期可无缝接入 io_uring 或 asio。
 
-**依赖** — 尽量只依赖 Linux 内核头文件（<termios.h>、<linux/spi/spidev.h>、<linux/can.h>），GPIO 可选依赖 libgpiod（比 sysfs 更现代）。
+**依赖** — 尽量只依赖 Linux 内核头文件（<termios.h>、<linux/spi/spidev.h>、<linux/can.h>），GPIO 依赖 libgpiod（比 sysfs 更现代）。
