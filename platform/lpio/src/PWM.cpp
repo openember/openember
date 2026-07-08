@@ -61,7 +61,7 @@ PWM PWM::Builder::build()
     return PWM(cfg_);
 }
 
-PWM PWM::Builder::buildAndOpen(OpenMode mode)
+PWM PWM::Builder::open(OpenMode mode)
 {
     auto dev = build();
     dev.open(mode);

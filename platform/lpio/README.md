@@ -59,3 +59,5 @@ lpio/
 **资源管理** — 文件描述符通过内部 `private/UniqueFd.hpp` 转移所有权；单 fd 设备继承内部 `detail::FdDeviceBase`，多资源或非 fd 设备按自身语义实现 RAII。设备对象不可拷贝、可移动，析构与失败路径都会自动释放已获取资源。
 
 **设备关系** — `SerialPort` / `I2CBus` / `SPIBus` / `CANBus` 是单 fd 设备；`RS485` 继承 `SerialPort`；`SBUSReader` 组合 `SerialPort`，只暴露 SBUS 帧读取语义；`GPIO` 管理 chip/line/event fd；`PWM` 管理 sysfs export/unexport 状态；`OneWire` 通过 kernel w1/sysfs 读取设备数据。
+
+**Builder 语义** — `Builder::build()` 只构造设备对象，不访问硬件；`Builder::open()` 会先 build 再调用设备的 `open()`，成功时返回已打开且由 RAII 管理资源的设备对象，失败时抛出 `DeviceError`。

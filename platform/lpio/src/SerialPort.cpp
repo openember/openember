@@ -141,7 +141,7 @@ SerialPort SerialPort::Builder::build()
     return SerialPort(path_, cfg_);
 }
 
-SerialPort SerialPort::Builder::buildAndOpen(OpenMode mode)
+SerialPort SerialPort::Builder::open(OpenMode mode)
 {
     auto dev = build();
     dev.open(mode);

@@ -27,7 +27,7 @@ public:
         Builder& delayUsecs(uint16_t us);
 
         SPIBus build();
-        SPIBus buildAndOpen(OpenMode mode = OpenMode::ReadWrite);
+        SPIBus open(OpenMode mode = OpenMode::ReadWrite);
 
     private:
         std::string   devPath_;

@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     }
 
     try {
-        auto port = lpio::SerialPort::on(argv[1]).baudRate(baud).buildAndOpen();
+        auto port = lpio::SerialPort::on(argv[1]).baudRate(baud).open();
 
         std::vector<std::byte> buf(512);
         std::fprintf(stderr, "echo on %s @ %u baud (Ctrl+C to quit)\n", argv[1], baud);

@@ -53,7 +53,7 @@ public:
         Builder& nonBlocking(bool enable = true);
 
         SerialPort build();
-        SerialPort buildAndOpen(OpenMode mode = OpenMode::ReadWrite);
+        SerialPort open(OpenMode mode = OpenMode::ReadWrite);
 
     private:
         std::string       path_;

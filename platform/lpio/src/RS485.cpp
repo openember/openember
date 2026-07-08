@@ -67,7 +67,7 @@ RS485 RS485::Builder::build()
     return RS485(path_, serialCfg_, rs485Cfg_);
 }
 
-RS485 RS485::Builder::buildAndOpen(OpenMode mode)
+RS485 RS485::Builder::open(OpenMode mode)
 {
     auto dev = build();
     dev.open(mode);

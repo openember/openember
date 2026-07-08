@@ -74,7 +74,7 @@ SBUSReader SBUSReader::Builder::build()
     return SBUSReader(path_, cfg_);
 }
 
-SBUSReader SBUSReader::Builder::buildAndOpen(OpenMode mode)
+SBUSReader SBUSReader::Builder::open(OpenMode mode)
 {
     auto dev = build();
     dev.open(mode);

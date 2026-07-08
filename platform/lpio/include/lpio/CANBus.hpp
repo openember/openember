@@ -31,7 +31,7 @@ public:
         Builder& canFd(bool enable = true);
 
         CANBus build();
-        CANBus buildAndOpen(OpenMode mode = OpenMode::ReadWrite);
+        CANBus open(OpenMode mode = OpenMode::ReadWrite);
 
     private:
         std::string   ifname_;

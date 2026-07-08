@@ -51,7 +51,7 @@ OneWire OneWire::Builder::build()
     return OneWire(slavePath_);
 }
 
-OneWire OneWire::Builder::buildAndOpen(OpenMode mode)
+OneWire OneWire::Builder::open(OpenMode mode)
 {
     auto dev = build();
     dev.open(mode);

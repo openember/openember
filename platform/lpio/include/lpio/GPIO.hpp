@@ -94,7 +94,7 @@ public:
         Builder& consumer(std::string name);
 
         GPIO build();
-        GPIO buildAndOpen(OpenMode mode = OpenMode::ReadWrite);
+        GPIO open(OpenMode mode = OpenMode::ReadWrite);
 
     private:
         std::string chipPath_;

@@ -21,7 +21,7 @@ public:
         explicit Builder(std::string slavePath);
 
         OneWire build();
-        OneWire buildAndOpen(OpenMode mode = OpenMode::ReadOnly);
+        OneWire open(OpenMode mode = OpenMode::ReadOnly);
 
     private:
         std::string slavePath_;

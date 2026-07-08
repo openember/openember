@@ -28,7 +28,7 @@ public:
         Builder& enabled(bool on = true);
 
         PWM build();
-        PWM buildAndOpen(OpenMode mode = OpenMode::ReadWrite);
+        PWM open(OpenMode mode = OpenMode::ReadWrite);
 
     private:
         PWMConfig cfg_;

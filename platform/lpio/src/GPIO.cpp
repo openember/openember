@@ -338,7 +338,7 @@ GPIO GPIO::Builder::build()
     return GPIO(chipPath_, cfg_);
 }
 
-GPIO GPIO::Builder::buildAndOpen(OpenMode mode)
+GPIO GPIO::Builder::open(OpenMode mode)
 {
     auto dev = build();
     dev.open(mode);

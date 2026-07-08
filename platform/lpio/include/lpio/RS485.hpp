@@ -34,7 +34,7 @@ public:
         Builder& rs485(RS485Config cfg);
 
         RS485 build();
-        RS485 buildAndOpen(OpenMode mode = OpenMode::ReadWrite);
+        RS485 open(OpenMode mode = OpenMode::ReadWrite);
 
     private:
         std::string       path_;

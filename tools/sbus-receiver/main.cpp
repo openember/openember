@@ -179,7 +179,7 @@ int main(int argc, char* argv[])
         auto sbus = lpio::SBUSReader::on(opts.device)
                         .baudRate(opts.baudRate)
                         .nonBlocking(true)
-                        .buildAndOpen();
+                        .open();
 
         sbus.useDefaultChannelMap();
 

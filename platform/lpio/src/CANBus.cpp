@@ -33,7 +33,7 @@ CANBus CANBus::Builder::build()
     return CANBus(ifname_, cfg_);
 }
 
-CANBus CANBus::Builder::buildAndOpen(OpenMode mode)
+CANBus CANBus::Builder::open(OpenMode mode)
 {
     auto dev = build();
     dev.open(mode);

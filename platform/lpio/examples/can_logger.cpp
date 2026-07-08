@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
     std::signal(SIGTERM, onSignal);
 
     try {
-        auto can = lpio::CANBus::on(argv[1]).buildAndOpen();
+        auto can = lpio::CANBus::on(argv[1]).open();
         std::printf("Listening on %s (Ctrl+C to quit)\n", argv[1]);
 
         while (g_running) {

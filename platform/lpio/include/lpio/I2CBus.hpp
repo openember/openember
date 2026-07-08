@@ -21,7 +21,7 @@ public:
         Builder& address(uint8_t addr7bit);
 
         I2CBus build();
-        I2CBus buildAndOpen(OpenMode mode = OpenMode::ReadWrite);
+        I2CBus open(OpenMode mode = OpenMode::ReadWrite);
 
     private:
         I2CBusConfig cfg_;

@@ -257,7 +257,7 @@ lpio::SerialPort openPort(const Options& opts)
     }
 
     builder.parity(opts.parity);
-    return builder.buildAndOpen();
+    return builder.open();
 }
 
 int sendFile(lpio::SerialPort& port, const std::string& path)

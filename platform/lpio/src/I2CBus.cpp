@@ -37,7 +37,7 @@ I2CBus I2CBus::Builder::build()
     return I2CBus(cfg_);
 }
 
-I2CBus I2CBus::Builder::buildAndOpen(OpenMode mode)
+I2CBus I2CBus::Builder::open(OpenMode mode)
 {
     auto dev = build();
     dev.open(mode);

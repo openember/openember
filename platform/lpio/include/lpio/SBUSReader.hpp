@@ -65,7 +65,7 @@ public:
         Builder& nonBlocking(bool enable = true);
 
         SBUSReader build();
-        SBUSReader buildAndOpen(OpenMode mode = OpenMode::ReadWrite);
+        SBUSReader open(OpenMode mode = OpenMode::ReadWrite);
 
     private:
         std::string path_;

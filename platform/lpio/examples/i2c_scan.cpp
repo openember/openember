@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
 
     for (uint8_t addr = 0x03; addr < 0x78; ++addr) {
         try {
-            auto bus = lpio::I2CBus::create().bus(busNum).address(addr).buildAndOpen();
+            auto bus = lpio::I2CBus::create().bus(busNum).address(addr).open();
 
             uint8_t dummy = 0;
             bus.read(std::span<std::byte>(reinterpret_cast<std::byte*>(&dummy), 1));

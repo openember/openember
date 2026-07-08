@@ -50,7 +50,7 @@ SPIBus SPIBus::Builder::build()
     return SPIBus(devPath_, cfg_);
 }
 
-SPIBus SPIBus::Builder::buildAndOpen(OpenMode mode)
+SPIBus SPIBus::Builder::open(OpenMode mode)
 {
     auto dev = build();
     dev.open(mode);
