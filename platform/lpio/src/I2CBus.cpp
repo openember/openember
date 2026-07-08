@@ -60,25 +60,23 @@ I2CBus::~I2CBus()
 }
 
 I2CBus::I2CBus(I2CBus&& other) noexcept
-    : config_(other.config_)
+    : detail::FdDeviceBase(std::move(other))
+    , config_(other.config_)
     , devPath_(std::move(other.devPath_))
     , state_(other.state_)
-    , fd_(other.fd_)
 {
     other.state_ = DeviceState::Closed;
-    other.fd_    = -1;
 }
 
 I2CBus& I2CBus::operator=(I2CBus&& other) noexcept
 {
     if (this != &other) {
         close();
+        detail::FdDeviceBase::operator=(std::move(other));
         config_  = other.config_;
         devPath_ = std::move(other.devPath_);
         state_   = other.state_;
-        fd_      = other.fd_;
         other.state_ = DeviceState::Closed;
-        other.fd_    = -1;
     }
     return *this;
 }
@@ -99,26 +97,22 @@ void I2CBus::open(OpenMode mode)
 
     refreshDevPath();
 
-    const int fd = ::open(devPath_.c_str(), O_RDWR);
-    if (fd < 0) {
+    detail::UniqueFd fd(::open(devPath_.c_str(), O_RDWR));
+    if (!fd) {
         throwErrno(devPath_);
     }
 
-    if (ioctl(fd, I2C_SLAVE, static_cast<int>(config_.addr7bit)) < 0) {
-        ::close(fd);
+    if (ioctl(fd.get(), I2C_SLAVE, static_cast<int>(config_.addr7bit)) < 0) {
         throwErrno("I2C_SLAVE");
     }
 
-    fd_    = fd;
+    setFd(std::move(fd));
     state_ = DeviceState::Open;
 }
 
 void I2CBus::close() noexcept
 {
-    if (fd_ >= 0) {
-        ::close(fd_);
-        fd_ = -1;
-    }
+    closeFd();
     state_ = DeviceState::Closed;
 }
 
@@ -141,7 +135,7 @@ std::size_t I2CBus::read(std::span<std::byte> buf)
 
     ssize_t n = 0;
     do {
-        n = ::read(fd_, buf.data(), buf.size());
+        n = ::read(fd(), buf.data(), buf.size());
     } while (n < 0 && errno == EINTR);
 
     if (n < 0) {
@@ -159,7 +153,7 @@ std::size_t I2CBus::write(std::span<const std::byte> buf)
 
     ssize_t n = 0;
     do {
-        n = ::write(fd_, buf.data(), buf.size());
+        n = ::write(fd(), buf.data(), buf.size());
     } while (n < 0 && errno == EINTR);
 
     if (n < 0) {
@@ -200,7 +194,7 @@ std::size_t I2CBus::writeRead(const uint8_t* wbuf, std::size_t wlen, uint8_t* rb
     data.msgs  = msgs;
     data.nmsgs = 2;
 
-    if (ioctl(fd_, I2C_RDWR, &data) < 0) {
+    if (ioctl(fd(), I2C_RDWR, &data) < 0) {
         throwErrno("I2C_RDWR");
     }
     return rlen;

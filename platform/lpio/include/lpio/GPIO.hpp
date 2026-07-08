@@ -2,6 +2,7 @@
 #pragma once
 
 #include "lpio/DeviceBase.hpp"
+#include "lpio/private/UniqueFd.hpp"
 
 #include <cstdint>
 #include <string>
@@ -153,15 +154,15 @@ public:
     const GPIOConfig& config() const noexcept;
 
 private:
-    void requestLine();
+    static detail::UniqueFd requestLine(int chipFd, const GPIOConfig& config, std::string_view chipPath);
     void releaseLine() noexcept;
 
     std::string  chipPath_;
     GPIOConfig   config_;
     DeviceState  state_ = DeviceState::Closed;
 
-    int chipFd_ = -1;   // gpiochip 文件描述符（open 后持有）
-    int lineFd_ = -1;   // 请求到的 line 文件描述符
+    detail::UniqueFd chipFd_;   // gpiochip 文件描述符（open 后持有）
+    detail::UniqueFd lineFd_;   // 请求到的 line 文件描述符
 };
 
 } // namespace lpio

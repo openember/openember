@@ -73,38 +73,36 @@ SPIBus::~SPIBus()
 }
 
 SPIBus::SPIBus(SPIBus&& other) noexcept
-    : devPath_(std::move(other.devPath_))
+    : detail::FdDeviceBase(std::move(other))
+    , devPath_(std::move(other.devPath_))
     , config_(other.config_)
     , state_(other.state_)
-    , fd_(other.fd_)
 {
     other.state_ = DeviceState::Closed;
-    other.fd_    = -1;
 }
 
 SPIBus& SPIBus::operator=(SPIBus&& other) noexcept
 {
     if (this != &other) {
         close();
+        detail::FdDeviceBase::operator=(std::move(other));
         devPath_ = std::move(other.devPath_);
         config_  = other.config_;
         state_   = other.state_;
-        fd_      = other.fd_;
         other.state_ = DeviceState::Closed;
-        other.fd_    = -1;
     }
     return *this;
 }
 
 void SPIBus::applySpiSettings()
 {
-    if (ioctl(fd_, SPI_IOC_WR_MODE, &config_.mode) < 0) {
+    if (ioctl(fd(), SPI_IOC_WR_MODE, &config_.mode) < 0) {
         throwErrno("SPI_IOC_WR_MODE");
     }
-    if (ioctl(fd_, SPI_IOC_WR_BITS_PER_WORD, &config_.bitsPerWord) < 0) {
+    if (ioctl(fd(), SPI_IOC_WR_BITS_PER_WORD, &config_.bitsPerWord) < 0) {
         throwErrno("SPI_IOC_WR_BITS_PER_WORD");
     }
-    if (ioctl(fd_, SPI_IOC_WR_MAX_SPEED_HZ, &config_.speedHz) < 0) {
+    if (ioctl(fd(), SPI_IOC_WR_MAX_SPEED_HZ, &config_.speedHz) < 0) {
         throwErrno("SPI_IOC_WR_MAX_SPEED_HZ");
     }
 }
@@ -120,17 +118,16 @@ void SPIBus::open(OpenMode mode)
         throw DeviceError(std::errc::invalid_argument, "spi path is empty");
     }
 
-    const int fd = ::open(devPath_.c_str(), O_RDWR);
-    if (fd < 0) {
+    detail::UniqueFd fd(::open(devPath_.c_str(), O_RDWR));
+    if (!fd) {
         throwErrno(devPath_);
     }
 
-    fd_ = fd;
+    setFd(std::move(fd));
     try {
         applySpiSettings();
     } catch (...) {
-        ::close(fd_);
-        fd_ = -1;
+        closeFd();
         throw;
     }
 
@@ -139,10 +136,7 @@ void SPIBus::open(OpenMode mode)
 
 void SPIBus::close() noexcept
 {
-    if (fd_ >= 0) {
-        ::close(fd_);
-        fd_ = -1;
-    }
+    closeFd();
     state_ = DeviceState::Closed;
 }
 
@@ -171,7 +165,7 @@ std::size_t SPIBus::transfer(const void* tx, void* rx, std::size_t len)
     xfer.delay_usecs   = config_.delayUsecs;
     xfer.bits_per_word = config_.bitsPerWord;
 
-    if (ioctl(fd_, SPI_IOC_MESSAGE(1), &xfer) < 0) {
+    if (ioctl(fd(), SPI_IOC_MESSAGE(1), &xfer) < 0) {
         throwErrno("SPI_IOC_MESSAGE");
     }
     return len;

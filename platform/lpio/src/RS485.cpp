@@ -100,8 +100,16 @@ RS485& RS485::operator=(RS485&& other) noexcept
 
 void RS485::open(OpenMode mode)
 {
+    const bool wasOpen = isOpen();
     SerialPort::open(mode);
-    applyRs485Settings();
+    try {
+        applyRs485Settings();
+    } catch (...) {
+        if (!wasOpen) {
+            SerialPort::close();
+        }
+        throw;
+    }
 }
 
 void RS485::applyRs485Settings()

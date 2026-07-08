@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lpio/DeviceBase.hpp"
+#include "lpio/private/FdDeviceBase.hpp"
 
 #include <cstdint>
 #include <string>
@@ -15,7 +15,7 @@ struct SPIBusConfig {
     uint16_t delayUsecs   = 0;
 };
 
-class SPIBus final : public DeviceBase {
+class SPIBus final : public detail::FdDeviceBase {
 public:
     class Builder {
     public:
@@ -63,7 +63,6 @@ private:
     std::string  devPath_;
     SPIBusConfig config_;
     DeviceState  state_ = DeviceState::Closed;
-    int          fd_    = -1;
 };
 
 }  // namespace lpio

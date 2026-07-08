@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lpio/DeviceBase.hpp"
+#include "lpio/private/FdDeviceBase.hpp"
 
 #include <array>
 #include <chrono>
@@ -22,7 +22,7 @@ struct CANFrame {
     std::array<uint8_t, 64> data {};
 };
 
-class CANBus final : public DeviceBase {
+class CANBus final : public detail::FdDeviceBase {
 public:
     class Builder {
     public:
@@ -66,7 +66,6 @@ private:
     std::string   ifname_;
     CANBusConfig  config_;
     DeviceState   state_ = DeviceState::Closed;
-    int           fd_    = -1;
     bool          canFdEnabled_ = false;
 };
 

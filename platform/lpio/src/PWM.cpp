@@ -155,10 +155,15 @@ void PWM::open(OpenMode mode)
         throw DeviceError(std::errc::invalid_argument, "PWM chip path is empty");
     }
 
-    exportChannel();
-    setPeriodNs(config_.periodNs);
-    setDutyCycleNs(config_.dutyCycleNs);
-    setEnabled(config_.enabled);
+    try {
+        exportChannel();
+        setPeriodNs(config_.periodNs);
+        setDutyCycleNs(config_.dutyCycleNs);
+        setEnabled(config_.enabled);
+    } catch (...) {
+        close();
+        throw;
+    }
     state_ = DeviceState::Open;
 }
 

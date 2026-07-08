@@ -1,9 +1,10 @@
-#include "lpio/SBUS.hpp"
+#include "lpio/SBUSReader.hpp"
 
 #include <algorithm>
 #include <chrono>
 #include <cstring>
 #include <thread>
+#include <utility>
 
 namespace lpio {
 
@@ -22,7 +23,7 @@ SerialPortConfig makeSbusLineConfig(const SbusConfig& cfg)
 
 }  // namespace
 
-const std::array<SbusChannelInfo, kSbusChannelCount>& SBUS::defaultChannelMap()
+const std::array<SbusChannelInfo, kSbusChannelCount>& SBUSReader::defaultChannelMap()
 {
     static const std::array<SbusChannelInfo, kSbusChannelCount> kMap = {{
         {0,  "CH1",  "Roll",     kSbusPwmMin, kSbusPwmMax, kSbusPwmCenter},
@@ -45,7 +46,7 @@ const std::array<SbusChannelInfo, kSbusChannelCount>& SBUS::defaultChannelMap()
     return kMap;
 }
 
-const std::array<SbusSwitchInfo, kSbusSwitchCount>& SBUS::defaultSwitchMap()
+const std::array<SbusSwitchInfo, kSbusSwitchCount>& SBUSReader::defaultSwitchMap()
 {
     static const std::array<SbusSwitchInfo, kSbusSwitchCount> kMap = {{
         {0, "SW1", "Digital switch 1", 0, 1},
@@ -54,55 +55,55 @@ const std::array<SbusSwitchInfo, kSbusSwitchCount>& SBUS::defaultSwitchMap()
     return kMap;
 }
 
-SBUS::Builder::Builder(std::string path) : path_(std::move(path)) {}
+SBUSReader::Builder::Builder(std::string path) : path_(std::move(path)) {}
 
-SBUS::Builder& SBUS::Builder::baudRate(uint32_t rate)
+SBUSReader::Builder& SBUSReader::Builder::baudRate(uint32_t rate)
 {
     cfg_.baudRate = rate;
     return *this;
 }
 
-SBUS::Builder& SBUS::Builder::nonBlocking(bool enable)
+SBUSReader::Builder& SBUSReader::Builder::nonBlocking(bool enable)
 {
     cfg_.nonBlocking = enable;
     return *this;
 }
 
-SBUS SBUS::Builder::build()
+SBUSReader SBUSReader::Builder::build()
 {
-    return SBUS(path_, cfg_);
+    return SBUSReader(path_, cfg_);
 }
 
-SBUS SBUS::Builder::buildAndOpen(OpenMode mode)
+SBUSReader SBUSReader::Builder::buildAndOpen(OpenMode mode)
 {
     auto dev = build();
     dev.open(mode);
     return dev;
 }
 
-SBUS::Builder SBUS::on(std::string path)
+SBUSReader::Builder SBUSReader::on(std::string path)
 {
     return Builder(std::move(path));
 }
 
-SBUS::SBUS(std::string path, SbusConfig config)
-    : SerialPort(path, makeSbusLineConfig(config))
+SBUSReader::SBUSReader(std::string path, SbusConfig config)
+    : port_(std::move(path), makeSbusLineConfig(config))
     , sbusCfg_(config)
 {
     useDefaultChannelMap();
 }
 
-SBUS::SBUS(SBUS&& other) noexcept
-    : SerialPort(std::move(other))
+SBUSReader::SBUSReader(SBUSReader&& other) noexcept
+    : port_(std::move(other.port_))
     , sbusCfg_(other.sbusCfg_)
     , channels_(std::move(other.channels_))
     , switches_(std::move(other.switches_))
 {}
 
-SBUS& SBUS::operator=(SBUS&& other) noexcept
+SBUSReader& SBUSReader::operator=(SBUSReader&& other) noexcept
 {
     if (this != &other) {
-        SerialPort::operator=(std::move(other));
+        port_ = std::move(other.port_);
         sbusCfg_   = other.sbusCfg_;
         channels_  = std::move(other.channels_);
         switches_  = std::move(other.switches_);
@@ -110,12 +111,37 @@ SBUS& SBUS::operator=(SBUS&& other) noexcept
     return *this;
 }
 
-void SBUS::open(OpenMode mode)
+void SBUSReader::open(OpenMode mode)
 {
-    SerialPort::open(mode);
+    port_.open(mode);
 }
 
-void SBUS::useDefaultChannelMap()
+void SBUSReader::close() noexcept
+{
+    port_.close();
+}
+
+DeviceState SBUSReader::state() const noexcept
+{
+    return port_.state();
+}
+
+std::string_view SBUSReader::path() const noexcept
+{
+    return port_.path();
+}
+
+std::size_t SBUSReader::read(std::span<std::byte>)
+{
+    throw DeviceError(std::errc::operation_not_supported, "use recvFrame()");
+}
+
+std::size_t SBUSReader::write(std::span<const std::byte>)
+{
+    throw DeviceError(std::errc::operation_not_supported, "SBUSReader is receive-only");
+}
+
+void SBUSReader::useDefaultChannelMap()
 {
     const auto& map = defaultChannelMap();
     channels_.assign(map.begin(), map.end());
@@ -124,33 +150,33 @@ void SBUS::useDefaultChannelMap()
     switches_.assign(sw.begin(), sw.end());
 }
 
-void SBUS::registerChannels(std::span<const SbusChannelInfo> channels)
+void SBUSReader::registerChannels(std::span<const SbusChannelInfo> channels)
 {
     if (channels.size() != kSbusChannelCount) {
-        throw DeviceError(std::errc::invalid_argument, "SBUS: expected 16 channel descriptors");
+        throw DeviceError(std::errc::invalid_argument, "SBUSReader: expected 16 channel descriptors");
     }
     channels_.assign(channels.begin(), channels.end());
 }
 
-void SBUS::registerSwitches(std::span<const SbusSwitchInfo> switches)
+void SBUSReader::registerSwitches(std::span<const SbusSwitchInfo> switches)
 {
     if (switches.size() != kSbusSwitchCount) {
-        throw DeviceError(std::errc::invalid_argument, "SBUS: expected 2 switch descriptors");
+        throw DeviceError(std::errc::invalid_argument, "SBUSReader: expected 2 switch descriptors");
     }
     switches_.assign(switches.begin(), switches.end());
 }
 
-const std::vector<SbusChannelInfo>& SBUS::channels() const noexcept
+const std::vector<SbusChannelInfo>& SBUSReader::channels() const noexcept
 {
     return channels_;
 }
 
-const std::vector<SbusSwitchInfo>& SBUS::switches() const noexcept
+const std::vector<SbusSwitchInfo>& SBUSReader::switches() const noexcept
 {
     return switches_;
 }
 
-float SBUS::rawToNormalized(uint16_t raw, const SbusChannelInfo& info)
+float SBUSReader::rawToNormalized(uint16_t raw, const SbusChannelInfo& info)
 {
     if (raw <= info.centerValue) {
         const auto denom = static_cast<float>(info.centerValue - info.minValue);
@@ -167,7 +193,7 @@ float SBUS::rawToNormalized(uint16_t raw, const SbusChannelInfo& info)
     return (static_cast<float>(raw - info.centerValue) / denom);
 }
 
-float SBUS::rawToPercent(uint16_t raw, const SbusChannelInfo& info)
+float SBUSReader::rawToPercent(uint16_t raw, const SbusChannelInfo& info)
 {
     const auto range = static_cast<float>(info.maxValue - info.minValue);
     if (range <= 0.0f) {
@@ -176,7 +202,7 @@ float SBUS::rawToPercent(uint16_t raw, const SbusChannelInfo& info)
     return 100.0f * static_cast<float>(raw - info.minValue) / range;
 }
 
-float SBUS::rawToMicroseconds(uint16_t raw, const SbusChannelInfo& info)
+float SBUSReader::rawToMicroseconds(uint16_t raw, const SbusChannelInfo& info)
 {
     const auto range = static_cast<float>(info.maxValue - info.minValue);
     if (range <= 0.0f) {
@@ -185,7 +211,7 @@ float SBUS::rawToMicroseconds(uint16_t raw, const SbusChannelInfo& info)
     return 1000.0f + (static_cast<float>(raw - info.minValue) * 1000.0f / range);
 }
 
-SbusFrame SBUS::decodeFrame(const uint8_t raw[kSbusFrameBytes]) const
+SbusFrame SBUSReader::decodeFrame(const uint8_t raw[kSbusFrameBytes]) const
 {
     SbusFrame frame {};
     std::memcpy(frame.raw.data(), raw, kSbusFrameBytes);
@@ -209,17 +235,17 @@ SbusFrame SBUS::decodeFrame(const uint8_t raw[kSbusFrameBytes]) const
     return frame;
 }
 
-uint8_t SBUS::readByte()
+uint8_t SBUSReader::readByte()
 {
     std::byte b {};
-    const std::size_t n = read(std::span<std::byte>(&b, 1));
+    const std::size_t n = port_.read(std::span<std::byte>(&b, 1));
     if (n == 0) {
-        throw DeviceTimeoutError("SBUS readByte");
+        throw DeviceTimeoutError("SBUSReader readByte");
     }
     return static_cast<uint8_t>(b);
 }
 
-SbusFrame SBUS::recvFrame(std::chrono::milliseconds timeout)
+SbusFrame SBUSReader::recvFrame(std::chrono::milliseconds timeout)
 {
     requireOpen();
 
@@ -245,13 +271,13 @@ SbusFrame SBUS::recvFrame(std::chrono::milliseconds timeout)
         std::size_t got = 1;
         while (got < kSbusFrameBytes) {
             if (Clock::now() >= deadline) {
-                throw DeviceTimeoutError("SBUS recvFrame");
+                throw DeviceTimeoutError("SBUSReader recvFrame");
             }
 
             try {
                 const std::size_t n =
-                    read(std::span<std::byte>(reinterpret_cast<std::byte*>(raw + got),
-                                              kSbusFrameBytes - got));
+                    port_.read(std::span<std::byte>(reinterpret_cast<std::byte*>(raw + got),
+                                                    kSbusFrameBytes - got));
                 got += n;
             } catch (const DeviceTimeoutError&) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -265,10 +291,10 @@ SbusFrame SBUS::recvFrame(std::chrono::milliseconds timeout)
         return decodeFrame(raw);
     }
 
-    throw DeviceTimeoutError("SBUS recvFrame");
+    throw DeviceTimeoutError("SBUSReader recvFrame");
 }
 
-const SbusConfig& SBUS::sbusConfig() const noexcept
+const SbusConfig& SBUSReader::sbusConfig() const noexcept
 {
     return sbusCfg_;
 }

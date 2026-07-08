@@ -1,5 +1,6 @@
 #pragma once
 
+#include "lpio/DeviceBase.hpp"
 #include "lpio/SerialPort.hpp"
 
 #include <array>
@@ -54,7 +55,7 @@ struct SbusFrame {
     std::array<uint8_t, kSbusFrameBytes>   raw {};
 };
 
-class SBUS final : public SerialPort {
+class SBUSReader final : public DeviceBase {
 public:
     class Builder {
     public:
@@ -63,8 +64,8 @@ public:
         Builder& baudRate(uint32_t rate);
         Builder& nonBlocking(bool enable = true);
 
-        SBUS build();
-        SBUS buildAndOpen(OpenMode mode = OpenMode::ReadWrite);
+        SBUSReader build();
+        SBUSReader buildAndOpen(OpenMode mode = OpenMode::ReadWrite);
 
     private:
         std::string path_;
@@ -73,15 +74,22 @@ public:
 
     static Builder on(std::string path);
 
-    SBUS(std::string path, SbusConfig config);
-    ~SBUS() override = default;
+    SBUSReader(std::string path, SbusConfig config);
+    ~SBUSReader() override = default;
 
-    SBUS(const SBUS&)            = delete;
-    SBUS& operator=(const SBUS&) = delete;
-    SBUS(SBUS&& other) noexcept;
-    SBUS& operator=(SBUS&& other) noexcept;
+    SBUSReader(const SBUSReader&)            = delete;
+    SBUSReader& operator=(const SBUSReader&) = delete;
+    SBUSReader(SBUSReader&& other) noexcept;
+    SBUSReader& operator=(SBUSReader&& other) noexcept;
 
     void open(OpenMode mode = OpenMode::ReadWrite) override;
+    void close() noexcept override;
+
+    DeviceState      state() const noexcept override;
+    std::string_view path() const noexcept override;
+
+    std::size_t read(std::span<std::byte> buf) override;
+    std::size_t write(std::span<const std::byte> buf) override;
 
     /** 使用默认飞控通道表（CH1–CH4: 横滚/俯仰/油门/偏航，CH5–CH16: AUX） */
     void useDefaultChannelMap();
@@ -111,6 +119,7 @@ private:
     SbusFrame decodeFrame(const uint8_t raw[kSbusFrameBytes]) const;
     uint8_t   readByte();
 
+    SerialPort                   port_;
     SbusConfig                   sbusCfg_;
     std::vector<SbusChannelInfo> channels_;
     std::vector<SbusSwitchInfo>  switches_;

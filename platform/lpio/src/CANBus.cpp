@@ -56,27 +56,27 @@ CANBus::~CANBus()
 }
 
 CANBus::CANBus(CANBus&& other) noexcept
-    : ifname_(std::move(other.ifname_))
+    : detail::FdDeviceBase(std::move(other))
+    , ifname_(std::move(other.ifname_))
     , config_(other.config_)
     , state_(other.state_)
-    , fd_(other.fd_)
     , canFdEnabled_(other.canFdEnabled_)
 {
     other.state_ = DeviceState::Closed;
-    other.fd_    = -1;
+    other.canFdEnabled_ = false;
 }
 
 CANBus& CANBus::operator=(CANBus&& other) noexcept
 {
     if (this != &other) {
         close();
+        detail::FdDeviceBase::operator=(std::move(other));
         ifname_       = std::move(other.ifname_);
         config_       = other.config_;
         state_        = other.state_;
-        fd_           = other.fd_;
         canFdEnabled_ = other.canFdEnabled_;
         other.state_  = DeviceState::Closed;
-        other.fd_     = -1;
+        other.canFdEnabled_ = false;
     }
     return *this;
 }
@@ -92,14 +92,13 @@ void CANBus::open(OpenMode mode)
         throw DeviceError(std::errc::invalid_argument, "CAN interface name is empty");
     }
 
-    const int fd = socket(PF_CAN, SOCK_RAW, CAN_RAW);
-    if (fd < 0) {
+    detail::UniqueFd fd(socket(PF_CAN, SOCK_RAW, CAN_RAW));
+    if (!fd) {
         throwErrno("socket(PF_CAN)");
     }
 
     const unsigned ifindex = if_nametoindex(ifname_.c_str());
     if (ifindex == 0) {
-        ::close(fd);
         throw DeviceError(std::errc::invalid_argument, ifname_);
     }
 
@@ -107,37 +106,31 @@ void CANBus::open(OpenMode mode)
     addr.can_family  = AF_CAN;
     addr.can_ifindex = ifindex;
 
-    if (bind(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0) {
-        ::close(fd);
+    if (bind(fd.get(), reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0) {
         throwErrno("bind CAN");
     }
 
 #ifdef CAN_RAW_FD_FRAMES
     if (config_.enableCanFd) {
         int enableFd = 1;
-        if (setsockopt(fd, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enableFd, sizeof(enableFd)) != 0) {
-            ::close(fd);
+        if (setsockopt(fd.get(), SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enableFd, sizeof(enableFd)) != 0) {
             throw DeviceError(std::errc::not_supported, "CAN FD");
         }
         canFdEnabled_ = true;
     }
 #else
     if (config_.enableCanFd) {
-        ::close(fd);
         throw DeviceError(std::errc::not_supported, "CAN FD");
     }
 #endif
 
-    fd_    = fd;
+    setFd(std::move(fd));
     state_ = DeviceState::Open;
 }
 
 void CANBus::close() noexcept
 {
-    if (fd_ >= 0) {
-        ::close(fd_);
-        fd_ = -1;
-    }
+    closeFd();
     canFdEnabled_ = false;
     state_        = DeviceState::Closed;
 }
@@ -181,7 +174,7 @@ void CANBus::sendFrame(const CANFrame& frame)
         if (frame.dataLen > 0) {
             std::memcpy(cfd.data, frame.data.data(), frame.dataLen);
         }
-        if (::write(fd_, &cfd, sizeof(cfd)) != static_cast<ssize_t>(sizeof(cfd))) {
+        if (::write(fd(), &cfd, sizeof(cfd)) != static_cast<ssize_t>(sizeof(cfd))) {
             throwErrno("CAN FD write");
         }
         return;
@@ -197,7 +190,7 @@ void CANBus::sendFrame(const CANFrame& frame)
     if (frame.dataLen > 0) {
         std::memcpy(cf.data, frame.data.data(), frame.dataLen);
     }
-    if (::write(fd_, &cf, sizeof(cf)) != static_cast<ssize_t>(sizeof(cf))) {
+    if (::write(fd(), &cf, sizeof(cf)) != static_cast<ssize_t>(sizeof(cf))) {
         throwErrno("CAN write");
     }
 }
@@ -207,7 +200,7 @@ CANFrame CANBus::recvFrame(std::chrono::milliseconds timeout)
     requireOpen();
 
     pollfd fds[1] {};
-    fds[0].fd     = fd_;
+    fds[0].fd     = fd();
     fds[0].events = POLLIN;
 
     const int rc = poll(fds, 1, static_cast<int>(timeout.count()));
@@ -223,7 +216,7 @@ CANFrame CANBus::recvFrame(std::chrono::milliseconds timeout)
         canfd_frame cfd;
     } u {};
 
-    const ssize_t n = ::read(fd_, &u, sizeof(u));
+    const ssize_t n = ::read(fd(), &u, sizeof(u));
     CANFrame out {};
 
     if (n == static_cast<ssize_t>(sizeof(u.cfd))) {

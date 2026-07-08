@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lpio/DeviceBase.hpp"
+#include "lpio/private/FdDeviceBase.hpp"
 
 #include <array>
 #include <cstdint>
@@ -39,7 +39,7 @@ struct SerialPortConfig {
     bool         nonBlocking = false;
 };
 
-class SerialPort : public DeviceBase {
+class SerialPort : public detail::FdDeviceBase {
 public:
     class Builder {
     public:
@@ -82,14 +82,10 @@ public:
 
     const SerialPortConfig& config() const noexcept;
 
-protected:
-    int fd() const noexcept { return fd_; }
-
 private:
     std::string       path_;
     SerialPortConfig  config_;
     DeviceState       state_ = DeviceState::Closed;
-    int               fd_    = -1;
 };
 
 }  // namespace lpio

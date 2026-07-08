@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lpio/DeviceBase.hpp"
+#include "lpio/private/FdDeviceBase.hpp"
 
 #include <cstdint>
 #include <string>
@@ -13,7 +13,7 @@ struct I2CBusConfig {
     uint8_t  addr7bit  = 0;
 };
 
-class I2CBus final : public DeviceBase {
+class I2CBus final : public detail::FdDeviceBase {
 public:
     class Builder {
     public:
@@ -56,7 +56,6 @@ private:
     I2CBusConfig config_;
     std::string  devPath_;
     DeviceState  state_ = DeviceState::Closed;
-    int          fd_    = -1;
 };
 
 }  // namespace lpio

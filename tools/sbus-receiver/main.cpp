@@ -1,8 +1,8 @@
-// sbus-receiver — SBUS frame monitor (LPIO SBUS)
+// sbus-receiver — SBUS frame monitor (LPIO SBUSReader)
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "lpio/SBUS.hpp"
+#include "lpio/SBUSReader.hpp"
 
 #include <csignal>
 #include <cstdio>
@@ -89,7 +89,7 @@ bool parseOptions(int argc, char* argv[], Options* opts)
     return positional == 1;
 }
 
-void printChannelRegistry(const lpio::SBUS& sbus)
+void printChannelRegistry(const lpio::SBUSReader& sbus)
 {
     std::fprintf(stderr, "Registered SBUS channels (%zu PWM + %zu digital):\n",
                  lpio::kSbusChannelCount,
@@ -119,7 +119,7 @@ void printChannelRegistry(const lpio::SBUS& sbus)
     std::fprintf(stderr, "\n");
 }
 
-void printFrame(const lpio::SBUS& sbus, const lpio::SbusFrame& frame, uint64_t seq)
+void printFrame(const lpio::SBUSReader& sbus, const lpio::SbusFrame& frame, uint64_t seq)
 {
     std::printf("--- frame #%llu", static_cast<unsigned long long>(seq));
     if (frame.failsafe) {
@@ -133,9 +133,9 @@ void printFrame(const lpio::SBUS& sbus, const lpio::SbusFrame& frame, uint64_t s
     for (std::size_t i = 0; i < lpio::kSbusChannelCount; ++i) {
         const auto& info = sbus.channels()[i];
         const uint16_t raw = frame.channels[i];
-        const float    pct = lpio::SBUS::rawToPercent(raw, info);
-        const float    us  = lpio::SBUS::rawToMicroseconds(raw, info);
-        const float    norm = lpio::SBUS::rawToNormalized(raw, info);
+        const float    pct = lpio::SBUSReader::rawToPercent(raw, info);
+        const float    us  = lpio::SBUSReader::rawToMicroseconds(raw, info);
+        const float    norm = lpio::SBUSReader::rawToNormalized(raw, info);
 
         std::printf("  %-4s %-10s  raw=%4u  us=%7.1f  pct=%6.1f%%  norm=%+.3f\n",
                     info.name.data(),
@@ -176,7 +176,7 @@ int main(int argc, char* argv[])
     std::signal(SIGTERM, onSignal);
 
     try {
-        auto sbus = lpio::SBUS::on(opts.device)
+        auto sbus = lpio::SBUSReader::on(opts.device)
                         .baudRate(opts.baudRate)
                         .nonBlocking(true)
                         .buildAndOpen();

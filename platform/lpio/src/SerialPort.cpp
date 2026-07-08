@@ -164,25 +164,23 @@ SerialPort::~SerialPort()
 }
 
 SerialPort::SerialPort(SerialPort&& other) noexcept
-    : path_(std::move(other.path_))
+    : detail::FdDeviceBase(std::move(other))
+    , path_(std::move(other.path_))
     , config_(other.config_)
     , state_(other.state_)
-    , fd_(other.fd_)
 {
     other.state_ = DeviceState::Closed;
-    other.fd_    = -1;
 }
 
 SerialPort& SerialPort::operator=(SerialPort&& other) noexcept
 {
     if (this != &other) {
         close();
+        detail::FdDeviceBase::operator=(std::move(other));
         path_   = std::move(other.path_);
         config_ = other.config_;
         state_  = other.state_;
-        fd_     = other.fd_;
         other.state_ = DeviceState::Closed;
-        other.fd_    = -1;
     }
     return *this;
 }
@@ -199,41 +197,32 @@ void SerialPort::open(OpenMode mode)
     }
 
     const int flags = O_RDWR | O_NOCTTY | (config_.nonBlocking ? O_NONBLOCK : 0);
-    const int fd    = ::open(path_.c_str(), flags);
-    if (fd < 0) {
+    detail::UniqueFd fd(::open(path_.c_str(), flags));
+    if (!fd) {
         throwErrno(path_);
     }
 
 #ifdef __linux__
-    try {
-        applyLineSettings(fd, config_);
-    } catch (...) {
-        ::close(fd);
-        throw;
-    }
+    applyLineSettings(fd.get(), config_);
 #else
     (void)config_;
-    ::close(fd);
     throw DeviceError(std::errc::not_supported, "SerialPort requires Linux termios2");
 #endif
 
     if (!config_.nonBlocking) {
-        const int fl = fcntl(fd, F_GETFL, 0);
+        const int fl = fcntl(fd.get(), F_GETFL, 0);
         if (fl >= 0) {
-            (void)fcntl(fd, F_SETFL, fl & ~O_NONBLOCK);
+            (void)fcntl(fd.get(), F_SETFL, fl & ~O_NONBLOCK);
         }
     }
 
-    fd_    = fd;
+    setFd(std::move(fd));
     state_ = DeviceState::Open;
 }
 
 void SerialPort::close() noexcept
 {
-    if (fd_ >= 0) {
-        ::close(fd_);
-        fd_ = -1;
-    }
+    closeFd();
     state_ = DeviceState::Closed;
 }
 
@@ -256,7 +245,7 @@ std::size_t SerialPort::read(std::span<std::byte> buf)
 
     ssize_t n = 0;
     do {
-        n = ::read(fd_, buf.data(), buf.size());
+        n = ::read(fd(), buf.data(), buf.size());
     } while (n < 0 && errno == EINTR);
 
     if (n < 0) {
@@ -277,7 +266,7 @@ std::size_t SerialPort::write(std::span<const std::byte> buf)
 
     ssize_t n = 0;
     do {
-        n = ::write(fd_, buf.data(), buf.size());
+        n = ::write(fd(), buf.data(), buf.size());
     } while (n < 0 && errno == EINTR);
 
     if (n < 0) {
@@ -291,7 +280,7 @@ void SerialPort::flush()
     requireOpen();
     // Avoid mixing <termios.h> with <asm/termbits.h> in the same TU.
     constexpr int kTcIoFlush = 2;
-    if (ioctl(fd_, TCFLSH, kTcIoFlush) != 0) {
+    if (ioctl(fd(), TCFLSH, kTcIoFlush) != 0) {
         throwErrno("TCFLSH");
     }
 }

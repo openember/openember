@@ -69,12 +69,10 @@ GPIO::GPIO(GPIO&& other) noexcept
     : chipPath_(std::move(other.chipPath_))
     , config_(std::move(other.config_))
     , state_(other.state_)
-    , chipFd_(other.chipFd_)
-    , lineFd_(other.lineFd_)
+    , chipFd_(std::move(other.chipFd_))
+    , lineFd_(std::move(other.lineFd_))
 {
     other.state_  = DeviceState::Closed;
-    other.chipFd_ = -1;
-    other.lineFd_ = -1;
 }
 
 GPIO& GPIO::operator=(GPIO&& other) noexcept
@@ -84,11 +82,9 @@ GPIO& GPIO::operator=(GPIO&& other) noexcept
         chipPath_ = std::move(other.chipPath_);
         config_   = std::move(other.config_);
         state_    = other.state_;
-        chipFd_   = other.chipFd_;
-        lineFd_   = other.lineFd_;
+        chipFd_   = std::move(other.chipFd_);
+        lineFd_   = std::move(other.lineFd_);
         other.state_  = DeviceState::Closed;
-        other.chipFd_ = -1;
-        other.lineFd_ = -1;
     }
     return *this;
 }
@@ -99,18 +95,13 @@ void GPIO::open(OpenMode /*mode*/)
         return;
     }
 
-    chipFd_ = ::open(chipPath_.c_str(), O_RDONLY | O_CLOEXEC);
-    if (chipFd_ < 0) {
+    detail::UniqueFd chipFd(::open(chipPath_.c_str(), O_RDONLY | O_CLOEXEC));
+    if (!chipFd) {
         throwErrno("GPIO::open — chip: " + chipPath_);
     }
 
-    try {
-        requestLine();
-    } catch (...) {
-        ::close(chipFd_);
-        chipFd_ = -1;
-        throw;
-    }
+    lineFd_ = requestLine(chipFd.get(), config_, chipPath_);
+    chipFd_ = std::move(chipFd);
 
     state_ = DeviceState::Open;
 }
@@ -119,10 +110,7 @@ void GPIO::close() noexcept
 {
     releaseLine();
 
-    if (chipFd_ >= 0) {
-        ::close(chipFd_);
-        chipFd_ = -1;
-    }
+    chipFd_.reset();
 
     state_ = DeviceState::Closed;
 }
@@ -154,7 +142,7 @@ GPIOValue GPIO::get() const
     requireOpen();
 
     gpiohandle_data data {};
-    if (::ioctl(lineFd_, GPIOHANDLE_GET_LINE_VALUES_IOCTL, &data) < 0) {
+    if (::ioctl(lineFd_.get(), GPIOHANDLE_GET_LINE_VALUES_IOCTL, &data) < 0) {
         throw GPIOError(errno, "GPIO::get — " + chipPath_);
     }
 
@@ -173,7 +161,7 @@ void GPIO::set(GPIOValue value)
     gpiohandle_data data {};
     data.values[0] = (value == GPIOValue::High) ? 1 : 0;
 
-    if (::ioctl(lineFd_, GPIOHANDLE_SET_LINE_VALUES_IOCTL, &data) < 0) {
+    if (::ioctl(lineFd_.get(), GPIOHANDLE_SET_LINE_VALUES_IOCTL, &data) < 0) {
         throw GPIOError(errno, "GPIO::set — " + chipPath_);
     }
 }
@@ -190,13 +178,21 @@ GPIODirection GPIO::direction() const noexcept
 
 void GPIO::setDirection(GPIODirection dir, GPIOValue initValue)
 {
-    config_.direction = dir;
-    config_.initValue = initValue;
+    GPIOConfig next = config_;
+    next.direction = dir;
+    next.initValue = initValue;
 
     if (state_ == DeviceState::Open) {
         releaseLine();
-        requestLine();
+        try {
+            lineFd_ = requestLine(chipFd_.get(), next, chipPath_);
+        } catch (...) {
+            close();
+            throw;
+        }
     }
+
+    config_ = std::move(next);
 }
 
 std::optional<GPIOValue> GPIO::waitForEdge(GPIOEdge edge,
@@ -231,35 +227,29 @@ std::optional<GPIOValue> GPIO::waitForEdge(GPIOEdge edge,
     std::strncpy(ereq.consumer_label, config_.consumer.c_str(),
                  sizeof(ereq.consumer_label) - 1);
 
-    if (::ioctl(chipFd_, GPIO_GET_LINEEVENT_IOCTL, &ereq) < 0) {
+    if (::ioctl(chipFd_.get(), GPIO_GET_LINEEVENT_IOCTL, &ereq) < 0) {
         throw GPIOError(errno, "GPIO::waitForEdge — " + chipPath_);
     }
 
-    const int eventFd = ereq.fd;
+    detail::UniqueFd eventFd(ereq.fd);
 
     pollfd pfd {};
-    pfd.fd     = eventFd;
+    pfd.fd     = eventFd.get();
     pfd.events = POLLIN;
 
     const int ret = ::poll(&pfd, 1, static_cast<int>(timeout.count()));
     if (ret < 0) {
-        ::close(eventFd);
         throw GPIOError(errno, "GPIO::waitForEdge poll — " + chipPath_);
     }
 
     if (ret == 0) {
-        ::close(eventFd);
         return std::nullopt;
     }
 
     gpioevent_data evdata {};
-    if (::read(eventFd, &evdata, sizeof(evdata)) < 0) {
-        const int saved = errno;
-        ::close(eventFd);
-        throw GPIOError(saved, "GPIO::waitForEdge read — " + chipPath_);
+    if (::read(eventFd.get(), &evdata, sizeof(evdata)) < 0) {
+        throw GPIOError(errno, "GPIO::waitForEdge read — " + chipPath_);
     }
-
-    ::close(eventFd);
 
     const GPIOValue triggered =
         (evdata.id == GPIOEVENT_EVENT_RISING_EDGE) ? GPIOValue::High : GPIOValue::Low;
@@ -271,36 +261,32 @@ const GPIOConfig& GPIO::config() const noexcept
     return config_;
 }
 
-void GPIO::requestLine()
+detail::UniqueFd GPIO::requestLine(int chipFd, const GPIOConfig& config, std::string_view chipPath)
 {
-    assert(chipFd_ >= 0);
-    assert(lineFd_ < 0);
+    assert(chipFd >= 0);
 
     gpiohandle_request req {};
-    req.lineoffsets[0] = config_.line;
+    req.lineoffsets[0] = config.line;
     req.lines          = 1;
-    req.flags          = toHandleFlags(config_);
+    req.flags          = toHandleFlags(config);
 
-    if (config_.direction == GPIODirection::Output) {
-        req.default_values[0] = (config_.initValue == GPIOValue::High) ? 1 : 0;
+    if (config.direction == GPIODirection::Output) {
+        req.default_values[0] = (config.initValue == GPIOValue::High) ? 1 : 0;
     }
 
-    std::strncpy(req.consumer_label, config_.consumer.c_str(),
+    std::strncpy(req.consumer_label, config.consumer.c_str(),
                  sizeof(req.consumer_label) - 1);
 
-    if (::ioctl(chipFd_, GPIO_GET_LINEHANDLE_IOCTL, &req) < 0) {
-        throwErrno("GPIO::requestLine — " + chipPath_);
+    if (::ioctl(chipFd, GPIO_GET_LINEHANDLE_IOCTL, &req) < 0) {
+        throwErrno("GPIO::requestLine — " + std::string(chipPath));
     }
 
-    lineFd_ = req.fd;
+    return detail::UniqueFd(req.fd);
 }
 
 void GPIO::releaseLine() noexcept
 {
-    if (lineFd_ >= 0) {
-        ::close(lineFd_);
-        lineFd_ = -1;
-    }
+    lineFd_.reset();
 }
 
 GPIO::Builder::Builder(std::string chipPath) : chipPath_(std::move(chipPath)) {}

@@ -1,4 +1,5 @@
 #include "lpio/OneWire.hpp"
+#include "lpio/private/UniqueFd.hpp"
 
 #include <algorithm>
 #include <cerrno>
@@ -18,20 +19,19 @@ namespace {
 
 std::string readFile(const std::string& path)
 {
-    const int fd = ::open(path.c_str(), O_RDONLY);
-    if (fd < 0) {
+    detail::UniqueFd fd(::open(path.c_str(), O_RDONLY));
+    if (!fd) {
         throwErrno(path);
     }
 
     std::string out;
     char        buf[256];
     while (true) {
-        const ssize_t n = ::read(fd, buf, sizeof(buf));
+        const ssize_t n = ::read(fd.get(), buf, sizeof(buf));
         if (n < 0) {
             if (errno == EINTR) {
                 continue;
             }
-            ::close(fd);
             throwErrno(path);
         }
         if (n == 0) {
@@ -39,7 +39,6 @@ std::string readFile(const std::string& path)
         }
         out.append(buf, static_cast<std::size_t>(n));
     }
-    ::close(fd);
     return out;
 }
 
