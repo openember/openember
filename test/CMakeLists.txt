@@ -8,10 +8,6 @@ if(OPENEMBER_ENABLE_OSAL)
     list(APPEND _openember_tests test_osal.cpp)
 endif()
 
-if(OPENEMBER_ENABLE_HAL)
-    list(APPEND _openember_tests test_hal.cpp)
-endif()
-
 foreach(_t ${_openember_tests})
     set(TEST_NAME "${_t}")
     string(REPLACE ".cpp" "" TEST_NAME "${TEST_NAME}")

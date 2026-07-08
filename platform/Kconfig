@@ -11,20 +11,12 @@ config OPENEMBER_ENABLE_OSAL
 
 endmenu
 
-config OPENEMBER_ENABLE_HAL
-    bool "Build HAL (UART / I2C / SPI / GPIO / CAN ...)"
-    depends on OPENEMBER_ENABLE_OSAL
-    default y
-    help
-      Platform HAL: POSIX file I/O and UART via termios.
-      Produces static library openember_hal. Requires OSAL.
-
 config OPENEMBER_ENABLE_LPIO
     bool "Build LPIO (Linux Peripheral I/O, C++ RAII)"
     default y
     help
       Modern C++ peripheral I/O: GPIO, UART, I2C, SPI, CAN, PWM, 1-Wire, RS485.
-      Produces static library openember_lpio. Independent of HAL/OSAL.
+      Produces static library openember_lpio. Independent of other platform layers.
 
 config OPENEMBER_ENABLE_LPIO_EXAMPLES
     bool "Build LPIO examples (serial_echo, i2c_scan, can_logger)"
@@ -35,4 +27,3 @@ config OPENEMBER_ENABLE_LPIO_EXAMPLES
       Requires OPENEMBER_ENABLE_LPIO.
 
 endmenu
-

@@ -26,7 +26,7 @@ platform
  └── arch
 ```
 
-
+注意：LPIO 是目前 HAL 的具体实现
 
 ## 二、HAL 的职责范围
 

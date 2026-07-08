@@ -143,11 +143,6 @@ if ! grep -q "^CONFIG_OPENEMBER_ENABLE_OSAL=" "${CONFIG_FILE}"; then
   enable_osal=ON
 fi
 
-enable_hal="$(onoff CONFIG_OPENEMBER_ENABLE_HAL)"
-if ! grep -q "^CONFIG_OPENEMBER_ENABLE_HAL=" "${CONFIG_FILE}"; then
-  enable_hal=ON
-fi
-
 enable_lpio="$(onoff CONFIG_OPENEMBER_ENABLE_LPIO)"
 if ! grep -q "^CONFIG_OPENEMBER_ENABLE_LPIO=" "${CONFIG_FILE}"; then
   enable_lpio=ON
@@ -637,7 +632,6 @@ set(OPENEMBER_MQTT_EMQX_SSL_CAFILE "${mqtt_emqx_ssl_cafile}" CACHE STRING "MQTT 
 set(OPENEMBER_MQTT_EMQX_SSL_VERIFY ${mqtt_emqx_ssl_verify} CACHE BOOL "Verify MQTT TLS server cert for mqtt_emqx example" FORCE)
 
 set(OPENEMBER_ENABLE_OSAL ${enable_osal} CACHE BOOL "Build platform OSAL (Linux pthread)" FORCE)
-set(OPENEMBER_ENABLE_HAL ${enable_hal} CACHE BOOL "Build platform HAL (Linux file/uart; requires OSAL)" FORCE)
 set(OPENEMBER_ENABLE_LPIO ${enable_lpio} CACHE BOOL "Build platform LPIO (C++ Linux peripherals)" FORCE)
 set(OPENEMBER_ENABLE_LPIO_EXAMPLES ${enable_lpio_examples} CACHE BOOL "Build platform LPIO examples" FORCE)
 set(OPENEMBER_ENABLE_TOOLS ${enable_tools} CACHE BOOL "Build OpenEmber utilities (tools/)" FORCE)
@@ -669,4 +663,3 @@ set(OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG ${bundle_ruckig} CACHE BOOL "Third-party
 EOF
 
 echo "Generated: ${out_cmake}" >&2
-

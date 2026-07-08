@@ -61,3 +61,5 @@ lpio/
 **设备关系** — `SerialPort` / `I2CBus` / `SPIBus` / `CANBus` 是单 fd 设备；`RS485` 继承 `SerialPort`；`SBUSReader` 组合 `SerialPort`，只暴露 SBUS 帧读取语义；`GPIO` 管理 chip/line/event fd；`PWM` 管理 sysfs export/unexport 状态；`OneWire` 通过 kernel w1/sysfs 读取设备数据。
 
 **Builder 语义** — `Builder::build()` 只构造设备对象，不访问硬件；`Builder::open()` 会先 build 再调用设备的 `open()`，成功时返回已打开且由 RAII 管理资源的设备对象，失败时抛出 `DeviceError`。
+
+**能力查询（capabilities）** — 旧 HAL 的 `query_caps()` 系列目前主要用于自测和架构占位，运行时代码没有依赖它。LPIO 暂不复制整套 `query_caps()` API：固定协议能力优先用 `constexpr` 暴露（例如 `kSbusChannelCount`、`kSbusFrameBytes`），确实有平台差异且会影响决策的能力再按设备补充轻量查询接口（例如未来的 CAN FD、串口能力、GPIO line info）。未来如果 DeviceManager 或 Agent Runtime 需要统一能力发现，应在更高层定义设备描述模型，再由 LPIO 适配填充，而不是在底层外设类里提前维护一套宽泛但未使用的 caps 体系。

@@ -438,14 +438,14 @@ configs/
 
 - openember-cli
 
-## 十三、HAL 与 OS 抽象的关系
+## 十三、LPIO 与 OS 抽象的关系
 
 推荐结构：
 
 ```bash
 platform/
 ├── os/
-└── hal/
+└── lpio/
 ```
 
 关系如下：
@@ -459,7 +459,7 @@ platform/
 ↓
 core
 ↓
-hal
+lpio
 ↓
 os
 ↓
@@ -468,7 +468,7 @@ os
 
 说明：
 
-- HAL 屏蔽硬件接口差异
+- LPIO 封装 Linux 外设 I/O 访问差异
 - OS 屏蔽系统接口差异
 
 ## 十四、通信后端架构设计示例
@@ -515,7 +515,7 @@ components/
 
 推荐三层结构：
 
-1. platform/hal
+1. platform/lpio
 2. components/transport
 3. modules/drivers
 
@@ -526,7 +526,7 @@ components/
 ↓
 transport 抽象
 ↓
-hal 抽象
+lpio 抽象
 ↓
 Linux driver
 ```

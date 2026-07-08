@@ -104,7 +104,7 @@ Feedback
 
 ```bash
 transport middleware
-HAL abstraction
+LPIO abstraction
 module system
 plugin architecture
 launch system
@@ -145,7 +145,7 @@ Agent Capability Layer
     ↑
 OpenEmber Components
     ↑
-Transport / HAL / OS
+Transport / LPIO / OS
 ```
 
 说明：
@@ -156,7 +156,7 @@ Transport / HAL / OS
 | Agent Graph Runtime    | Agent 执行流程调度       |
 | Agent Capability Layer | 感知/记忆/规划能力       |
 | Components             | 通信/日志/配置等基础能力 |
-| Transport/HAL          | 硬件接口层               |
+| Transport/LPIO         | 硬件接口层               |
 
 
 
