@@ -8,6 +8,9 @@ config OPENEMBER_EXAMPLE_HELLO_NODE
     bool "Build example: hello_node"
     default y
     depends on OPENEMBER_ENABLE_EXAMPLES
+    depends on OPENEMBER_COMPONENT_THREAD_POOL
+    help
+      Demo node that uses openember::thread_pool for async message handling.
 
 config OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES
     bool "Build example: msgbus_two_nodes (msg_bus publisher/subscriber)"

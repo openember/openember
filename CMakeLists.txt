@@ -280,7 +280,6 @@ set( OPENEMBER_INTERNAL_INCLUDE_DIRS
     ${CMAKE_BINARY_DIR}/include
     ${CMAKE_SOURCE_DIR}/core/inc
     ${CMAKE_SOURCE_DIR}/components/logging
-    ${CMAKE_SOURCE_DIR}/components/thread_pool/include
     ${CMAKE_SOURCE_DIR}/components/msgbus
     ${CMAKE_SOURCE_DIR}/components/Common
 )
@@ -290,10 +289,13 @@ endif()
 
 set( OPENEMBER_INTERNAL_LIBRARIES 
     logging
-    openember_thread_pool
     msgbus
     Common
 )
+if(NOT DEFINED OPENEMBER_COMPONENT_THREAD_POOL OR OPENEMBER_COMPONENT_THREAD_POOL)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/thread_pool/include)
+    list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_thread_pool)
+endif()
 if(NOT DEFINED OPENEMBER_COMPONENT_ALGORITHM OR OPENEMBER_COMPONENT_ALGORITHM)
     list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/algorithm/include)
     list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_algorithm)

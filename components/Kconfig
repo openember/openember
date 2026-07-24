@@ -184,6 +184,17 @@ config OPENEMBER_COMPONENT_ALGORITHM
 
 endmenu
 
+menu "Thread Pool"
+
+config OPENEMBER_COMPONENT_THREAD_POOL
+    bool "Build component: Thread Pool"
+    default y
+    help
+      Build openember::thread_pool (fixed-size RAII worker pool for async tasks
+      in nodes). Disable to shrink the framework when no component needs it.
+
+endmenu
+
 menu "Transport (Zenoh)"
 
 comment "Mandatory framework component (openember::transport). Always built; not user-disableable."
