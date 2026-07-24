@@ -7,6 +7,13 @@ set(_core_examples
     service_client.cpp:openember_service_client
 )
 
+if(TARGET openember::msgs_cpp)
+    list(APPEND _core_examples
+        msgs_talker.cpp:openember_msgs_talker
+        msgs_listener.cpp:openember_msgs_listener
+    )
+endif()
+
 foreach(_pair ${_core_examples})
     string(REPLACE ":" ";" _parts "${_pair}")
     list(GET _parts 0 _src)

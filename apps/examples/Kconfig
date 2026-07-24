@@ -39,6 +39,8 @@ config OPENEMBER_EXAMPLE_CORE
     depends on OPENEMBER_COMPONENT_TRANSPORT
     help
       openember_topic_talker/listener and openember_service_server/client.
+      When OPENEMBER_ENABLE_MSGS is enabled, also builds openember_msgs_talker/listener
+      to demonstrate Protobuf payloads from openember-msgs.
       Requires openember::core (always built with Transport).
       Start listener/server first (router + listen), then talker/client (peer + connect).
 
