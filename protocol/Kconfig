@@ -1,0 +1,46 @@
+menu "Protocol / Messages"
+
+config OPENEMBER_ENABLE_MSGS
+    bool "Enable openember-msgs protocol bindings"
+    default y
+    help
+      Build generated protocol bindings from openember-msgs for OpenEmber
+      runtime nodes, tools, diagnostics, parameters, and device management.
+
+choice OPENEMBER_MSGS_SOURCE_CHOICE
+    prompt "openember-msgs source"
+    depends on OPENEMBER_ENABLE_MSGS
+    default OPENEMBER_MSGS_SOURCE_FETCH
+
+config OPENEMBER_MSGS_SOURCE_FETCH
+    bool "FETCH"
+    help
+      Download the selected openember-msgs ref during CMake configure.
+
+config OPENEMBER_MSGS_SOURCE_LOCAL
+    bool "LOCAL"
+    help
+      Use a local openember-msgs checkout. OPENEMBER_MSGS_LOCAL_SOURCE must be
+      an absolute path.
+
+endchoice
+
+config OPENEMBER_MSGS_LOCAL_SOURCE
+    string "openember-msgs local source path"
+    depends on OPENEMBER_ENABLE_MSGS && OPENEMBER_MSGS_SOURCE_LOCAL
+    default ""
+    help
+      Absolute path to an openember-msgs checkout. The path must contain
+      CMakeLists.txt.
+
+choice OPENEMBER_MSGS_REF_CHOICE
+    prompt "openember-msgs version"
+    depends on OPENEMBER_ENABLE_MSGS && OPENEMBER_MSGS_SOURCE_FETCH
+    default OPENEMBER_MSGS_REF_LATEST
+
+config OPENEMBER_MSGS_REF_LATEST
+    bool "latest"
+
+endchoice
+
+endmenu

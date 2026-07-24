@@ -84,6 +84,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/GetLcm.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetCppZmq.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetZenohC.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetZenohCpp.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/GetOpenEmberMsgs.cmake)
 
 # Eclipse Paho MQTT C（components/mqtt/mqtt_client.cpp 直接使用 MQTTClient.h）。
 set(OPENEMBER_PAHO_MQTT_C_VERSION "1.3.16")
@@ -104,6 +105,15 @@ set(OPENEMBER_RUCKIG_VERSION "0.17.3" CACHE STRING "ruckig release tag")
 set(OPENEMBER_RUCKIG_URL
     "https://github.com/pantor/ruckig/archive/refs/tags/v${OPENEMBER_RUCKIG_VERSION}.tar.gz"
     CACHE STRING "ruckig source archive URL")
+
+# openember-msgs（核心通信协议定义；OpenEmber 使用 C++ Protobuf 绑定）
+set(OPENEMBER_MSGS_SOURCE "FETCH" CACHE STRING "openember-msgs source: FETCH or LOCAL")
+set_property(CACHE OPENEMBER_MSGS_SOURCE PROPERTY STRINGS FETCH LOCAL)
+set(OPENEMBER_MSGS_REF "main" CACHE STRING "openember-msgs git ref")
+set_property(CACHE OPENEMBER_MSGS_REF PROPERTY STRINGS main)
+set(OPENEMBER_MSGS_URL
+    "https://github.com/openember/openember-msgs/archive/refs/heads/${OPENEMBER_MSGS_REF}.tar.gz"
+    CACHE STRING "openember-msgs source archive URL")
 
 # 解压目录与 third_party 缓存文件名（与上游归档顶层目录一致）
 set(OPENEMBER_NLOHMANN_JSON_CACHE_KEY "json-${OPENEMBER_NLOHMANN_JSON_VERSION}")
@@ -134,6 +144,8 @@ set(OPENEMBER_PAHO_MQTT_C_CACHE_KEY "paho.mqtt.c-${OPENEMBER_PAHO_MQTT_C_VERSION
 set(OPENEMBER_PAHO_MQTT_C_STAGE_DIR_NAME "${OPENEMBER_PAHO_MQTT_C_CACHE_KEY}")
 set(OPENEMBER_RUCKIG_CACHE_KEY "ruckig-${OPENEMBER_RUCKIG_VERSION}")
 set(OPENEMBER_RUCKIG_STAGE_DIR_NAME "${OPENEMBER_RUCKIG_CACHE_KEY}")
+set(OPENEMBER_MSGS_CACHE_KEY "openember-msgs-${OPENEMBER_MSGS_REF}")
+set(OPENEMBER_MSGS_STAGE_DIR_NAME "${OPENEMBER_MSGS_CACHE_KEY}")
 
 set(OPENEMBER_NLOHMANN_JSON_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted nlohmann/json tree")
 set(OPENEMBER_SQLITE_LOCAL_SOURCE "" CACHE PATH "Optional: SQLite amalgamation dir (sqlite3.c)")
@@ -148,6 +160,7 @@ set(OPENEMBER_CPPZMQ_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted cppzmq 
 set(OPENEMBER_ZENOHC_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted zenoh-c tree")
 set(OPENEMBER_ZENOHCXX_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted zenoh-cpp tree")
 set(OPENEMBER_RUCKIG_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted ruckig tree")
+set(OPENEMBER_MSGS_LOCAL_SOURCE "" CACHE PATH "Absolute path to local openember-msgs checkout")
 
 include(${CMAKE_SOURCE_DIR}/cmake/GetNlohmannJson.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetYamlCpp.cmake)
@@ -412,6 +425,25 @@ function(openember_transport_resolve_zenoh_cpp)
     set(OPENEMBER_ZENOHCXX_LIBRARIES ${OPENEMBER_ZENOHCXX_LIBRARIES} PARENT_SCOPE)
 endfunction()
 
+function(openember_third_party_resolve_openember_msgs)
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM" AND NOT (OPENEMBER_MSGS_SOURCE STREQUAL "LOCAL"))
+        message(FATAL_ERROR
+            "openember-msgs SYSTEM mode is not packaged yet. "
+            "Set OPENEMBER_MSGS_LOCAL_SOURCE or use FETCH/VENDOR.")
+    endif()
+
+    if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "FETCH" OR OPENEMBER_THIRD_PARTY_MODE STREQUAL "VENDOR")
+        if(OPENEMBER_MSGS_SOURCE STREQUAL "FETCH" AND NOT OPENEMBER_THIRD_PARTY_BUNDLE_OPENEMBER_MSGS)
+            message(FATAL_ERROR
+                "OPENEMBER_THIRD_PARTY_BUNDLE_OPENEMBER_MSGS=OFF: install/provide openember-msgs "
+                "or set OPENEMBER_MSGS_SOURCE=LOCAL and OPENEMBER_MSGS_LOCAL_SOURCE.")
+        endif()
+    endif()
+
+    openember_get_openember_msgs()
+    set(OPENEMBER_MSGS_LIBRARIES ${OPENEMBER_MSGS_LIBRARIES} PARENT_SCOPE)
+endfunction()
+
 # 可选 C++ 依赖：yaml-cpp / Asio；spdlog 仅在 OPENEMBER_LOG_BACKEND=SPDLOG 时拉取
 function(openember_third_party_resolve_optional_cxx_deps)
     if(OPENEMBER_WITH_YAMLCPP)
@@ -556,6 +588,13 @@ function(openember_third_party_prefetch_unused_bundles)
         endif()
     endif()
 
+    if(OPENEMBER_THIRD_PARTY_BUNDLE_OPENEMBER_MSGS AND NOT OPENEMBER_ENABLE_MSGS)
+        if(OPENEMBER_MSGS_SOURCE STREQUAL "FETCH")
+            openember_prepare_openember_msgs_source(_unused)
+            message(STATUS "Third-party: pre-fetch only (not built): openember-msgs")
+        endif()
+    endif()
+
     set(_zenoh_c_needed OFF)
     if(OPENEMBER_MSGBUS_USE_ZENOH OR OPENEMBER_WITH_ZENOHCXX)
         set(_zenoh_c_needed ON)
@@ -584,5 +623,3 @@ function(openember_third_party_prefetch_unused_bundles)
         endif()
     endif()
 endfunction()
-
-

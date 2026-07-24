@@ -34,4 +34,15 @@ target_link_libraries(openember_core
         openember::transport
 )
 
+if(TARGET openember::msgs_cpp)
+    target_link_libraries(openember_core
+        PUBLIC
+            openember::msgs_cpp
+    )
+    target_compile_definitions(openember_core
+        PUBLIC
+            OPENEMBER_HAS_MSGS=1
+    )
+endif()
+
 add_library(openember::core ALIAS openember_core)

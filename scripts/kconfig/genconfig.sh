@@ -76,6 +76,30 @@ debug_enabled="$(onoff CONFIG_OPENEMBER_DEBUG_ENABLED)"
 opt_disabled="$(onoff CONFIG_OPENEMBER_OPTIMIZATION_DISABLED)"
 crosscompile_enabled="$(onoff CONFIG_OPENEMBER_CROSSCOMPILE_ENABLED)"
 use_yamlcpp="$(onoff CONFIG_OPENEMBER_USE_YAMLCPP)"
+enable_msgs="$(onoff CONFIG_OPENEMBER_ENABLE_MSGS)"
+if ! grep -q "^CONFIG_OPENEMBER_ENABLE_MSGS=" "${CONFIG_FILE}"; then
+  enable_msgs=ON
+fi
+msgs_ref="$(awk '
+  BEGIN { r="main" }
+  /^CONFIG_OPENEMBER_MSGS_REF_LATEST=y/ { r="main" }
+  END { print r }
+' "${CONFIG_FILE}")"
+msgs_source="$(awk '
+  BEGIN { s="FETCH" }
+  /^CONFIG_OPENEMBER_MSGS_SOURCE_LOCAL=y/ { s="LOCAL" }
+  /^CONFIG_OPENEMBER_MSGS_SOURCE_FETCH=y/ { s="FETCH" }
+  END { print s }
+' "${CONFIG_FILE}")"
+msgs_local_source="$(awk '
+  /^CONFIG_OPENEMBER_MSGS_LOCAL_SOURCE=/ {
+    v=$0
+    sub(/^CONFIG_OPENEMBER_MSGS_LOCAL_SOURCE=/,"",v)
+    gsub(/^"/,"",v); gsub(/"$/,"",v)
+    print v
+    exit
+  }
+' "${CONFIG_FILE}")"
 use_asio="$(onoff CONFIG_OPENEMBER_USE_ASIO)"
 use_ruckig="$(onoff CONFIG_OPENEMBER_USE_RUCKIG)"
 if ! grep -q "^CONFIG_OPENEMBER_USE_RUCKIG=" "${CONFIG_FILE}"; then
@@ -563,6 +587,7 @@ bundle_cppzmq="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_CPPZMQ)"
 bundle_zenoh_c="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_ZENOH_C)"
 bundle_zenohcxx="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_ZENOHCXX)"
 bundle_ruckig="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG)"
+bundle_openember_msgs="$(kconfig_bundle_on CONFIG_OPENEMBER_THIRD_PARTY_BUNDLE_OPENEMBER_MSGS)"
 
 out_cmake="${BUILD_DIR}/config.cmake"
 cat > "${out_cmake}" <<EOF
@@ -591,6 +616,12 @@ set(OPENEMBER_LOGGER_PORT ${logger_port} CACHE STRING "logger HTTP port" FORCE)
 set(OPENEMBER_LOGGER_LOG_DIR "${logger_log_dir}" CACHE STRING "logger source log directory" FORCE)
 set(OPENEMBER_THIRD_PARTY_MODE "${tp_mode}" CACHE STRING "Third-party source mode: FETCH/VENDOR/SYSTEM" FORCE)
 set(OPENEMBER_WITH_YAMLCPP ${use_yamlcpp} CACHE BOOL "Fetch/use yaml-cpp (optional C++ dependency)" FORCE)
+set(OPENEMBER_ENABLE_MSGS ${enable_msgs} CACHE BOOL "Build openember-msgs C++ protocol bindings" FORCE)
+set(OPENEMBER_MSGS_SOURCE "${msgs_source}" CACHE STRING "openember-msgs source: FETCH or LOCAL" FORCE)
+set_property(CACHE OPENEMBER_MSGS_SOURCE PROPERTY STRINGS FETCH LOCAL)
+set(OPENEMBER_MSGS_REF "${msgs_ref}" CACHE STRING "openember-msgs git ref" FORCE)
+set_property(CACHE OPENEMBER_MSGS_REF PROPERTY STRINGS main)
+set(OPENEMBER_MSGS_LOCAL_SOURCE "${msgs_local_source}" CACHE PATH "Absolute path to local openember-msgs checkout" FORCE)
 set(OPENEMBER_WITH_ASIO ${use_asio} CACHE BOOL "Fetch/use standalone Asio (optional)" FORCE)
 set(OPENEMBER_COMPONENT_NETWORK ${component_network} CACHE BOOL "Build component: Network (high-level socket wrapper)" FORCE)
 set(OPENEMBER_COMPONENT_TRANSPORT ${component_transport} CACHE BOOL "Build component: Transport (Zenoh)" FORCE)
@@ -660,6 +691,7 @@ set(OPENEMBER_THIRD_PARTY_BUNDLE_CPPZMQ ${bundle_cppzmq} CACHE BOOL "Third-party
 set(OPENEMBER_THIRD_PARTY_BUNDLE_ZENOH_C ${bundle_zenoh_c} CACHE BOOL "Third-party bundle: zenoh-c" FORCE)
 set(OPENEMBER_THIRD_PARTY_BUNDLE_ZENOHCXX ${bundle_zenohcxx} CACHE BOOL "Third-party bundle: zenoh-cpp" FORCE)
 set(OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG ${bundle_ruckig} CACHE BOOL "Third-party bundle: ruckig" FORCE)
+set(OPENEMBER_THIRD_PARTY_BUNDLE_OPENEMBER_MSGS ${bundle_openember_msgs} CACHE BOOL "Third-party bundle: openember-msgs" FORCE)
 EOF
 
 echo "Generated: ${out_cmake}" >&2

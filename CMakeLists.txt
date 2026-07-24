@@ -130,6 +130,7 @@ set_property(CACHE OPENEMBER_LOG_BACKEND PROPERTY STRINGS BUILTIN SPDLOG)
 option(OPENEMBER_WITH_YAMLCPP "Fetch/use yaml-cpp (optional C++ dependency)" ON)
 option(OPENEMBER_WITH_ASIO "Fetch/use standalone Asio (optional)" ON)
 option(OPENEMBER_WITH_RUCKIG "Fetch/use ruckig trajectory library (optional; C++20)" OFF)
+option(OPENEMBER_ENABLE_MSGS "Build openember-msgs C++ protocol bindings" ON)
 
 set(OPENEMBER_LOG_BACKEND_IS_BUILTIN 0)
 set(OPENEMBER_LOG_BACKEND_IS_SPDLOG 0)
@@ -199,6 +200,14 @@ if(OPENEMBER_WITH_RUCKIG)
 endif()
 if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
     message(STATUS "├── log backend: spdlog (target spdlog::spdlog)")
+endif()
+
+if(OPENEMBER_ENABLE_MSGS)
+    openember_third_party_resolve_openember_msgs()
+    message(STATUS "├── openember-msgs: ${OPENEMBER_MSGS_LIBRARIES}")
+else()
+    set(OPENEMBER_MSGS_LIBRARIES "")
+    message(STATUS "├── openember-msgs: (skipped, OPENEMBER_ENABLE_MSGS=OFF)")
 endif()
 
 # Mongoose (embedded web server) is used by apps/services/web_dashboard.

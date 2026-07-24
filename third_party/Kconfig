@@ -91,6 +91,12 @@ config OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG
     help
       When OPENEMBER_USE_RUCKIG, forced ON. Otherwise optional pre-fetch (C++20).
 
+config OPENEMBER_THIRD_PARTY_BUNDLE_OPENEMBER_MSGS
+    bool "Include openember-msgs protocol definitions"
+    default n
+    help
+      When OPENEMBER_ENABLE_MSGS is enabled, forced ON. Otherwise optional pre-fetch.
+
 # Hidden linkers: force bundle ON when the matching feature is active (Kconfig select = menu shows <*>).
 config OPENEMBER_TP_LINK_SPDLOG
     bool
@@ -143,6 +149,11 @@ config OPENEMBER_TP_LINK_RUCKIG
     bool
     default y if OPENEMBER_USE_RUCKIG
     select OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG
+
+config OPENEMBER_TP_LINK_OPENEMBER_MSGS
+    bool
+    default y if OPENEMBER_ENABLE_MSGS
+    select OPENEMBER_THIRD_PARTY_BUNDLE_OPENEMBER_MSGS
 
 config OPENEMBER_TP_LINK_TRANSPORT
     bool
