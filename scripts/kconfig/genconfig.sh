@@ -139,7 +139,10 @@ module_ota="$(onoff CONFIG_OPENEMBER_MODULE_OTA)"
 module_acquisition="$(onoff CONFIG_OPENEMBER_MODULE_ACQUISITION)"
 module_web_server="$(onoff CONFIG_OPENEMBER_MODULE_WEB_SERVER)"
 module_logger="$(onoff CONFIG_OPENEMBER_MODULE_LOGGER)"
-feature_algorithm="$(onoff CONFIG_OPENEMBER_FEATURE_ALGORITHM)"
+component_algorithm="$(onoff CONFIG_OPENEMBER_COMPONENT_ALGORITHM)"
+if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_ALGORITHM=" "${CONFIG_FILE}"; then
+  component_algorithm=ON
+fi
 example_msgbus_two_nodes="$(onoff CONFIG_OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES)"
 example_msgbus_nng_forwarder="$(onoff CONFIG_OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER)"
 example_network_sockets="$(onoff CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS)"
@@ -655,7 +658,7 @@ set(OPENEMBER_MODULE_OTA ${module_ota} CACHE BOOL "Build app services/ota_update
 set(OPENEMBER_MODULE_ACQUISITION ${module_acquisition} CACHE BOOL "Build app references/sensor_data_reference" FORCE)
 set(OPENEMBER_MODULE_WEB_SERVER ${module_web_server} CACHE BOOL "Build app services/web_dashboard" FORCE)
 set(OPENEMBER_MODULE_LOGGER ${module_logger} CACHE BOOL "Build app services/logger" FORCE)
-set(OPENEMBER_FEATURE_ALGORITHM ${feature_algorithm} CACHE BOOL "Enable Algorithm module" FORCE)
+set(OPENEMBER_COMPONENT_ALGORITHM ${component_algorithm} CACHE BOOL "Build Algorithm component" FORCE)
 set(OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES ${example_msgbus_two_nodes} CACHE BOOL "Build example msgbus_two_nodes" FORCE)
 set(OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER ${example_msgbus_nng_forwarder} CACHE BOOL "Build example msgbus_nng_forwarder" FORCE)
 set(OPENEMBER_EXAMPLE_NETWORK_SOCKETS ${example_network_sockets} CACHE BOOL "Build example network_sockets" FORCE)

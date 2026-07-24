@@ -205,7 +205,7 @@ class TopicManager
 
 - 设备驱动
 - 协议实现
-- 算法模块
+- 可复用算法组件
 - 数据库实现
 
 否则会导致核心层膨胀。
@@ -229,6 +229,7 @@ class TopicManager
 components/
 
 ├── logging/
+├── algorithm/
 ├── serialization/
 ├── container/
 ├── memory/
@@ -288,8 +289,6 @@ modules/
 │
 ├── dds/
 │   └── fastdds/
-│
-├── algorithms/
 │
 ├── perception/
 │

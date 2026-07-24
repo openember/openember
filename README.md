@@ -23,7 +23,7 @@ OpenEmber 不只是 Robot Application Framework，而是一个通用的 Middlewa
                      ▼
 ┌────────────────────────────────────────────────┐
 │ Modules                                        │
-│ drivers / algorithms / bridges / app modules   │
+│ drivers / bridges / app modules                │
 └────────────────────────────────────────────────┘
                      │
                      ▼
@@ -36,7 +36,7 @@ OpenEmber 不只是 Robot Application Framework，而是一个通用的 Middlewa
                      ▼
 ┌────────────────────────────────────────────────┐
 │ Components                                     │
-│ logging / serialization / transport / config   │
+│ logging / algorithm / transport / config       │
 │ containers / sqlite / utility libraries        │
 └────────────────────────────────────────────────┘
                      │
@@ -99,9 +99,10 @@ openember/
 │   │   ├── lidar/
 │   │   └── motor/
 │   │
-│   └── algorithms/
+│   └── bridges/
 │
 ├── components/
+│   ├── algorithm/
 │   ├── logging/
 │   ├── container/
 │   ├── database/

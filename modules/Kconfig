@@ -22,13 +22,4 @@ endchoice
 
 endmenu
 
-menu "Loadable/Feature Modules"
-
-config OPENEMBER_FEATURE_ALGORITHM
-    bool "Enable module: Algorithm"
-    default y
-
 endmenu
-
-endmenu
-

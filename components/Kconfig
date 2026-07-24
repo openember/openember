@@ -173,6 +173,16 @@ config OPENEMBER_USE_RUCKIG
 
 endmenu
 
+menu "Algorithm"
+
+config OPENEMBER_COMPONENT_ALGORITHM
+    bool "Build component: Algorithm"
+    default y
+    help
+      Build reusable algorithm utilities such as filters and point cloud helpers.
+
+endmenu
+
 menu "Transport (Zenoh)"
 
 comment "Mandatory framework component (openember::transport). Always built; not user-disableable."
