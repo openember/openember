@@ -6,6 +6,7 @@
  * Change Logs:
  * Date           Author       Notes
  * 2022-07-07     luhuadong    the first version
+ * 2026-07-25     openember    logging via components/logging
  */
 
 #ifndef __OPENEMBER_H__
@@ -17,8 +18,12 @@
 
 #include "list.h"
 
-#include "openember/log.h"
-#include "log_wrapper.h" /* legacy include: prefer openember/log.h */
+#ifdef __cplusplus
+#include "openember/logging/log.hpp"
+#else
+#include "openember/logging/log_c.h"
+#endif
+
 #include "message.h"
 #include "common.h"
 

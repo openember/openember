@@ -20,7 +20,7 @@
 #include <unistd.h>
 
 #define LOG_TAG "msgbus_nng_forwarder"
-#include "openember/log.h"
+#include "openember/logging/log.hpp"
 
 static volatile int g_running = 1;
 

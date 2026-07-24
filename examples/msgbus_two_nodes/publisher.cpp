@@ -18,7 +18,7 @@
 #include "openember.h"
 #undef LOG_TAG
 #define LOG_TAG "msgbus_demo_pub"
-#include "openember/log.h"
+#include "openember/logging/log.hpp"
 
 #ifndef DEMO_TOPIC
 #define DEMO_TOPIC "openember/demo/hello"

@@ -15,7 +15,7 @@
 #include "openember.h"
 #undef LOG_TAG
 #define LOG_TAG "mqtt_emqx"
-#include "openember/log.h"
+#include "openember/logging/log.hpp"
 
 #ifndef OPENEMBER_MQTT_EMQX_BROKER_URI
 #define OPENEMBER_MQTT_EMQX_BROKER_URI "tcp://broker.emqx.io:1883"

@@ -1,24 +1,23 @@
 project(logging VERSION 1.0.0)
 
 set(LIB_LOG_SRCS
-    log_wrapper.c
-    oe_log_c.c
+    src/logger.cpp
 )
-if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
-    list(APPEND LIB_LOG_SRCS log_spdlog.cpp)
-endif()
 
 OPENEMBER_ADD_STATIC_LIBRARY(TARGET ${PROJECT_NAME}
     SRCS     ${LIB_LOG_SRCS}
     LIBS     ${OPENEMBER_EXTERNAL_LIBRARIES} msgbus
-    INCLUDES ${OPENEMBER_EXTERNAL_INCLUDE_DIRS} ${OPENEMBER_INTERNAL_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}
+    INCLUDES ${OPENEMBER_EXTERNAL_INCLUDE_DIRS}
+             ${OPENEMBER_INTERNAL_INCLUDE_DIRS}
+             ${CMAKE_CURRENT_SOURCE_DIR}
+             ${CMAKE_CURRENT_SOURCE_DIR}/include
     DESTINATION lib
 )
 
-if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
-    set_property(TARGET logging PROPERTY CXX_STANDARD 17)
-    set_property(TARGET logging PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET logging PROPERTY CXX_STANDARD 17)
+set_property(TARGET logging PROPERTY CXX_STANDARD_REQUIRED ON)
 
+if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
     if(NOT DEFINED OPENEMBER_SPDLOG_LEVEL OR "${OPENEMBER_SPDLOG_LEVEL}" STREQUAL "")
         set(OPENEMBER_SPDLOG_LEVEL "info")
     endif()
@@ -52,7 +51,6 @@ if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
     if(NOT DEFINED OPENEMBER_SPDLOG_TOPIC_NAME OR "${OPENEMBER_SPDLOG_TOPIC_NAME}" STREQUAL "")
         set(OPENEMBER_SPDLOG_TOPIC_NAME "/openember/log")
     endif()
-    # Topic bind/connect URLs follow the selected msgbus backend (LCM vs NNG).
     if(NOT DEFINED OPENEMBER_SPDLOG_TOPIC_PUB_URL OR "${OPENEMBER_SPDLOG_TOPIC_PUB_URL}" STREQUAL "")
         if(OPENEMBER_MSGBUS_USE_LCM)
             set(OPENEMBER_SPDLOG_TOPIC_PUB_URL "udpm://239.255.76.67:7667?ttl=1")
@@ -74,7 +72,6 @@ if(OPENEMBER_LOG_BACKEND STREQUAL "SPDLOG")
         set(OPENEMBER_SPDLOG_TOPIC_RATE_LIMIT 0)
     endif()
 
-    # Stale CMake cache often leaves tcp:// here; LCM lcm_create() does not support provider "tcp".
     if(OPENEMBER_MSGBUS_USE_LCM)
         if(OPENEMBER_SPDLOG_TOPIC_PUB_URL MATCHES "^tcp://")
             message(STATUS "logging: spdlog topic PUB URL was tcp (invalid for LCM); overriding to udpm multicast")

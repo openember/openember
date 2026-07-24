@@ -280,6 +280,7 @@ set( OPENEMBER_INTERNAL_INCLUDE_DIRS
     ${CMAKE_BINARY_DIR}/include
     ${CMAKE_SOURCE_DIR}/core/inc
     ${CMAKE_SOURCE_DIR}/components/logging
+    ${CMAKE_SOURCE_DIR}/components/logging/include
     ${CMAKE_SOURCE_DIR}/components/msgbus
     ${CMAKE_SOURCE_DIR}/components/Common
 )

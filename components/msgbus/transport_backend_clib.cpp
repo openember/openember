@@ -4,9 +4,7 @@
 #include <memory>
 #include <string>
 
-extern "C" {
 #include "message.h"
-}
 
 namespace openember::msgbus {
 
