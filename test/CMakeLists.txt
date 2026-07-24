@@ -1,5 +1,6 @@
 set(_openember_tests
     minunit_example.c
+    test_algorithm.cpp
     test_log.c
     test_msgbus_transport.cpp
 )
