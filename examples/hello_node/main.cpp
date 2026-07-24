@@ -18,15 +18,16 @@
 #define MODULE_NAME            "hello_node"
 #define LOG_TAG                MODULE_NAME
 #include "openember.h"
-#include "ppool.h"
+#include "openember/thread_pool/thread_pool.hpp"
 
+#include <memory>
 #include <string>
 #include <nlohmann/json.hpp>
 
 //#define TEMPLATE_RAW_MSG
 
 static msg_node_t client;
-static pool_t *ppool;
+static std::unique_ptr<openember::thread_pool::ThreadPool> g_pool;
 
 /* Options */
 static ember_bool_t sync_mode = EMBER_FALSE; /* EMBER_TRUE or EMBER_FALSE */
@@ -38,38 +39,29 @@ typedef struct test_msg {
 } test_msg_t;
 #endif
 
-static void task_entry(void *args)
-{
-    if (!args) {
-        LOG_E("Invalid arguments for thread routine");
-        return;
-    }
-
-    try {
-        nlohmann::json j = nlohmann::json::parse(std::string(static_cast<char *>(args)));
-        LOG_I("%s", j.dump(4).c_str());
-    } catch (const std::exception &e) {
-        LOG_E("JSON: %s", e.what());
-    }
-    free(args);
-}
-
 static void _msg_arrived_cb(void *user_data, char *topic, void *payload, size_t payloadlen)
 {
     (void)user_data;
+    (void)payloadlen;
 #ifdef TEMPLATE_RAW_MSG
     test_msg_t *test_msg = (test_msg_t *)payload;
     LOG_I("Payload len = %lu >> id: %d, msg: %s", payloadlen, test_msg->id, test_msg->msg);
 #else
     LOG_D("[%s] %s", topic, (char *)payload);
 
-    pool_task ptask = {
-        .entry     = task_entry,
-        .parameter = strdup((char *)payload),
-        .priority  = 0,
-    };
+    if (!g_pool) {
+        return;
+    }
 
-    ppool_add(ppool, &ptask);
+    std::string body(static_cast<char *>(payload));
+    g_pool->post([body = std::move(body)]() {
+        try {
+            nlohmann::json j = nlohmann::json::parse(body);
+            LOG_I("%s", j.dump(4).c_str());
+        } catch (const std::exception &e) {
+            LOG_E("JSON: %s", e.what());
+        }
+    });
 #endif
 }
 
@@ -88,7 +80,7 @@ static int msg_init(void)
         return -1;
     }
 
-    ppool = ppool_init(5); /* create 5 thread */
+    g_pool = std::make_unique<openember::thread_pool::ThreadPool>(5);
 
     /* Subscription list */
     rc = msg_bus_subscribe(client, TEST_TOPIC);
@@ -99,7 +91,7 @@ static int msg_init(void)
     if (rc != EMBER_EOK) cn++;
 
     if (cn != 0) {
-        ppool_destroy(ppool);
+        g_pool.reset();
         msg_bus_deinit(client);
         LOG_E("Message bus subscribe failed.\n");
         return -EMBER_ERROR;
@@ -171,6 +163,10 @@ int main(void)
     }
     
     LOG_I("[Module] Template end.");
+    if (g_pool) {
+        g_pool->wait_idle();
+        g_pool.reset();
+    }
     msg_bus_deinit(client);
     log_deinit();
 

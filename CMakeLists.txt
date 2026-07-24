@@ -280,7 +280,7 @@ set( OPENEMBER_INTERNAL_INCLUDE_DIRS
     ${CMAKE_BINARY_DIR}/include
     ${CMAKE_SOURCE_DIR}/core/inc
     ${CMAKE_SOURCE_DIR}/components/logging
-    ${CMAKE_SOURCE_DIR}/components/ppool
+    ${CMAKE_SOURCE_DIR}/components/thread_pool/include
     ${CMAKE_SOURCE_DIR}/components/msgbus
     ${CMAKE_SOURCE_DIR}/components/Common
 )
@@ -290,7 +290,7 @@ endif()
 
 set( OPENEMBER_INTERNAL_LIBRARIES 
     logging
-    ppool
+    openember_thread_pool
     msgbus
     Common
 )
