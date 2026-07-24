@@ -3,8 +3,8 @@
 #include <string>
 
 #include "openember/init.hpp"
+#include "openember/link/options.hpp"
 #include "openember/node.hpp"
-#include "openember/transport/options.hpp"
 
 #include <thread>
 
@@ -12,9 +12,9 @@ int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
 
-    openember::ContextOptions options;
-    options.device_id = "demo";
-    options.zenoh_connect = openember::transport::kDefaultZenohListenEndpoint;
+    openember::RuntimeOptions options;
+    options.robot_id = "demo";
+    options.link = openember::link::LocalClientOptions();
 
     openember::Init(options);
 

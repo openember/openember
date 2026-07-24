@@ -4,10 +4,17 @@
 #include <memory>
 #include <string>
 
+#include "openember/link/options.hpp"
 #include "openember/transport/options.hpp"
 #include "openember/transport/session.hpp"
 
 namespace openember {
+
+struct RuntimeOptions {
+    std::string robot_id = "default";
+    std::string namespace_name = "";
+    link::Options link;
+};
 
 struct ContextOptions {
     std::string device_id = "default";
@@ -19,7 +26,8 @@ struct ContextOptions {
 
 class Context {
 public:
-    explicit Context(const ContextOptions& options = {});
+    explicit Context(const RuntimeOptions& options = {});
+    explicit Context(const ContextOptions& options);
     ~Context();
 
     Context(const Context&) = delete;
@@ -32,7 +40,7 @@ public:
     transport::Session& Transport();
 
 private:
-    ContextOptions options_;
+    RuntimeOptions options_;
     std::unique_ptr<transport::Session> transport_session_;
     std::atomic_bool ok_{false};
 };

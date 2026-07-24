@@ -13,23 +13,14 @@
 #include <string>
 #include <typeinfo>
 
+#include "openember/link/message_traits.hpp"
 #include "openember/transport/buffer.hpp"
 
 namespace openember {
 
 template <typename T>
 inline std::string TypeName() {
-    return typeid(T).name();
-}
-
-template <>
-inline std::string TypeName<std::string>() {
-    return "std_msgs/String";
-}
-
-template <>
-inline std::string TypeName<transport::ByteBuffer>() {
-    return "openember/ByteBuffer";
+    return link::MessageTraits<T>::TypeName();
 }
 
 }  // namespace openember

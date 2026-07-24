@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -49,6 +50,11 @@ public:
     }
 
     template <typename MessageT>
+    Publisher<MessageT> Advertise(const std::string& topic_name) {
+        return CreatePublisher<MessageT>(topic_name);
+    }
+
+    template <typename MessageT>
     Subscriber<MessageT> CreateSubscriber(
         const std::string& topic_name,
         std::function<void(const MessageT&)> callback) {
@@ -58,8 +64,16 @@ public:
         auto raw_callback =
             [callback = std::move(callback)](
                 const transport::Message& raw_msg) {
-                auto msg = Deserialize<MessageT>(raw_msg.payload);
-                callback(msg);
+                try {
+                    auto msg = Deserialize<MessageT>(raw_msg.payload);
+                    callback(msg);
+                } catch (const std::exception& e) {
+                    std::cerr << "openember subscriber callback failed for "
+                              << raw_msg.key
+                              << ": "
+                              << e.what()
+                              << std::endl;
+                }
             };
 
         auto result = context_->Transport().CreateSubscriber(
@@ -77,6 +91,13 @@ public:
 
         subscribers_.push_back(base);
         return Subscriber<MessageT>(base);
+    }
+
+    template <typename MessageT>
+    Subscriber<MessageT> Subscribe(
+        const std::string& topic_name,
+        std::function<void(const MessageT&)> callback) {
+        return CreateSubscriber<MessageT>(topic_name, std::move(callback));
     }
 
     template <typename RequestT, typename ResponseT>

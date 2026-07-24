@@ -4,18 +4,16 @@
 #include <thread>
 
 #include "openember/init.hpp"
+#include "openember/link/options.hpp"
 #include "openember/node.hpp"
-#include "openember/transport/options.hpp"
-
-#include <thread>
 
 int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
 
-    openember::ContextOptions options;
-    options.device_id = "demo";
-    options.zenoh_connect = openember::transport::kDefaultZenohListenEndpoint;
+    openember::RuntimeOptions options;
+    options.robot_id = "demo";
+    options.link = openember::link::LocalClientOptions();
 
     openember::Init(options);
 
@@ -23,7 +21,7 @@ int main(int argc, char** argv) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     auto node = openember::CreateNode("talker");
-    auto pub = node->CreatePublisher<std::string>("/chatter");
+    auto pub = node->Advertise<std::string>("/chatter");
 
     int count = 0;
 

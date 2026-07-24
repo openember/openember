@@ -2,23 +2,22 @@
 #include <string>
 
 #include "openember/init.hpp"
+#include "openember/link/options.hpp"
 #include "openember/node.hpp"
-#include "openember/transport/options.hpp"
 
 int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
 
-    openember::ContextOptions options;
-    options.device_id = "demo";
-    options.zenoh_mode = openember::transport::ZenohMode::kRouter;
-    options.zenoh_listen = openember::transport::kDefaultZenohListenEndpoint;
+    openember::RuntimeOptions options;
+    options.robot_id = "demo";
+    options.link = openember::link::LocalRouterOptions();
 
     openember::Init(options);
 
     auto node = openember::CreateNode("listener");
 
-    auto sub = node->CreateSubscriber<std::string>(
+    auto sub = node->Subscribe<std::string>(
         "/chatter",
         [](const std::string& msg) {
             std::cout << "recv: " << msg << std::endl;

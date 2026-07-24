@@ -1,14 +1,12 @@
 #include <chrono>
 #include <cstdint>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <thread>
 
 #include "openember/init.hpp"
+#include "openember/link/options.hpp"
 #include "openember/node.hpp"
-#include "openember/transport/buffer.hpp"
-#include "openember/transport/options.hpp"
 #include "openember/msgs/common/v1/common.pb.h"
 #include "openember/msgs/lifecycle/v1/lifecycle.pb.h"
 #include "openember/msgs/node/v1/node.pb.h"
@@ -21,25 +19,15 @@ std::uint64_t UnixTimeNs() {
         std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
 }
 
-openember::transport::ByteBuffer SerializeHeartbeat(
-    const openember::msgs::node::v1::NodeHeartbeat& heartbeat) {
-    std::string bytes;
-    if (!heartbeat.SerializeToString(&bytes)) {
-        throw std::runtime_error("failed to serialize NodeHeartbeat");
-    }
-
-    return openember::transport::ByteBuffer(bytes.begin(), bytes.end());
-}
-
 }  // namespace
 
 int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
 
-    openember::ContextOptions options;
-    options.device_id = "demo";
-    options.zenoh_connect = openember::transport::kDefaultZenohListenEndpoint;
+    openember::RuntimeOptions options;
+    options.robot_id = "demo";
+    options.link = openember::link::LocalClientOptions();
 
     openember::Init(options);
 
@@ -47,8 +35,9 @@ int main(int argc, char** argv) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     auto node = openember::CreateNode("msgs_talker");
-    auto pub = node->CreatePublisher<openember::transport::ByteBuffer>(
-        "/msgs/heartbeat");
+    auto pub =
+        node->Advertise<openember::msgs::node::v1::NodeHeartbeat>(
+            "/msgs/heartbeat");
 
     std::uint64_t sequence = 0;
     const auto start = std::chrono::steady_clock::now();
@@ -81,12 +70,10 @@ int main(int argc, char** argv) {
         metric->set_value(static_cast<double>(sequence));
         metric->set_unit("count");
 
-        const auto payload = SerializeHeartbeat(heartbeat);
-        if (pub.Publish(payload)) {
-            std::cout << "publish NodeHeartbeat sequence="
+        if (pub.Publish(heartbeat)) {
+            std::cout << node->Name()
+                      << " publish NodeHeartbeat sequence="
                       << sequence
-                      << " bytes="
-                      << payload.size()
                       << std::endl;
         } else {
             std::cerr << "publish failed" << std::endl;
