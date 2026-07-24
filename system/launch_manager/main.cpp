@@ -206,7 +206,6 @@ int main(int argc, char *argv[])
 {
     int rc;
 
-    sayHello(APPLICATION_NAME);
 
     if (argc > 1)
     {

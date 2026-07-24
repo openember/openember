@@ -54,7 +54,6 @@ int main(void)
 {
     int rc;
 
-    sayHello(MODULE_NAME);
     
     log_init(MODULE_NAME);
     LOG_I("Version: %lu.%lu.%lu", EMBER_VERSION, EMBER_SUBVERSION, EMBER_REVISION);

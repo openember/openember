@@ -214,6 +214,13 @@ config OPENEMBER_COMPONENT_NETWORK
     help
       Build Components/Network library (URI-based high-level socket wrapper) on top of OSAL sockets.
 
+config OPENEMBER_COMPONENT_NETDEV
+    bool "Build component: NetDevice (interface MAC/IP/link helpers)"
+    default y
+    help
+      Build openember::netdev::NetDevice for querying and configuring Linux
+      network interfaces (ioctl / ethtool). Formerly components/Common/netdev.
+
 endmenu
 
 menu "MQTT (Eclipse Paho C)"

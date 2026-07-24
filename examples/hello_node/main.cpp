@@ -104,7 +104,6 @@ int main(void)
 {
     int rc;
 
-    sayHello(MODULE_NAME);
     
     log_init(MODULE_NAME);
     

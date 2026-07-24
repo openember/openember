@@ -464,7 +464,6 @@ int main()
     (void)snprintf(listening_addr, sizeof(listening_addr), "0.0.0.0:%u", port);
     const char *s_listening_address = listening_addr;
 
-    sayHello(MODULE_NAME);
     
     log_init(MODULE_NAME);
     LOG_I("Version: %lu.%lu.%lu", EMBER_VERSION, EMBER_SUBVERSION, EMBER_REVISION);

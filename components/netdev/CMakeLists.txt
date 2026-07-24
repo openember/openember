@@ -1,0 +1,12 @@
+project(openember_netdev)
+
+set(NETDEV_SRCS
+    src/netdev.cpp
+)
+
+OPENEMBER_ADD_STATIC_LIBRARY(TARGET ${PROJECT_NAME}
+    SRCS     ${NETDEV_SRCS}
+    LIBS     ${OPENEMBER_EXTERNAL_LIBRARIES} logging
+    INCLUDES ${OPENEMBER_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/include
+    DESTINATION lib
+)

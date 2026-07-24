@@ -25,7 +25,6 @@
 #endif
 
 #include "message.h"
-#include "common.h"
 
 #ifdef __cplusplus
 extern "C" {
