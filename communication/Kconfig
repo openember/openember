@@ -1,4 +1,18 @@
-menu "Protocol / Messages"
+menu "Communication"
+
+menu "Link"
+
+config OPENEMBER_ENABLE_LINK
+    bool "Enable OpenEmber Link"
+    default y
+    depends on OPENEMBER_COMPONENT_TRANSPORT
+    help
+      Build the stable OpenEmber communication layer for Topic, Service,
+      Liveliness, node discovery, diagnostics, and message serialization.
+
+endmenu
+
+menu "Messages"
 
 config OPENEMBER_ENABLE_MSGS
     bool "Enable openember-msgs protocol bindings"
@@ -42,5 +56,7 @@ config OPENEMBER_MSGS_REF_LATEST
     bool "latest"
 
 endchoice
+
+endmenu
 
 endmenu

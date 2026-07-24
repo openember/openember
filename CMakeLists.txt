@@ -67,8 +67,15 @@ if(NOT DEFINED OPENEMBER_COMPONENT_TRANSPORT)
     set(OPENEMBER_COMPONENT_TRANSPORT ON CACHE BOOL "Build component: Transport (Zenoh)" FORCE)
 endif()
 
-# Core 与 Transport 绑定：Transport 开启时始终构建 openember::core
-if(OPENEMBER_COMPONENT_TRANSPORT)
+# Link 依赖 Transport；openember::core 当前承载 Link 的节点通信 API。
+if(NOT DEFINED OPENEMBER_ENABLE_LINK)
+    set(OPENEMBER_ENABLE_LINK ON CACHE BOOL "Build OpenEmber Link communication layer" FORCE)
+endif()
+if(OPENEMBER_ENABLE_LINK AND NOT OPENEMBER_COMPONENT_TRANSPORT)
+    message(FATAL_ERROR "OPENEMBER_ENABLE_LINK requires OPENEMBER_COMPONENT_TRANSPORT")
+endif()
+
+if(OPENEMBER_ENABLE_LINK)
     set(OPENEMBER_ENABLE_CORE ON CACHE BOOL "Build C++ core (Node/Topic/Service)" FORCE)
 else()
     set(OPENEMBER_ENABLE_CORE OFF CACHE BOOL "Build C++ core (Node/Topic/Service)" FORCE)
@@ -130,6 +137,7 @@ set_property(CACHE OPENEMBER_LOG_BACKEND PROPERTY STRINGS BUILTIN SPDLOG)
 option(OPENEMBER_WITH_YAMLCPP "Fetch/use yaml-cpp (optional C++ dependency)" ON)
 option(OPENEMBER_WITH_ASIO "Fetch/use standalone Asio (optional)" ON)
 option(OPENEMBER_WITH_RUCKIG "Fetch/use ruckig trajectory library (optional; C++20)" OFF)
+option(OPENEMBER_ENABLE_LINK "Build OpenEmber Link communication layer" ON)
 option(OPENEMBER_ENABLE_MSGS "Build openember-msgs C++ protocol bindings" ON)
 
 set(OPENEMBER_LOG_BACKEND_IS_BUILTIN 0)

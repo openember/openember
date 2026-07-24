@@ -12,11 +12,11 @@ config OPENEMBER_ENABLE_OPENMP
     bool "Enable OpenMP"
     default n
 
-comment "Mandatory framework library (openember::core). Requires Transport; not user-disableable."
+comment "Framework library (openember::core). Enabled by OpenEmber Link."
 
 config OPENEMBER_ENABLE_CORE
     bool
-    default y
-    depends on OPENEMBER_COMPONENT_TRANSPORT
+    default y if OPENEMBER_ENABLE_LINK
+    depends on OPENEMBER_ENABLE_LINK
 
 endmenu

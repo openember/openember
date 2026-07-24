@@ -36,12 +36,12 @@ config OPENEMBER_EXAMPLE_CORE
     bool "Build examples: core (Node Topic/Service on openember::core)"
     default y
     depends on OPENEMBER_ENABLE_EXAMPLES
-    depends on OPENEMBER_COMPONENT_TRANSPORT
+    depends on OPENEMBER_ENABLE_LINK
     help
       openember_topic_talker/listener and openember_service_server/client.
       When OPENEMBER_ENABLE_MSGS is enabled, also builds openember_msgs_talker/listener
       to demonstrate Protobuf payloads from openember-msgs.
-      Requires openember::core (always built with Transport).
+      Requires OpenEmber Link and openember::core.
       Start listener/server first (router + listen), then talker/client (peer + connect).
 
 config OPENEMBER_EXAMPLE_MQTT_EMQX

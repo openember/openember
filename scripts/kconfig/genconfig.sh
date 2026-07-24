@@ -76,6 +76,10 @@ debug_enabled="$(onoff CONFIG_OPENEMBER_DEBUG_ENABLED)"
 opt_disabled="$(onoff CONFIG_OPENEMBER_OPTIMIZATION_DISABLED)"
 crosscompile_enabled="$(onoff CONFIG_OPENEMBER_CROSSCOMPILE_ENABLED)"
 use_yamlcpp="$(onoff CONFIG_OPENEMBER_USE_YAMLCPP)"
+enable_link="$(onoff CONFIG_OPENEMBER_ENABLE_LINK)"
+if ! grep -q "^CONFIG_OPENEMBER_ENABLE_LINK=" "${CONFIG_FILE}"; then
+  enable_link=ON
+fi
 enable_msgs="$(onoff CONFIG_OPENEMBER_ENABLE_MSGS)"
 if ! grep -q "^CONFIG_OPENEMBER_ENABLE_MSGS=" "${CONFIG_FILE}"; then
   enable_msgs=ON
@@ -110,6 +114,9 @@ component_transport="$(onoff CONFIG_OPENEMBER_COMPONENT_TRANSPORT)"
 if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_TRANSPORT=" "${CONFIG_FILE}"; then
   component_transport=ON
 fi
+if [[ "${component_transport}" == "OFF" ]]; then
+  enable_link=OFF
+fi
 component_mqtt="$(onoff CONFIG_OPENEMBER_COMPONENT_MQTT)"
 if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_MQTT=" "${CONFIG_FILE}"; then
   component_mqtt=ON
@@ -140,8 +147,8 @@ example_transport="$(onoff CONFIG_OPENEMBER_EXAMPLE_TRANSPORT)"
 if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_TRANSPORT=" "${CONFIG_FILE}"; then
   example_transport=ON
 fi
-# Core 与 Transport 绑定：Transport 开启时 Core 必选
-if [[ "${component_transport}" == "ON" ]]; then
+# Core 与 Link 绑定：Link 开启时构建 openember::core
+if [[ "${enable_link}" == "ON" ]]; then
   enable_core=ON
 else
   enable_core=OFF
@@ -150,7 +157,7 @@ example_core="$(onoff CONFIG_OPENEMBER_EXAMPLE_CORE)"
 if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_CORE=" "${CONFIG_FILE}"; then
   example_core=ON
 fi
-if [[ "${component_transport}" == "OFF" ]] || [[ "${examples_enabled}" == "OFF" ]]; then
+if [[ "${enable_link}" == "OFF" ]] || [[ "${examples_enabled}" == "OFF" ]]; then
   example_core=OFF
 fi
 if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS=" "${CONFIG_FILE}"; then
@@ -616,6 +623,7 @@ set(OPENEMBER_LOGGER_PORT ${logger_port} CACHE STRING "logger HTTP port" FORCE)
 set(OPENEMBER_LOGGER_LOG_DIR "${logger_log_dir}" CACHE STRING "logger source log directory" FORCE)
 set(OPENEMBER_THIRD_PARTY_MODE "${tp_mode}" CACHE STRING "Third-party source mode: FETCH/VENDOR/SYSTEM" FORCE)
 set(OPENEMBER_WITH_YAMLCPP ${use_yamlcpp} CACHE BOOL "Fetch/use yaml-cpp (optional C++ dependency)" FORCE)
+set(OPENEMBER_ENABLE_LINK ${enable_link} CACHE BOOL "Build OpenEmber Link communication layer" FORCE)
 set(OPENEMBER_ENABLE_MSGS ${enable_msgs} CACHE BOOL "Build openember-msgs C++ protocol bindings" FORCE)
 set(OPENEMBER_MSGS_SOURCE "${msgs_source}" CACHE STRING "openember-msgs source: FETCH or LOCAL" FORCE)
 set_property(CACHE OPENEMBER_MSGS_SOURCE PROPERTY STRINGS FETCH LOCAL)
