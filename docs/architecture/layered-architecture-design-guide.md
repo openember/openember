@@ -55,6 +55,9 @@ OpenEmber 推荐采用五层结构模型：
 openember/
 
 ├── apps/
+├── system/
+├── services/
+├── examples/
 ├── modules/
 ├── components/
 ├── core/
@@ -73,6 +76,8 @@ openember/
 
 ```bash
 apps
+↓
+system / services / examples
 ↓
 modules
 ↓
@@ -321,37 +326,40 @@ my_robot_driver/
 
 目录：`apps/`
 
-职责：提供应用程序入口节点。
+职责：提供产品或用户项目的应用程序入口节点。
+
+OpenEmber 自带的系统节点、可选服务、示例与参考实现使用独立顶层目录：
+
+```bash
+system/      # OpenEmber 自带系统节点
+services/    # 可选 runtime 服务
+examples/    # 示例与参考实现
+tools/       # 开发、调试、运维工具
+```
 
 典型应用示例：
 
 ```bash
 apps/
 
-├── launch/
-│
-├── node_camera/
-│
-├── node_controller/
-│
-├── node_logger/
-│
-└── node_web/
+├── demo_robot/
+├── smart_gateway/
+└── user_app/
 ```
 
 典型程序类型：
 
 - 节点程序
-- 系统启动程序
-- 调试工具
-- 测试程序
+- 产品业务入口
+- 用户项目节点
+- 项目级 launch / 编排入口
 
 示例：
 
-- openember_launch
-  负责启动多个节点
+- user_app
+  组合 OpenEmber 节点、服务与设备能力，形成具体产品行为
 
-设计原则：apps 层不属于框架核心，属于最终运行程序集合。
+设计原则：apps 层不属于框架核心，属于最终产品或用户项目入口；框架自带节点不要再放入 apps。
 
 ## 九、Third Party Layer（第三方依赖层）
 
@@ -610,6 +618,9 @@ OpenEmber 推荐采用如下正式结构：
 
 ```bash
 apps/
+system/
+services/
+examples/
 modules/
 components/
 core/

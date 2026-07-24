@@ -95,7 +95,7 @@ set(OPENEMBER_PAHO_MQTT_C_URL
 set(PAHO_MQTT_C_LOCAL_SOURCE "" CACHE PATH
     "Optional: pre-extracted paho.mqtt.c tree (overrides third_party/ archives and network download)")
 
-# Mongoose embedded web server (used by apps/services/web_dashboard)
+# Mongoose embedded web server (used by services/web_console)
 set(OPENEMBER_MONGOOSE_VERSION "7.20")
 set(OPENEMBER_MONGOOSE_URL
     "https://github.com/cesanta/mongoose/archive/refs/tags/${OPENEMBER_MONGOOSE_VERSION}.tar.gz")

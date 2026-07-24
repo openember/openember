@@ -142,8 +142,8 @@ static int startup_modules(void)
      * (3) fork
      */
     system("/opt/openember/bin/health_monitor &");
-    system("/opt/openember/bin/web_dashboard &");
-    system("/opt/openember/bin/ota_update_service &");
+    system("/opt/openember/bin/web_console &");
+    system("/opt/openember/bin/ota_agent &");
     system("/opt/openember/bin/config_service &");
     system("/opt/openember/bin/device_manager &");
     system("/opt/openember/bin/sensor_data_reference &");

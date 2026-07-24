@@ -129,16 +129,16 @@ mqtt_paho_async="$(onoff CONFIG_OPENEMBER_MQTT_PAHO_ASYNC)"
 if ! grep -q "^CONFIG_OPENEMBER_MQTT_PAHO_ASYNC=" "${CONFIG_FILE}"; then
   mqtt_paho_async=OFF
 fi
-module_launch_manager="$(onoff CONFIG_OPENEMBER_MODULE_LAUNCH_MANAGER)"
-module_template="$(onoff CONFIG_OPENEMBER_MODULE_TEMPLATE)"
-module_alogd="$(onoff CONFIG_OPENEMBER_MODULE_ALOGD)"
-module_device_manager="$(onoff CONFIG_OPENEMBER_MODULE_DEVICE_MANAGER)"
-module_config_manager="$(onoff CONFIG_OPENEMBER_MODULE_CONFIG_MANAGER)"
-module_monitor_alarm="$(onoff CONFIG_OPENEMBER_MODULE_MONITOR_ALARM)"
-module_ota="$(onoff CONFIG_OPENEMBER_MODULE_OTA)"
-module_acquisition="$(onoff CONFIG_OPENEMBER_MODULE_ACQUISITION)"
-module_web_server="$(onoff CONFIG_OPENEMBER_MODULE_WEB_SERVER)"
-module_logger="$(onoff CONFIG_OPENEMBER_MODULE_LOGGER)"
+system_launch_manager="$(onoff CONFIG_OPENEMBER_SYSTEM_LAUNCH_MANAGER)"
+example_hello_node="$(onoff CONFIG_OPENEMBER_EXAMPLE_HELLO_NODE)"
+system_log_service="$(onoff CONFIG_OPENEMBER_SYSTEM_LOG_SERVICE)"
+system_device_manager="$(onoff CONFIG_OPENEMBER_SYSTEM_DEVICE_MANAGER)"
+system_config_service="$(onoff CONFIG_OPENEMBER_SYSTEM_CONFIG_SERVICE)"
+system_health_monitor="$(onoff CONFIG_OPENEMBER_SYSTEM_HEALTH_MONITOR)"
+service_ota_update="$(onoff CONFIG_OPENEMBER_SERVICE_OTA_AGENT)"
+reference_sensor_data="$(onoff CONFIG_OPENEMBER_REFERENCE_SENSOR_DATA)"
+service_web_console="$(onoff CONFIG_OPENEMBER_SERVICE_WEB_CONSOLE)"
+service_logger="$(onoff CONFIG_OPENEMBER_SERVICE_LOGGER)"
 component_algorithm="$(onoff CONFIG_OPENEMBER_COMPONENT_ALGORITHM)"
 if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_ALGORITHM=" "${CONFIG_FILE}"; then
   component_algorithm=ON
@@ -324,25 +324,25 @@ if [[ -z "${spdlog_topic_rate_limit}" ]]; then
   spdlog_topic_rate_limit="0"
 fi
 
-web_root_dir="apps/services/web_dashboard/web_root"
+web_root_dir="services/web_console/web_root"
 web_root_dir="$(awk '
-  /^CONFIG_OPENEMBER_WEB_DASHBOARD_ROOT_DIR=/ {
+  /^CONFIG_OPENEMBER_WEB_CONSOLE_ROOT_DIR=/ {
     v=$0
-    sub(/^CONFIG_OPENEMBER_WEB_DASHBOARD_ROOT_DIR=/,"",v)
+    sub(/^CONFIG_OPENEMBER_WEB_CONSOLE_ROOT_DIR=/,"",v)
     gsub(/^"/,"",v); gsub(/"$/,"",v)
     print v
     exit
   }
 ' "${CONFIG_FILE}")"
 if [[ -z "${web_root_dir}" ]]; then
-  web_root_dir="apps/services/web_dashboard/web_root"
+  web_root_dir="services/web_console/web_root"
 fi
 
 web_port="8000"
 web_port="$(awk '
-  /^CONFIG_OPENEMBER_WEB_DASHBOARD_PORT=/ {
+  /^CONFIG_OPENEMBER_WEB_CONSOLE_PORT=/ {
     v=$0
-    sub(/^CONFIG_OPENEMBER_WEB_DASHBOARD_PORT=/,"",v)
+    sub(/^CONFIG_OPENEMBER_WEB_CONSOLE_PORT=/,"",v)
     print v
     exit
   }
@@ -620,8 +620,8 @@ set(OPENEMBER_SPDLOG_TOPIC_PUB_URL "${spdlog_topic_pub_url}" CACHE STRING "spdlo
 set(OPENEMBER_SPDLOG_TOPIC_SUB_URL "${spdlog_topic_sub_url}" CACHE STRING "spdlog topic subscriber URL" FORCE)
 set(OPENEMBER_SPDLOG_TOPIC_LEVEL "${spdlog_topic_level}" CACHE STRING "spdlog topic publish level threshold" FORCE)
 set(OPENEMBER_SPDLOG_TOPIC_RATE_LIMIT ${spdlog_topic_rate_limit} CACHE STRING "spdlog topic rate limit (lines/sec)" FORCE)
-set(OPENEMBER_WEB_DASHBOARD_ROOT_DIR "${web_root_dir}" CACHE STRING "web_dashboard web root directory" FORCE)
-set(OPENEMBER_WEB_DASHBOARD_PORT ${web_port} CACHE STRING "web_dashboard HTTP port" FORCE)
+set(OPENEMBER_WEB_CONSOLE_ROOT_DIR "${web_root_dir}" CACHE STRING "web_console web root directory" FORCE)
+set(OPENEMBER_WEB_CONSOLE_PORT ${web_port} CACHE STRING "web_console HTTP port" FORCE)
 set(OPENEMBER_LOGGER_PORT ${logger_port} CACHE STRING "logger HTTP port" FORCE)
 set(OPENEMBER_LOGGER_LOG_DIR "${logger_log_dir}" CACHE STRING "logger source log directory" FORCE)
 set(OPENEMBER_THIRD_PARTY_MODE "${tp_mode}" CACHE STRING "Third-party source mode: FETCH/VENDOR/SYSTEM" FORCE)
@@ -648,16 +648,16 @@ set(DEBUG_ENABLED ${debug_enabled} CACHE BOOL "Whether to enable debug mode" FOR
 set(OPTIMIZATION_DISABLED ${opt_disabled} CACHE BOOL "Whether to disable optimization" FORCE)
 set(CROSSCOMPILE_ENABLED ${crosscompile_enabled} CACHE BOOL "Whether to build for ARM" FORCE)
 
-set(OPENEMBER_MODULE_LAUNCH_MANAGER ${module_launch_manager} CACHE BOOL "Build app system/launch_manager" FORCE)
-set(OPENEMBER_MODULE_TEMPLATE ${module_template} CACHE BOOL "Build app examples/hello_node" FORCE)
-set(OPENEMBER_MODULE_ALOGD ${module_alogd} CACHE BOOL "Build app system/log_service" FORCE)
-set(OPENEMBER_MODULE_DEVICE_MANAGER ${module_device_manager} CACHE BOOL "Build app system/device_manager" FORCE)
-set(OPENEMBER_MODULE_CONFIG_MANAGER ${module_config_manager} CACHE BOOL "Build app system/config_service" FORCE)
-set(OPENEMBER_MODULE_MONITOR_ALARM ${module_monitor_alarm} CACHE BOOL "Build app system/health_monitor" FORCE)
-set(OPENEMBER_MODULE_OTA ${module_ota} CACHE BOOL "Build app services/ota_update_service" FORCE)
-set(OPENEMBER_MODULE_ACQUISITION ${module_acquisition} CACHE BOOL "Build app references/sensor_data_reference" FORCE)
-set(OPENEMBER_MODULE_WEB_SERVER ${module_web_server} CACHE BOOL "Build app services/web_dashboard" FORCE)
-set(OPENEMBER_MODULE_LOGGER ${module_logger} CACHE BOOL "Build app services/logger" FORCE)
+set(OPENEMBER_SYSTEM_LAUNCH_MANAGER ${system_launch_manager} CACHE BOOL "Build system/launch_manager" FORCE)
+set(OPENEMBER_EXAMPLE_HELLO_NODE ${example_hello_node} CACHE BOOL "Build examples/hello_node" FORCE)
+set(OPENEMBER_SYSTEM_LOG_SERVICE ${system_log_service} CACHE BOOL "Build system/log_service" FORCE)
+set(OPENEMBER_SYSTEM_DEVICE_MANAGER ${system_device_manager} CACHE BOOL "Build system/device_manager" FORCE)
+set(OPENEMBER_SYSTEM_CONFIG_SERVICE ${system_config_service} CACHE BOOL "Build system/config_service" FORCE)
+set(OPENEMBER_SYSTEM_HEALTH_MONITOR ${system_health_monitor} CACHE BOOL "Build system/health_monitor" FORCE)
+set(OPENEMBER_SERVICE_OTA_AGENT ${service_ota_update} CACHE BOOL "Build services/ota_agent" FORCE)
+set(OPENEMBER_REFERENCE_SENSOR_DATA ${reference_sensor_data} CACHE BOOL "Build examples/references/sensor_data_reference" FORCE)
+set(OPENEMBER_SERVICE_WEB_CONSOLE ${service_web_console} CACHE BOOL "Build services/web_console" FORCE)
+set(OPENEMBER_SERVICE_LOGGER ${service_logger} CACHE BOOL "Build services/logger" FORCE)
 set(OPENEMBER_COMPONENT_ALGORITHM ${component_algorithm} CACHE BOOL "Build Algorithm component" FORCE)
 set(OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES ${example_msgbus_two_nodes} CACHE BOOL "Build example msgbus_two_nodes" FORCE)
 set(OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER ${example_msgbus_nng_forwarder} CACHE BOOL "Build example msgbus_nng_forwarder" FORCE)

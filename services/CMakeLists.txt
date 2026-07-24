@@ -1,0 +1,13 @@
+set(FOLDER_NAME "services")
+
+if(NOT DEFINED OPENEMBER_SERVICE_OTA_AGENT OR OPENEMBER_SERVICE_OTA_AGENT)
+    add_subdirectory(ota_agent)
+endif()
+
+if(NOT DEFINED OPENEMBER_SERVICE_WEB_CONSOLE OR OPENEMBER_SERVICE_WEB_CONSOLE)
+    add_subdirectory(web_console)
+endif()
+
+if(NOT DEFINED OPENEMBER_SERVICE_LOGGER OR OPENEMBER_SERVICE_LOGGER)
+    add_subdirectory(logger)
+endif()

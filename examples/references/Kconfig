@@ -1,0 +1,3 @@
+config OPENEMBER_REFERENCE_SENSOR_DATA
+    bool "Build reference example: sensor_data_reference"
+    default y

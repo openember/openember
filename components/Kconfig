@@ -91,7 +91,7 @@ config OPENEMBER_SPDLOG_ENABLE_TOPIC
     depends on OPENEMBER_LOG_BACKEND_SPDLOG
     default y
     help
-      Publish log entries to pub/sub topic so other nodes (web_dashboard/loggerd) can subscribe.
+      Publish log entries to pub/sub topic so other nodes (web_console/loggerd) can subscribe.
 
 config OPENEMBER_SPDLOG_TOPIC_NAME
     string "spdlog: topic name"

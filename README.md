@@ -83,10 +83,14 @@ OpenEmber 不只是 Robot Application Framework，而是一个通用的 Middlewa
 openember/
 │
 ├── apps/
-│   ├── system/        # launch_manager、log_service 等
-│   ├── services/      # web_dashboard、ota_update_service 等
-│   ├── references/    # 参考实现节点
-│   └── examples/      # hello_node、pubsub 示例等
+│   └── user_app/      # 产品或用户项目入口
+│
+├── system/            # launch_manager、log_service 等系统节点
+│
+├── services/          # web_console、ota_agent 等可选服务
+│
+├── examples/          # hello_node、pubsub 示例与参考实现
+│   └── references/
 │
 ├── modules/
 │   ├── transport/
@@ -149,10 +153,10 @@ OpenEmber v0.1 就采用：
 | `system/config_service`     | system     | 配置服务节点，负责配置存取与下发。                           |
 | `system/device_manager`     | system     | 设备管理节点，负责设备注册、状态管理与生命周期协调。         |
 | `system/health_monitor`     | system     | 健康监控节点，负责状态巡检与告警。                           |
-| `services/ota_update_service` | services | OTA 服务节点，负责在线/离线升级流程。                        |
-| `services/web_dashboard`    | services   | Web 仪表盘服务，提供运行状态可视化与交互入口。               |
+| `services/ota_agent` | services | OTA 服务节点，负责在线/离线升级流程。                        |
+| `services/web_console`    | services   | Web 仪表盘服务，提供运行状态可视化与交互入口。               |
 | `examples/hello_node`       | examples   | 最小示例节点，用于验证运行环境与接口调用。                   |
-| `references/sensor_data_reference` | references | 参考实现节点，演示数据采集节点的通用组织方式。        |
+| `examples/references/sensor_data_reference` | references | 参考实现节点，演示数据采集节点的通用组织方式。 |
 
 
 

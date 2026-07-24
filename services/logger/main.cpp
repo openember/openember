@@ -1,7 +1,7 @@
 /*
  * logger service v1:
  * - collect logs from files (*.log) under OPENEMBER_LOGGER_LOG_DIR
- * - provide local HTTP API for web_dashboard:
+ * - provide local HTTP API for web_console:
  *   GET /api/logs?limit=200&level=info&tag=foo
  */
 #include <mongoose.h>

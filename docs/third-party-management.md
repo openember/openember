@@ -33,7 +33,7 @@
 | [Asio](https://github.com/chriskohlhoff/asio) standalone | `OPENEMBER_ASIO_TAG` | `GetAsio.cmake` | `OPENEMBER_WITH_ASIO=ON` |
 | [spdlog](https://github.com/gabime/spdlog) | `OPENEMBER_SPDLOG_VERSION` | `GetSpdlog.cmake` | `OPENEMBER_LOG_BACKEND=SPDLOG` |
 | [Eclipse Paho MQTT C](https://github.com/eclipse-paho/paho.mqtt.c) | `OPENEMBER_PAHO_MQTT_C_VERSION` | `GetPahoMqttC.cmake` | `OPENEMBER_COMPONENT_MQTT=ON` |
-| [Mongoose](https://github.com/cesanta/mongoose) | `OPENEMBER_MONGOOSE_VERSION` | `GetMongoose.cmake` | web_dashboard 等 |
+| [Mongoose](https://github.com/cesanta/mongoose) | `OPENEMBER_MONGOOSE_VERSION` | `GetMongoose.cmake` | web_console 等 |
 | [NNG](https://github.com/nanomsg/nng) | `OPENEMBER_NNG_VERSION` | `GetNng.cmake` | `OPENEMBER_MSGBUS_USE_NNG=ON` |
 | [LCM](https://github.com/lcm-proj/lcm) | `OPENEMBER_LCM_VERSION` | `GetLcm.cmake` | `OPENEMBER_MSGBUS_USE_LCM=ON` |
 | [libzmq](https://github.com/zeromq/libzmq) | `OPENEMBER_LIBZMQ_VERSION` | `GetLibzmq.cmake` | msgbus ZMQ 后端选用时 |

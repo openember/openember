@@ -1,4 +1,4 @@
-project(ota_update_service VERSION 1.0.0 LANGUAGES CXX)
+project(ota_agent VERSION 1.0.0 LANGUAGES CXX)
 
 set( OTA_MODULE_SRCS 
     main.cpp

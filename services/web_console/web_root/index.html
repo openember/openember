@@ -334,7 +334,7 @@
               <div class="layui-card">
                 <div class="layui-card-header">项目简介</div>
                 <div class="layui-card-body">
-                  <p>OpenEmber 面向模块化机器人与边缘设备软件栈；web_dashboard 提供本地 Web 管理界面。</p>
+                  <p>OpenEmber 面向模块化机器人与边缘设备软件栈；web_console 提供本地 Web 管理界面。</p>
                   <p class="oe-muted" style="margin-top:8px;">详细架构见仓库 <span class="oe-mono">docs/architecture/</span>。</p>
                 </div>
               </div>
@@ -495,7 +495,7 @@
             { name: 'config_service', st: 'RUN', pid: 1033 },
             { name: 'device_manager', st: 'RUN', pid: 1041 },
             { name: 'health_monitor', st: 'RUN', pid: 1048 },
-            { name: 'web_dashboard', st: 'RUN', pid: 1056 }
+            { name: 'web_console', st: 'RUN', pid: 1056 }
           ];
           var html = rows.map(function (r) {
             var badge = r.st === 'RUN'
@@ -591,7 +591,7 @@
         function start() {
           setConn(false);
           var verEl = document.getElementById('oeAppVersion');
-          if (verEl) verEl.textContent = 'web_dashboard（构建版本待 CMake 注入）';
+          if (verEl) verEl.textContent = 'web_console（构建版本待 CMake 注入）';
           log('dashboard loaded (Layui ' + (hasLayui() ? 'available' : 'missing') + ')');
           window.addEventListener('hashchange', function () {
             applyRoute(pageFromHash());

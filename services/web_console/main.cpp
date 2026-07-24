@@ -25,7 +25,7 @@
 
 #include <sys/utsname.h>
 
-#define MODULE_NAME            "web_dashboard"
+#define MODULE_NAME            "web_console"
 #define LOG_TAG                MODULE_NAME
 #include "openember.h"
 
@@ -35,10 +35,10 @@ static std::string json_escape(std::string_view v);
 
 static const char *s_debug_level = "2";    // debug level, from 0 to 4
 static const char *s_root_dir =
-#ifdef OPENEMBER_WEB_DASHBOARD_ROOT_DIR
-    OPENEMBER_WEB_DASHBOARD_ROOT_DIR;
+#ifdef OPENEMBER_WEB_CONSOLE_ROOT_DIR
+    OPENEMBER_WEB_CONSOLE_ROOT_DIR;
 #else
-    "apps/services/web_dashboard/web_root";
+    "services/web_console/web_root";
 #endif
 static const char *s_enable_hexdump = "no";
 static const char *s_ssi_pattern = "#.html";
@@ -458,8 +458,8 @@ int main()
     struct mg_mgr mgr;
     char listening_addr[64];
     unsigned port = 8000;
-#ifdef OPENEMBER_WEB_DASHBOARD_PORT
-    port = (unsigned)OPENEMBER_WEB_DASHBOARD_PORT;
+#ifdef OPENEMBER_WEB_CONSOLE_PORT
+    port = (unsigned)OPENEMBER_WEB_CONSOLE_PORT;
 #endif
     (void)snprintf(listening_addr, sizeof(listening_addr), "0.0.0.0:%u", port);
     const char *s_listening_address = listening_addr;

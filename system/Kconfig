@@ -1,0 +1,23 @@
+menu "System"
+
+config OPENEMBER_SYSTEM_LAUNCH_MANAGER
+    bool "Build system node: launch_manager"
+    default y
+
+config OPENEMBER_SYSTEM_LOG_SERVICE
+    bool "Build system node: log_service"
+    default y
+
+config OPENEMBER_SYSTEM_DEVICE_MANAGER
+    bool "Build system node: device_manager"
+    default y
+
+config OPENEMBER_SYSTEM_CONFIG_SERVICE
+    bool "Build system node: config_service"
+    default y
+
+config OPENEMBER_SYSTEM_HEALTH_MONITOR
+    bool "Build system node: health_monitor"
+    default y
+
+endmenu

@@ -24,11 +24,14 @@ endchoice
 endmenu
 
 source "apps/Kconfig"
+source "system/Kconfig"
+source "services/Kconfig"
 source "modules/Kconfig"
-source "communication/Kconfig"
 source "core/Kconfig"
+source "communication/Kconfig"
 source "components/Kconfig"
 source "platform/Kconfig"
+source "third_party/Kconfig"
+source "examples/Kconfig"
 source "tools/Kconfig"
 source "test/Kconfig"
-source "third_party/Kconfig"

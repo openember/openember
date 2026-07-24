@@ -1,0 +1,21 @@
+set(FOLDER_NAME "system")
+
+if(NOT DEFINED OPENEMBER_SYSTEM_LAUNCH_MANAGER OR OPENEMBER_SYSTEM_LAUNCH_MANAGER)
+    add_subdirectory(launch_manager)
+endif()
+
+if(NOT DEFINED OPENEMBER_SYSTEM_LOG_SERVICE OR OPENEMBER_SYSTEM_LOG_SERVICE)
+    add_subdirectory(log_service)
+endif()
+
+if(NOT DEFINED OPENEMBER_SYSTEM_DEVICE_MANAGER OR OPENEMBER_SYSTEM_DEVICE_MANAGER)
+    add_subdirectory(device_manager)
+endif()
+
+if(NOT DEFINED OPENEMBER_SYSTEM_CONFIG_SERVICE OR OPENEMBER_SYSTEM_CONFIG_SERVICE)
+    add_subdirectory(config_service)
+endif()
+
+if(NOT DEFINED OPENEMBER_SYSTEM_HEALTH_MONITOR OR OPENEMBER_SYSTEM_HEALTH_MONITOR)
+    add_subdirectory(health_monitor)
+endif()

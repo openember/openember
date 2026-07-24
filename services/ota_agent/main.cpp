@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MODULE_NAME            "ota_update_service"
+#define MODULE_NAME            "ota_agent"
 #define LOG_TAG                MODULE_NAME
 #include "openember.h"
 

@@ -53,23 +53,23 @@ C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal
 
 ## Logging 服务第一版（文件采集 + Web 展示）
 
-- [x] 形成方案：阶段 1 采用“文件采集 + Web 流（由 web_dashboard 对外）”
-- [x] 新增 `apps/services/logger` 服务（采集 `*.log`，提供本地 `/api/logs`）
-- [x] 在 `apps/Kconfig` 增加 logger 构建开关与参数（端口、日志目录）
+- [x] 形成方案：阶段 1 采用“文件采集 + Web 流（由 web_console 对外）”
+- [x] 新增 `services/logger` 服务（采集 `*.log`，提供本地 `/api/logs`）
+- [x] 在 `services/Kconfig` 增加 logger 构建开关与参数（端口、日志目录）
 - [x] 更新 `scripts/kconfig/genconfig.sh` 映射 logger 相关配置到 CMake
-- [x] 在 `apps/CMakeLists.txt` 按开关编译 logger 服务
-- [x] `web_dashboard` 增加 `/api/logs` 代理到 logger（本地回环）
+- [x] 在 `services/CMakeLists.txt` 按开关编译 logger 服务
+- [x] `web_console` 增加 `/api/logs` 代理到 logger（本地回环）
 - [x] `web_root` logs 页面接入 `/api/logs` 并显示最近日志
-- [x] 编译验证（至少 logger + web_dashboard + 现有 apps）
+- [x] 编译验证（至少 logger + web_console + 现有 apps）
 
-## Logging 阶段 1（主线）：spdlog topic sink + web_dashboard 订阅
+## Logging 阶段 1（主线）：spdlog topic sink + web_console 订阅
 
 - [ ] 在 `components/Kconfig` 增加 spdlog topic sink 配置项（enable/topic/level/rate limit）
 - [ ] 在 `scripts/kconfig/genconfig.sh` 映射 topic sink 配置到 CMake cache
 - [ ] 在 `components/Log/log_spdlog.cpp` 实现 topic sink（基于现有 pub/sub 骨架发布到 `/openember/log`）
-- [ ] 在 `web_dashboard` 增加“订阅日志 topic 并缓存”的后台逻辑（内存 ring）
+- [ ] 在 `web_console` 增加“订阅日志 topic 并缓存”的后台逻辑（内存 ring）
 - [ ] 前端 logs 页面接入（优先走 `/api/logs` 读取 ring；后续再做 SSE）
-- [ ] 编译运行验证：至少 `web_dashboard` 能实时看到 `INFO+` 日志
+- [ ] 编译运行验证：至少 `web_console` 能实时看到 `INFO+` 日志
 
 ## Msgbus 插件化重构（进行中）
 
@@ -80,7 +80,7 @@ C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal
 - [x] 将 `components/msgbus` 的 `mqtt_*` wrapper 迁出到 `components/mqtt`（静态库 `openember_mqtt`）
 - [x] 在 `components/mqtt` 提供独立 C++ 封装（面向 IoT 云连接）：`mqtt_client.hpp` / `mqtt_client.cpp`（`EMBER_LIBS_USING_MQTT` 时启用）
 - [x] 增加 backend 装配说明与工厂入口（`CreateDefaultTransportBackend` → `detail_create_clib_transport_backend`；动态插件仍待后续）
-- [x] 补齐回归测试：`test/test_msgbus_transport.cpp`（TransportBackend 工厂冒烟；logger/web_dashboard/topic 全链路仍建议发布前手动跑通）
+- [x] 补齐回归测试：`test/test_msgbus_transport.cpp`（TransportBackend 工厂冒烟；logger/web_console/topic 全链路仍建议发布前手动跑通）
 
 ## 迁移：移除 ember_pubsub，统一到 msgbus + C++ 抽象
 
@@ -89,7 +89,7 @@ C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal
 ### 阶段 A — 功能迁移
 
 - [x] spdlog topic sink：`log_spdlog.cpp` 使用 `TransportBackend` → `msg_bus_*`
-- [x] `web_dashboard`：同一 `msg_node_t` 上 `msg_bus_subscribe` 日志 topic + 回调写 ring
+- [x] `web_console`：同一 `msg_node_t` 上 `msg_bus_subscribe` 日志 topic + 回调写 ring
 - [x] 示例：`msgbus_two_nodes`（`msgbus_demo_publisher` / `msgbus_demo_subscriber`）
 - [x] CMake：移除 `BUILD_PUBSUB_*`、`ember_pubsub`；`msgbus` 先于 `Log` 构建；根 CMake 按 `OPENEMBER_MSGBUS_USE_*` 解析 LCM/NNG
 - [x] Kconfig / `genconfig.sh`：示例 `OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES`；spdlog URL 回退与 msgbus 一致
@@ -108,7 +108,7 @@ C++ wrapper（保持轻量、RAII，位于 `platform/osal/include/openember/osal
 ### 验收
 
 - [x] 全量编译（含 `OPENEMBER_LOG_BACKEND=SPDLOG` 的 `Log`）+ `ctest`（`test_msgbus_transport`）
-- [ ] 手动：`msgbus_demo_*` 双进程、spdlog topic + `web_dashboard` 日志环（发布前建议跑通）
+- [ ] 手动：`msgbus_demo_*` 双进程、spdlog topic + `web_console` 日志环（发布前建议跑通）
 
 ## 第三方库管理重构（third_party/ + build/_deps 命名）
 

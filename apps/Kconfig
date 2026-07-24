@@ -1,27 +1,5 @@
 menu "Application"
 
-config OPENEMBER_ENABLE_EXAMPLES
-    bool
-    default y
-
-menu "system"
-source "../apps/system/Kconfig"
-endmenu
-
-menu "services"
-source "../apps/services/Kconfig"
-endmenu
-
-menu "tools"
-source "../apps/tools/Kconfig"
-endmenu
-
-menu "references"
-source "../apps/references/Kconfig"
-endmenu
-
-menu "examples"
-source "../apps/examples/Kconfig"
-endmenu
+comment "Product application entry point. Add project-specific options here."
 
 endmenu

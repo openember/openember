@@ -1,5 +1,11 @@
-config OPENEMBER_MODULE_TEMPLATE
-    bool "Build app: examples/hello_node"
+menu "Examples"
+
+config OPENEMBER_ENABLE_EXAMPLES
+    bool
+    default y
+
+config OPENEMBER_EXAMPLE_HELLO_NODE
+    bool "Build example: hello_node"
     default y
     depends on OPENEMBER_ENABLE_EXAMPLES
 
@@ -22,7 +28,7 @@ config OPENEMBER_EXAMPLE_NETWORK_SOCKETS
     default y
     depends on OPENEMBER_ENABLE_EXAMPLES
     help
-      Build apps/examples/network_sockets demos for OSAL sockets and Components/Network wrapper.
+      Build examples/network_sockets demos for OSAL sockets and Components/Network wrapper.
 
 config OPENEMBER_EXAMPLE_TRANSPORT
     bool "Build examples: transport_talker / transport_listener (Zenoh)"
@@ -120,3 +126,9 @@ config OPENEMBER_MQTT_EMQX_SSL_VERIFY
     default y
 
 endif
+
+menu "references"
+source "../examples/references/Kconfig"
+endmenu
+
+endmenu

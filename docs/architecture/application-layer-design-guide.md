@@ -108,18 +108,18 @@ apps/
 ```bash
 apps/
 
-├── system/        # 系统基础节点
-├── references/    # 参考实现节点
-├── tools/         # 开发辅助工具节点
-├── services/      # 系统服务节点
-└── examples/      # 最小示例节点
+system/            # 系统基础节点
+services/          # 可选运行时服务
+tools/             # 开发、调试、运维工具
+examples/          # 最小示例节点
+└── references/    # 参考实现节点
 ```
 
 说明如下。
 
 
 
-### apps/system（系统基础节点）
+### system（系统基础节点）
 
 system 目录用于存放框架运行所必需的基础服务节点。
 
@@ -152,17 +152,17 @@ supervisor
 
 
 
-### apps/services（系统服务节点）
+### services（系统服务节点）
 
 services 提供运行时功能支持，但不是框架必须组件。
 
 典型包括：
 
 ```
-web_dashboard
+web_console
 rest_api_server
 rpc_gateway
-ota_update_service
+ota_agent
 metrics_exporter
 telemetry_service
 ```
@@ -179,7 +179,7 @@ telemetry_service
 
 
 
-### apps/tools（开发辅助工具节点）
+### tools（开发辅助工具）
 
 tools 目录用于开发调试辅助工具。
 
@@ -227,14 +227,14 @@ topic echo → tools
 
 
 
-### apps/references（参考实现节点）
+### examples/references（参考实现节点）
 
 references 目录用于提供官方推荐的示例节点组合方式。
 
 例如：
 
 ```
-apps/references/
+examples/references/
 
 ├── perception/
 ├── control/
@@ -252,11 +252,11 @@ apps/references/
 如何构建系统流程
 ```
 
-未来用户会直接复制 `apps/references/*` 来构建产品系统，这就是 framework adoption accelerator 🚀
+未来用户可以参考或复制 `examples/references/*` 来构建产品系统。
 
 
 
-### apps/examples（最小示例节点）
+### examples（最小示例节点）
 
 examples 用于教学和快速验证。
 
@@ -394,7 +394,7 @@ lifecycle_manager
 属于：
 
 ```
-apps/system
+system
 ```
 
 
@@ -419,7 +419,7 @@ metrics_exporter
 属于：
 
 ```
-apps/services
+services
 ```
 
 
@@ -443,7 +443,7 @@ perf_tracker
 属于：
 
 ```
-apps/tools
+tools
 ```
 
 
@@ -467,7 +467,7 @@ agent_demo_node
 属于：
 
 ```
-apps/reference
+examples/references
 ```
 
 
@@ -491,7 +491,7 @@ camera_demo_node
 属于：
 
 ```
-apps/examples
+examples
 ```
 
 
@@ -517,7 +517,7 @@ monitor_agent_node
 它们属于：
 
 ```
-apps/reference/agent
+examples/references/agent
 ```
 
 而不是：
@@ -546,12 +546,11 @@ Applications 层核心职责：
 
 ```
 apps/
-
-├── system/
-├── services/
-├── tools/
-├── reference/
-└── examples/
+system/
+services/
+tools/
+examples/
+└── references/
 ```
 
 该结构具备以下优势：
@@ -569,4 +568,3 @@ apps/
 ```
 
 适合作为 OpenEmber 官方 Applications 层长期标准结构。
-

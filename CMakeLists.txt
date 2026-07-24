@@ -218,7 +218,7 @@ else()
     message(STATUS "├── openember-msgs: (skipped, OPENEMBER_ENABLE_MSGS=OFF)")
 endif()
 
-# Mongoose (embedded web server) is used by apps/services/web_dashboard.
+# Mongoose (embedded web server) is used by services/web_console.
 openember_third_party_resolve_mongoose()
 message(STATUS "├── mongoose: ${MONGOOSE_LIBRARIES}")
 message(STATUS "└── mongoose include: ${MONGOOSE_INCLUDE_DIRS}")
@@ -339,6 +339,11 @@ set( OPENEMBER_LIBRARIES
 add_subdirectory(components)
 add_subdirectory(modules)
 add_subdirectory(core)
+add_subdirectory(system)
+add_subdirectory(services)
+if(EXAMPLES_ENABLED)
+    add_subdirectory(examples)
+endif()
 add_subdirectory(apps)
 
 #========================================================

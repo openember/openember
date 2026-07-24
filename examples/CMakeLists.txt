@@ -1,7 +1,11 @@
-# 应用层示例：hello_node、msgbus 双节点、msgbus NNG 转发器等
+# 示例与参考实现：hello_node、msgbus 双节点、msgbus NNG 转发器等
 
-if(NOT DEFINED OPENEMBER_MODULE_TEMPLATE OR OPENEMBER_MODULE_TEMPLATE)
+if(NOT DEFINED OPENEMBER_EXAMPLE_HELLO_NODE OR OPENEMBER_EXAMPLE_HELLO_NODE)
     add_subdirectory(hello_node)
+endif()
+
+if(NOT DEFINED OPENEMBER_REFERENCE_SENSOR_DATA OR OPENEMBER_REFERENCE_SENSOR_DATA)
+    add_subdirectory(references/sensor_data_reference)
 endif()
 
 if(NOT DEFINED OPENEMBER_EXAMPLE_NETWORK_SOCKETS OR OPENEMBER_EXAMPLE_NETWORK_SOCKETS)

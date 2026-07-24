@@ -1,3 +1,0 @@
-config OPENEMBER_MODULE_ACQUISITION
-    bool "Build app: references/sensor_data_reference"
-    default y

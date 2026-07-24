@@ -146,7 +146,7 @@
 ### 阶段 C（运维）
 
 - 文档约定：**systemd journal**、**rsyslog**、**文件路径**、**logrotate**。
-- 可选：向 **MQTT/HTTP** 上报关键级别（与 `web_dashboard` 日志页对接）。
+- 可选：向 **MQTT/HTTP** 上报关键级别（与 `web_console` 日志页对接）。
 
 ### 6.0 syslog / journald / syslog-ng：`OPENEMBER_SPDLOG_ENABLE_SYSLOG` 的作用
 
@@ -188,7 +188,7 @@
 
 - **落盘**：用本项目内置的 **rotating file sink**（每进程一个文件）或直接走 **syslog sink**。\n
 - **集中采集/转发**：交给系统侧（journald / rsyslog / syslog-ng / Fluent Bit / Vector）。\n
-- **Web 展示**：web_dashboard 不直接去“尾读文件”，而是读取**聚合后的流**（见下一节）。
+- **Web 展示**：web_console 不直接去“尾读文件”，而是读取**聚合后的流**（见下一节）。
 
 优点：少维护一个守护进程，可靠性与生态更好；缺点：依赖目标系统具备/配置好日志栈。
 
@@ -212,9 +212,9 @@
 
 你提到的两种方式都可行，但建议明确边界与扩展方向：
 
-#### 6.3.1 各节点直接发送到 web_dashboard（不推荐作为默认）
+#### 6.3.1 各节点直接发送到 web_console（不推荐作为默认）
 
-- **缺点**：每个进程都要实现网络协议/重试/鉴权；web_dashboard 一挂，全栈都要处理失败；运维策略分散。\n
+- **缺点**：每个进程都要实现网络协议/重试/鉴权；web_console 一挂，全栈都要处理失败；运维策略分散。\n
 - **适用**：极少量关键事件上报（例如告警），而不是全量日志流。
 
 #### 6.3.2 发布订阅聚合（推荐作为默认演进方向）
@@ -222,7 +222,7 @@
 建议引入一个逻辑概念：**log topic**（例如 `openember/log/<level>` 或 `openember/log`），由日志模块提供一个“可选 sink”把日志条目发布到 msgbus/pubsub。\n
 
 - **logger 服务（可选）**：订阅 log topic，负责落盘/转发/过滤。\n
-- **web_dashboard（可选）**：也订阅同一个 log topic，通过 SSE/WebSocket 推送到前端 logs 页面。\n
+- **web_console（可选）**：也订阅同一个 log topic，通过 SSE/WebSocket 推送到前端 logs 页面。\n
 
 这样做的好处是：
 - 生产者（各节点）只需“写日志”，不关心日志去哪。\n
@@ -242,7 +242,7 @@ spdlog
  ↓ (topic sink)
 /openember/log
  ↓
-├── web_dashboard（直接订阅）
+├── web_console（直接订阅）
 └── openember_loggerd（可选：日志控制中心/缓存/过滤/导出）
 ```
 
@@ -254,7 +254,7 @@ spdlog
 - **openember_loggerd**：作为 **optional daemon**
   - **启动**：自动增强日志能力（控制平面 + 数据缓存 + 导出）
   - **不启动**：系统仍可运行（stdout/file/syslog 仍可用，dashboard 也可直接订阅 topic）
-- **web_dashboard**：
+- **web_console**：
   - 阶段 1 只做“实时日志展示”，直接订阅 `/openember/log`
   - 回看/导出/检索属于阶段 2+（由 loggerd 提供）
 
@@ -267,7 +267,7 @@ spdlog
  ↓ topic sink
 /openember/log
  ↓
-web_dashboard
+web_console
 ```
 
 目标：
@@ -281,7 +281,7 @@ spdlog
  ↓ topic sink
 /openember/log
  ↓
-├── web_dashboard（订阅展示）
+├── web_console（订阅展示）
 └── openember_loggerd（缓存/过滤/导出/动态调级）
 ```
 
@@ -325,7 +325,7 @@ dashboard
 建议首版 topic payload 用 **单行 JSON**（便于跨语言与调试）：
 
 ```json
-{"ts":"2026-03-27T12:34:56.789Z","lvl":"info","pid":1234,"proc":"web_dashboard","tag":"apps.services.web_dashboard","msg":"Listening on 0.0.0.0:8000"}
+{"ts":"2026-03-27T12:34:56.789Z","lvl":"info","pid":1234,"proc":"web_console","tag":"services.web_console","msg":"Listening on 0.0.0.0:8000"}
 ```
 
 字段建议：
@@ -373,7 +373,7 @@ mg_listen Failed: 127.0.0.1:18081
 
 1. **输入**：logger 监控各进程日志文件（tail/follow）
 2. **处理**：解析、打统一字段、过滤、缓存
-3. **输出**：统一提供给 web_dashboard（SSE/WebSocket/API），或再发布到 topic
+3. **输出**：统一提供给 web_console（SSE/WebSocket/API），或再发布到 topic
 
 #### 6.4.1 文件采集方案的优缺点
 
@@ -401,7 +401,7 @@ mg_listen Failed: 127.0.0.1:18081
 
 - **阶段 1（先上线）**  
   - logger 只做文件采集（每进程日志文件）
-  - 对外提供 `web_dashboard` 所需实时流（SSE）+ 最近 N 条查询 API
+  - 对外提供 `web_console` 所需实时流（SSE）+ 最近 N 条查询 API
   - 先不引入 topic 入站，降低改造面
 
 - **阶段 2（能力增强）**  
@@ -417,29 +417,29 @@ mg_listen Failed: 127.0.0.1:18081
 
 - **方式 A：logger 自己提供 HTTP/SSE 接口**  
   - logger 进程监听本地端口（例如 `127.0.0.1:18080`）或 Unix socket 对外提供 `/api/logs`、`/api/log/stream`  
-  - web_dashboard 前端直接请求 logger（同机可走反向代理或同源转发）
+  - web_console 前端直接请求 logger（同机可走反向代理或同源转发）
 
-- **方式 B（推荐首版）：web_dashboard 继续对外，logger 只做“后端数据源”**  
+- **方式 B（推荐首版）：web_console 继续对外，logger 只做“后端数据源”**
   - logger 不对外暴露网页端口，只提供本地 IPC 接口（Unix socket）或内部 topic  
-  - web_dashboard 的 `main.cpp` 在 `/api/logs` / `/api/log/stream` 里转发/聚合 logger 数据  
+  - web_console 的 `main.cpp` 在 `/api/logs` / `/api/log/stream` 里转发/聚合 logger 数据
   - 好处是外部仍只有一个 Web 入口，部署与鉴权更简单
 
-> 结论：首版建议 **方式 B**。这样不需要再让 logger 成为“第二个 Web 服务器”，对外接口仍由 web_dashboard 统一承载。
+> 结论：首版建议 **方式 B**。这样不需要再让 logger 成为“第二个 Web 服务器”，对外接口仍由 web_console 统一承载。
 
 ##### 6.4.3.2 阶段 1 的最小数据路径（文件采集 + Web）
 
 推荐链路：
 
-`各节点 -> spdlog 文件 -> logger tail/parse -> logger 内存环形缓冲 -> web_dashboard API/SSE -> 浏览器`
+`各节点 -> spdlog 文件 -> logger tail/parse -> logger 内存环形缓冲 -> web_console API/SSE -> 浏览器`
 
 其中：
 - logger 维护最近 N 条（例如 10k）内存缓冲用于低延迟查询/流推送
-- web_dashboard 负责对外 HTTP 与鉴权；logger 只负责日志数据处理
+- web_console 负责对外 HTTP 与鉴权；logger 只负责日志数据处理
 - 历史日志分页可由 logger 从文件 + offset 读取，实时日志从内存缓冲推送
 
-#### 6.4.4 logger 与 web_dashboard 的接口建议
+#### 6.4.4 logger 与 web_console 的接口建议
 
-- **推荐**：`web_dashboard` 不直接读文件，不直接订阅各模块
+- **推荐**：`web_console` 不直接读文件，不直接订阅各模块
 - **统一由 logger 提供**：
   - `GET /api/logs?level=&tag=&since=&limit=`（历史/分页）
   - `GET /api/log/stream`（SSE 实时推送）
@@ -452,13 +452,13 @@ mg_listen Failed: 127.0.0.1:18081
 
 - **输入 1（已有）**：文件采集（tail 每进程日志文件）
 - **输入 2（新增，可选）**：topic 日志流（各节点发布 `openember/log`）
-- **输出（单一）**：仍由 logger 统一提供给 web_dashboard（API/SSE），可选再转发到外部系统
+- **输出（单一）**：仍由 logger 统一提供给 web_console（API/SSE），可选再转发到外部系统
 
 具体方向是：
 
 `节点(可选) --topic--> logger`  
 `节点(默认) --file--> logger`  
-`logger --统一接口--> web_dashboard`
+`logger --统一接口--> web_console`
 
 不是要求“所有节点都必须 topic 化”。建议：
 - 默认仍靠文件输入（零侵入）
@@ -491,9 +491,9 @@ mg_listen Failed: 127.0.0.1:18081
 
 ## 7. 与现有代码的衔接
 
-- 当前工程中已有 `LOG_I` / `LOG_TAG` 用法（如 `web_dashboard/main.cpp`），迁移时：
+- 当前工程中已有 `LOG_I` / `LOG_TAG` 用法（如 `web_console/main.cpp`），迁移时：
   - **统一宏名与头文件**；
-  - **MODULE_NAME** 可保留为 **默认 TAG**，或改为更长的 **分层名**（`apps.services.web_dashboard`）。
+  - **MODULE_NAME** 可保留为 **默认 TAG**，或改为更长的 **分层名**（`services.web_console`）。
 
 ---
 
