@@ -40,7 +40,6 @@ struct LoggerConfig {
     std::size_t max_file_count   = 5;
 
     std::string topic_name       = "/openember/log";
-    std::string topic_pub_url    = "tcp://*:7561";
     std::string topic_level      = "info";
     int         topic_rate_limit = 0;  // lines/sec, 0 = unlimited
 

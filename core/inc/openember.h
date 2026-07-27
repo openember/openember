@@ -24,8 +24,6 @@
 #include "openember/logging/log_c.h"
 #endif
 
-#include "message.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

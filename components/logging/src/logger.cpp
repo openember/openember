@@ -23,7 +23,10 @@
 #include <spdlog/sinks/syslog_sink.h>
 #include <spdlog/sinks/base_sink.h>
 
-#include "transport_backend.hpp"
+#include "openember/transport/options.hpp"
+#include "openember/transport/publisher.hpp"
+#include "openember/transport/session.hpp"
+
 #include <chrono>
 #include <filesystem>
 #include <unistd.h>
@@ -75,21 +78,10 @@ std::string json_escape(std::string_view v)
     return out;
 }
 
-std::string normalize_topic_pub_url(const std::string& raw)
-{
-#if defined(EMBER_LIBS_USING_LCM)
-    if (raw.size() >= 6u && raw.compare(0u, 6u, "tcp://") == 0) {
-        return "udpm://239.255.76.67:7667?ttl=1";
-    }
-#endif
-    return raw;
-}
-
 class TopicSink final : public spdlog::sinks::base_sink<std::mutex> {
 public:
-    TopicSink(std::string pub_url, std::string topic, spdlog::level::level_enum threshold, int rate_limit_lps)
-        : pub_url_(normalize_topic_pub_url(std::move(pub_url)))
-        , topic_(std::move(topic))
+    TopicSink(std::string topic, spdlog::level::level_enum threshold, int rate_limit_lps)
+        : topic_(std::move(topic))
         , threshold_(threshold)
         , rate_limit_lps_(rate_limit_lps)
     {
@@ -97,9 +89,10 @@ public:
 
     ~TopicSink() override
     {
-        if (transport_) {
-            (void)transport_->deinit();
-            transport_.reset();
+        publisher_.reset();
+        if (session_) {
+            session_->Close();
+            session_.reset();
         }
     }
 
@@ -125,16 +118,8 @@ protected:
             ++rl_count_;
         }
 
-        if (!transport_) {
-            transport_ = openember::msgbus::CreateDefaultTransportBackend();
-            if (!transport_) {
-                return;
-            }
-            openember::msgbus::MessageCallback no_recv{};
-            if (transport_->init("spdlog", pub_url_, std::move(no_recv)) != 0) {
-                transport_.reset();
-                return;
-            }
+        if (!ensure_publisher()) {
+            return;
         }
 
         const auto ts =
@@ -151,17 +136,55 @@ protected:
         payload += "\"msg\":\"" + json_escape(std::string_view(msg.payload.data(), msg.payload.size())) + "\"";
         payload += "}";
 
-        (void)transport_->publish_raw(topic_, payload.data(), payload.size());
+        openember::transport::ByteBuffer buf(payload.begin(), payload.end());
+        (void)publisher_->Publish(buf);
     }
 
     void flush_() override {}
 
 private:
-    std::string pub_url_;
+    bool ensure_publisher()
+    {
+        if (publisher_) {
+            return true;
+        }
+
+        const auto now = std::chrono::steady_clock::now();
+        if (last_open_attempt_.time_since_epoch().count() != 0 &&
+            now - last_open_attempt_ < std::chrono::seconds(2)) {
+            return false;
+        }
+        last_open_attempt_ = now;
+
+        openember::transport::SessionOptions options;
+        options.mode = openember::transport::ZenohMode::kClient;
+        options.connect = openember::transport::kDefaultZenohListenEndpoint;
+        options.robot_id = "openember";
+
+        auto session = std::make_unique<openember::transport::Session>(options);
+        if (!session->Open().Ok()) {
+            return false;
+        }
+
+        openember::transport::TopicOptions topic_opts;
+        topic_opts.name = topic_;
+        auto result = session->CreatePublisher(topic_opts);
+        if (!result.Ok()) {
+            session->Close();
+            return false;
+        }
+
+        session_ = std::move(session);
+        publisher_ = std::make_unique<openember::transport::Publisher>(std::move(result.Value()));
+        return true;
+    }
+
     std::string topic_;
     spdlog::level::level_enum threshold_{spdlog::level::info};
     int rate_limit_lps_{0};
-    std::unique_ptr<openember::msgbus::TransportBackend> transport_;
+    std::unique_ptr<openember::transport::Session> session_;
+    std::unique_ptr<openember::transport::Publisher> publisher_;
+    std::chrono::steady_clock::time_point last_open_attempt_{};
     std::string proc_{"openember"};
     std::chrono::steady_clock::time_point rl_window_start_{};
     int rl_count_{0};
@@ -207,9 +230,6 @@ LoggerConfig LoggerConfig::from_build_defaults(std::string_view process_name)
 #endif
 #ifdef OPENEMBER_SPDLOG_TOPIC_NAME
     cfg.topic_name = OPENEMBER_SPDLOG_TOPIC_NAME;
-#endif
-#ifdef OPENEMBER_SPDLOG_TOPIC_PUB_URL
-    cfg.topic_pub_url = OPENEMBER_SPDLOG_TOPIC_PUB_URL;
 #endif
 #ifdef OPENEMBER_SPDLOG_TOPIC_LEVEL
     cfg.topic_level = OPENEMBER_SPDLOG_TOPIC_LEVEL;
@@ -273,7 +293,7 @@ Logger::Logger(LoggerConfig config) : config_(std::move(config)), impl_(std::mak
             try {
                 auto threshold = parse_level(config_.topic_level, spdlog::level::info);
                 auto ts = std::make_shared<TopicSink>(
-                    config_.topic_pub_url, config_.topic_name, threshold, config_.topic_rate_limit);
+                    config_.topic_name, threshold, config_.topic_rate_limit);
                 ts->set_process_name(config_.name);
                 sinks.push_back(std::move(ts));
             } catch (...) {

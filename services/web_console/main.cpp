@@ -24,12 +24,18 @@
 #include <unistd.h>
 
 #include <sys/utsname.h>
+#include <memory>
 
 #define MODULE_NAME            "web_console"
 #define LOG_TAG                MODULE_NAME
 #include "openember.h"
 
-static msg_node_t client;
+#include "openember/framework/system_bus.hpp"
+#include "openember/init.hpp"
+#include "openember/node.hpp"
+
+static std::shared_ptr<openember::Node> g_node;
+static openember::Subscriber<std::string> g_log_sub;
 
 static std::string json_escape(std::string_view v);
 
@@ -403,52 +409,28 @@ static void fn(struct mg_connection *c, int ev, void *ev_data)
     }
 }
 
-static void _msg_arrived_cb(void *user_data, char *topic, void *payload, size_t payloadlen)
+static int link_init(void)
 {
-    (void)user_data;
-#if defined(OPENEMBER_SPDLOG_ENABLE_TOPIC) && OPENEMBER_SPDLOG_ENABLE_TOPIC && defined(OPENEMBER_SPDLOG_TOPIC_NAME)
-    if (topic && payload && payloadlen > 0) {
-        const size_t tlen = std::strlen(OPENEMBER_SPDLOG_TOPIC_NAME);
-        if (std::strncmp(topic, OPENEMBER_SPDLOG_TOPIC_NAME, tlen) == 0) {
-            on_log_topic_payload(payload, payloadlen);
-            return;
+    try {
+        openember::framework::InitSystemClient();
+        g_node = openember::CreateNode(MODULE_NAME);
+        if (!openember::framework::RegisterModule(*g_node, MODULE_NAME, SUBMODULE_CLASS_WEB)) {
+            LOG_E("Module register publish failed.");
+            return -EMBER_ERROR;
         }
-    }
-#else
-    (void)payloadlen;
+
+#if defined(OPENEMBER_SPDLOG_ENABLE_TOPIC) && OPENEMBER_SPDLOG_ENABLE_TOPIC && \
+    defined(OPENEMBER_SPDLOG_TOPIC_NAME)
+        g_log_sub = g_node->Subscribe<std::string>(
+            OPENEMBER_SPDLOG_TOPIC_NAME, [](const std::string& payload) {
+                on_log_topic_payload(payload.data(), payload.size());
+            });
+        LOG_I("log topic subscribed via Link: topic=%s", OPENEMBER_SPDLOG_TOPIC_NAME);
 #endif
-    LOG_D("[%s] %s\n", topic, (char *)payload);
-}
-
-static int msg_init(void)
-{
-    int rc = 0, cn = 0;
-
-    rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb, NULL);
-    if (rc != EMBER_EOK) {
-        LOG_E("Message bus init failed.");
-        return -1;
-    }
-
-    /* Subscription list */
-    rc = msg_bus_subscribe(client, TEST_TOPIC);
-    if (rc != EMBER_EOK) cn++;
-    rc = msg_bus_subscribe(client, SYS_EVENT_REPLY_TOPIC);
-    if (rc != EMBER_EOK) cn++;
-    rc = msg_bus_subscribe(client, MOD_REGISTER_REPLY_TOPIC);
-    if (rc != EMBER_EOK) cn++;
-
-#if defined(OPENEMBER_SPDLOG_ENABLE_TOPIC) && OPENEMBER_SPDLOG_ENABLE_TOPIC
-    rc = msg_bus_subscribe(client, OPENEMBER_SPDLOG_TOPIC_NAME);
-    if (rc != EMBER_EOK) cn++;
-#endif
-
-    if (cn != 0) {
-        msg_bus_deinit(client);
-        LOG_E("Message bus subscribe failed.");
+    } catch (const std::exception& e) {
+        LOG_E("Link init failed: %s", e.what());
         return -EMBER_ERROR;
     }
-
     return EMBER_EOK;
 }
 
@@ -464,25 +446,14 @@ int main()
     (void)snprintf(listening_addr, sizeof(listening_addr), "0.0.0.0:%u", port);
     const char *s_listening_address = listening_addr;
 
-    
     log_init(MODULE_NAME);
     LOG_I("Version: %lu.%lu.%lu", EMBER_VERSION, EMBER_SUBVERSION, EMBER_REVISION);
 
-    rc = msg_init();
+    rc = link_init();
     if (rc != EMBER_EOK) {
-        LOG_E("Message channel init failed.");
+        LOG_E("Link channel init failed.");
         exit(1);
     }
-
-    rc = msg_smm_register(client, MODULE_NAME, SUBMODULE_CLASS_WEB);
-    if (rc != EMBER_EOK) {
-        LOG_E("Module register failed.");
-        exit(1);
-    }
-
-#if defined(OPENEMBER_SPDLOG_ENABLE_TOPIC) && OPENEMBER_SPDLOG_ENABLE_TOPIC
-    LOG_I("log topic subscribed via msgbus: topic=%s (same transport as framework bus)", OPENEMBER_SPDLOG_TOPIC_NAME);
-#endif
 
     /* Run web server */
     mg_mgr_init(&mgr);
@@ -491,6 +462,7 @@ int main()
     if (NULL == mg_http_listen(&mgr, s_listening_address, fn, NULL)) {
         LOG_E("Exit.");
         mg_mgr_free(&mgr);
+        openember::Shutdown();
         exit(1);
     }
 
@@ -504,6 +476,9 @@ int main()
     }
 
     mg_mgr_free(&mgr);
+    g_log_sub = {};
+    g_node.reset();
+    openember::Shutdown();
     MG_INFO(("Exiting on signal %d", s_signo));
     return 0;
 }

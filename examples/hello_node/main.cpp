@@ -1,173 +1,85 @@
 /*
- * Copyright (c) 2022-2023, OpenEmber Team
- *
+ * Copyright (c) 2022-2026, OpenEmber Team
  * SPDX-License-Identifier: Apache-2.0
  *
  * Change Logs:
  * Date           Author       Notes
  * 2022-07-07     luhuadong    the first version
- * 2022-07-28     luhuadong    add message pub & sub
- * 2022-11-08     luhuadong    add multi-thread for message parse
- * 2022-11-08     luhuadong    support synchronous mode
+ * 2026-07-25     openember    migrate from msgbus to Link
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
-#define MODULE_NAME            "hello_node"
-#define LOG_TAG                MODULE_NAME
-#include "openember.h"
-#include "openember/thread_pool/thread_pool.hpp"
 
+#include <chrono>
 #include <memory>
 #include <string>
+#include <thread>
+
 #include <nlohmann/json.hpp>
 
-//#define TEMPLATE_RAW_MSG
+#define MODULE_NAME "hello_node"
+#define LOG_TAG MODULE_NAME
+#include "openember.h"
 
-static msg_node_t client;
-static std::unique_ptr<openember::thread_pool::ThreadPool> g_pool;
-
-/* Options */
-static ember_bool_t sync_mode = EMBER_FALSE; /* EMBER_TRUE or EMBER_FALSE */
-
-#ifdef TEMPLATE_RAW_MSG
-typedef struct test_msg {
-    int id;
-    char *msg;
-} test_msg_t;
-#endif
-
-static void _msg_arrived_cb(void *user_data, char *topic, void *payload, size_t payloadlen)
-{
-    (void)user_data;
-    (void)payloadlen;
-#ifdef TEMPLATE_RAW_MSG
-    test_msg_t *test_msg = (test_msg_t *)payload;
-    LOG_I("Payload len = %lu >> id: %d, msg: %s", payloadlen, test_msg->id, test_msg->msg);
-#else
-    LOG_D("[%s] %s", topic, (char *)payload);
-
-    if (!g_pool) {
-        return;
-    }
-
-    std::string body(static_cast<char *>(payload));
-    g_pool->post([body = std::move(body)]() {
-        try {
-            nlohmann::json j = nlohmann::json::parse(body);
-            LOG_I("%s", j.dump(4).c_str());
-        } catch (const std::exception &e) {
-            LOG_E("JSON: %s", e.what());
-        }
-    });
-#endif
-}
-
-static int msg_init(void)
-{
-    int rc = 0, cn = 0;
-
-    if (sync_mode) {
-        rc = msg_bus_init(&client, MODULE_NAME, NULL, NULL, NULL);
-    }
-    else {
-        rc = msg_bus_init(&client, MODULE_NAME, NULL, _msg_arrived_cb, NULL);
-    }
-    if (rc != EMBER_EOK) {
-        LOG_E("Message bus init failed.\n");
-        return -1;
-    }
-
-    g_pool = std::make_unique<openember::thread_pool::ThreadPool>(5);
-
-    /* Subscription list */
-    rc = msg_bus_subscribe(client, TEST_TOPIC);
-    if (rc != EMBER_EOK) cn++;
-    rc = msg_bus_subscribe(client, SYS_EVENT_REPLY_TOPIC);
-    if (rc != EMBER_EOK) cn++;
-    rc = msg_bus_subscribe(client, MOD_REGISTER_REPLY_TOPIC);
-    if (rc != EMBER_EOK) cn++;
-
-    if (cn != 0) {
-        g_pool.reset();
-        msg_bus_deinit(client);
-        LOG_E("Message bus subscribe failed.\n");
-        return -EMBER_ERROR;
-    }
-
-    return EMBER_EOK;
-}
+#include "openember/framework/system_bus.hpp"
+#include "openember/init.hpp"
+#include "openember/node.hpp"
+#include "openember/thread_pool/thread_pool.hpp"
 
 int main(void)
 {
-    int rc;
-
-    
     log_init(MODULE_NAME);
-    
+
     LOG_D("Hello OpenEmber!");
     LOG_I("Hello OpenEmber!");
     LOG_W("Hello OpenEmber!");
     LOG_E("Hello OpenEmber!");
-
     LOG_I("Version: %lu.%lu.%lu", EMBER_VERSION, EMBER_SUBVERSION, EMBER_REVISION);
 
-    rc = msg_init();
-    if (rc != EMBER_EOK) {
-        LOG_E("Message channel init failed.");
-        exit(1);
-    }
+    auto pool = std::make_unique<openember::thread_pool::ThreadPool>(5);
 
-    rc = msg_smm_register(client, MODULE_NAME, SUBmod_class_tEST);
-    if (rc != EMBER_EOK) {
-        LOG_E("Module register failed.");
-        exit(1);
-    }
+    try {
+        openember::framework::InitSystemClient();
+        auto node = openember::CreateNode(MODULE_NAME);
 
-    int count = 3;
-    
-#ifdef TEMPLATE_RAW_MSG
-    test_msg_t test_msg = {0};
-#else
-    char buf[256] = {0};
-#endif
+        auto sub = node->Subscribe<std::string>(
+            TEST_TOPIC, [pool = pool.get()](const std::string& body) {
+                if (!pool) {
+                    return;
+                }
+                pool->post([body]() {
+                    try {
+                        nlohmann::json j = nlohmann::json::parse(body);
+                        LOG_I("%s", j.dump(4).c_str());
+                    } catch (const std::exception& e) {
+                        LOG_E("JSON: %s", e.what());
+                    }
+                });
+            });
 
-    while (count--) {
-
-#ifdef TEMPLATE_RAW_MSG
-        test_msg.id = count;
-        test_msg.msg = "Hello, OpenEmber";
-        msg_bus_publish_raw(client, TEST_TOPIC, &test_msg, sizeof(test_msg));
-#else
-        snprintf(buf, sizeof(buf), "{\"id\":\"%d\",\"msg\":\"Hello, OpenEmber\"}", count);
-        msg_bus_publish(client, TEST_TOPIC, buf);
-
-        if (sync_mode) { /* wait message */
-            
-            char *topic = NULL;
-            int payloadlen = 0;
-            void *payload = NULL;
-
-            msg_bus_recv(client, &topic, &payload, &payloadlen, 3000);
-
-            if (topic && payload) {
-                LOG_I("Recv: [%s] %s", topic, (char *)payload);
-                msg_bus_free(topic, payload);
-            }
+        if (!openember::framework::RegisterModule(*node, MODULE_NAME, SUBmod_class_tEST)) {
+            LOG_E("Module register publish failed.");
         }
-#endif
-        sleep(1);
-    }
-    
-    LOG_I("[Module] Template end.");
-    if (g_pool) {
-        g_pool->wait_idle();
-        g_pool.reset();
-    }
-    msg_bus_deinit(client);
-    log_deinit();
 
+        auto pub = node->Advertise<std::string>(TEST_TOPIC);
+        int count = 3;
+        while (count--) {
+            char buf[256] = {0};
+            snprintf(buf, sizeof(buf), "{\"id\":\"%d\",\"msg\":\"Hello, OpenEmber\"}", count);
+            (void)pub.Publish(std::string(buf));
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        LOG_I("[Module] Template end.");
+        pool->wait_idle();
+        pool.reset();
+        openember::Shutdown();
+    } catch (const std::exception& e) {
+        LOG_E("Link init failed: %s", e.what());
+        log_deinit();
+        return 1;
+    }
+
+    log_deinit();
     return 0;
 }

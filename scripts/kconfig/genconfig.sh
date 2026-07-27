@@ -51,15 +51,6 @@ tp_mode="$(awk '
   END { print m }
 ' "${CONFIG_FILE}")"
 
-msgbus_backend="$(awk '
-  BEGIN { b="LCM" }
-  /^CONFIG_OPENEMBER_MSGBUS_BACKEND_UDP=y/ { b="UDP" }
-  /^CONFIG_OPENEMBER_MSGBUS_BACKEND_ZMQ=y/ { b="ZMQ" }
-  /^CONFIG_OPENEMBER_MSGBUS_BACKEND_NNG=y/ { b="NNG" }
-  /^CONFIG_OPENEMBER_MSGBUS_BACKEND_LCM=y/ { b="LCM" }
-  END { print b }
-' "${CONFIG_FILE}")"
-
 onoff() {
   local sym="$1"
   if grep -q "^${sym}=y" "${CONFIG_FILE}"; then
@@ -147,8 +138,6 @@ component_thread_pool="$(onoff CONFIG_OPENEMBER_COMPONENT_THREAD_POOL)"
 if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_THREAD_POOL=" "${CONFIG_FILE}"; then
   component_thread_pool=ON
 fi
-example_msgbus_two_nodes="$(onoff CONFIG_OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES)"
-example_msgbus_nng_forwarder="$(onoff CONFIG_OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER)"
 example_network_sockets="$(onoff CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS)"
 example_transport="$(onoff CONFIG_OPENEMBER_EXAMPLE_TRANSPORT)"
 if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_TRANSPORT=" "${CONFIG_FILE}"; then
@@ -277,42 +266,6 @@ spdlog_topic_name="$(awk '
 ' "${CONFIG_FILE}")"
 if [[ -z "${spdlog_topic_name}" ]]; then
   spdlog_topic_name="/openember/log"
-fi
-
-spdlog_topic_pub_url="tcp://*:7561"
-spdlog_topic_pub_url="$(awk '
-  /^CONFIG_OPENEMBER_SPDLOG_TOPIC_PUB_URL=/ {
-    v=$0
-    sub(/^CONFIG_OPENEMBER_SPDLOG_TOPIC_PUB_URL=/,"",v)
-    gsub(/^"/,"",v); gsub(/"$/,"",v)
-    print v
-    exit
-  }
-' "${CONFIG_FILE}")"
-if [[ -z "${spdlog_topic_pub_url}" ]]; then
-  if [[ "${msgbus_backend}" == "LCM" ]]; then
-    spdlog_topic_pub_url="udpm://239.255.76.67:7667?ttl=1"
-  else
-    spdlog_topic_pub_url="tcp://*:7561"
-  fi
-fi
-
-spdlog_topic_sub_url="tcp://127.0.0.1:7561"
-spdlog_topic_sub_url="$(awk '
-  /^CONFIG_OPENEMBER_SPDLOG_TOPIC_SUB_URL=/ {
-    v=$0
-    sub(/^CONFIG_OPENEMBER_SPDLOG_TOPIC_SUB_URL=/,"",v)
-    gsub(/^"/,"",v); gsub(/"$/,"",v)
-    print v
-    exit
-  }
-' "${CONFIG_FILE}")"
-if [[ -z "${spdlog_topic_sub_url}" ]]; then
-  if [[ "${msgbus_backend}" == "LCM" ]]; then
-    spdlog_topic_sub_url="udpm://239.255.76.67:7667?ttl=1"
-  else
-    spdlog_topic_sub_url="tcp://127.0.0.1:7561"
-  fi
 fi
 
 spdlog_topic_rate_limit="0"
@@ -620,8 +573,6 @@ set(OPENEMBER_SPDLOG_ROTATE_MAX_FILES ${spdlog_rotate_max_files} CACHE STRING "s
 set(OPENEMBER_SPDLOG_ENABLE_SYSLOG ${spdlog_syslog} CACHE BOOL "Enable spdlog syslog sink" FORCE)
 set(OPENEMBER_SPDLOG_ENABLE_TOPIC ${spdlog_topic} CACHE BOOL "Enable spdlog topic sink" FORCE)
 set(OPENEMBER_SPDLOG_TOPIC_NAME "${spdlog_topic_name}" CACHE STRING "spdlog log topic name" FORCE)
-set(OPENEMBER_SPDLOG_TOPIC_PUB_URL "${spdlog_topic_pub_url}" CACHE STRING "spdlog topic publisher URL" FORCE)
-set(OPENEMBER_SPDLOG_TOPIC_SUB_URL "${spdlog_topic_sub_url}" CACHE STRING "spdlog topic subscriber URL" FORCE)
 set(OPENEMBER_SPDLOG_TOPIC_LEVEL "${spdlog_topic_level}" CACHE STRING "spdlog topic publish level threshold" FORCE)
 set(OPENEMBER_SPDLOG_TOPIC_RATE_LIMIT ${spdlog_topic_rate_limit} CACHE STRING "spdlog topic rate limit (lines/sec)" FORCE)
 set(OPENEMBER_WEB_CONSOLE_ROOT_DIR "${web_root_dir}" CACHE STRING "web_console web root directory" FORCE)
@@ -664,8 +615,6 @@ set(OPENEMBER_SERVICE_WEB_CONSOLE ${service_web_console} CACHE BOOL "Build servi
 set(OPENEMBER_SERVICE_LOGGER ${service_logger} CACHE BOOL "Build services/logger" FORCE)
 set(OPENEMBER_COMPONENT_ALGORITHM ${component_algorithm} CACHE BOOL "Build Algorithm component" FORCE)
 set(OPENEMBER_COMPONENT_THREAD_POOL ${component_thread_pool} CACHE BOOL "Build Thread Pool component" FORCE)
-set(OPENEMBER_EXAMPLE_MSGBUS_TWO_NODES ${example_msgbus_two_nodes} CACHE BOOL "Build example msgbus_two_nodes" FORCE)
-set(OPENEMBER_EXAMPLE_MSGBUS_NNG_FORWARDER ${example_msgbus_nng_forwarder} CACHE BOOL "Build example msgbus_nng_forwarder" FORCE)
 set(OPENEMBER_EXAMPLE_NETWORK_SOCKETS ${example_network_sockets} CACHE BOOL "Build example network_sockets" FORCE)
 set(OPENEMBER_EXAMPLE_TRANSPORT ${example_transport} CACHE BOOL "Build examples transport_talker/listener" FORCE)
 set(OPENEMBER_EXAMPLE_CORE ${example_core} CACHE BOOL "Build examples openember_topic_* / openember_service_*" FORCE)
@@ -684,14 +633,6 @@ set(OPENEMBER_ENABLE_LPIO_EXAMPLES ${enable_lpio_examples} CACHE BOOL "Build pla
 set(OPENEMBER_ENABLE_TOOLS ${enable_tools} CACHE BOOL "Build OpenEmber utilities (tools/)" FORCE)
 set(OPENEMBER_ENABLE_TOOLS_EMCOM ${enable_tools_emcom} CACHE BOOL "Build emcom serial console tool" FORCE)
 set(OPENEMBER_ENABLE_TOOLS_SBUS_RECEIVER ${enable_tools_sbus_receiver} CACHE BOOL "Build sbus-receiver SBUS monitor tool" FORCE)
-
-if("${msgbus_backend}" STREQUAL "LCM")
-  set(OPENEMBER_MSGBUS_USE_NNG OFF CACHE BOOL "Use NNG backend for internal msgbus" FORCE)
-  set(OPENEMBER_MSGBUS_USE_LCM ON CACHE BOOL "Use LCM backend for internal msgbus" FORCE)
-else()
-  set(OPENEMBER_MSGBUS_USE_NNG ON CACHE BOOL "Use NNG backend for internal msgbus" FORCE)
-  set(OPENEMBER_MSGBUS_USE_LCM OFF CACHE BOOL "Use LCM backend for internal msgbus" FORCE)
-endif()
 
 set(OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG ${bundle_spdlog} CACHE BOOL "Third-party bundle: spdlog" FORCE)
 set(OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON ${bundle_nlohmann} CACHE BOOL "Third-party bundle: nlohmann/json" FORCE)

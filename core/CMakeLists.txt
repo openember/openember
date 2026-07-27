@@ -13,6 +13,7 @@ add_library(openember_core
     src/context.cpp
     src/init.cpp
     src/node.cpp
+    src/framework/system_bus.cpp
     src/topic/publisher_base.cpp
     src/topic/subscriber_base.cpp
     src/service/service_base.cpp
@@ -22,6 +23,8 @@ add_library(openember_core
 target_include_directories(openember_core
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc
+        ${CMAKE_BINARY_DIR}/include
 )
 
 target_compile_features(openember_core

@@ -55,12 +55,6 @@ option( BUILD_MQTT "Whether compile MQTT" OFF)
 option( BUILD_MD5 "Whether compile md5" OFF)
 option( BUILD_EASYLOGGER "Whether compile EasyLogger (obsolete, currently disabled)" OFF)
 
-option( OPENEMBER_MSGBUS_USE_NNG "Use NNG backend for internal msgbus" ON)
-option( OPENEMBER_MSGBUS_USE_LCM "Use LCM backend for internal msgbus" OFF)
-option( OPENEMBER_MSGBUS_USE_ZMQ "Use ZeroMQ for internal msgbus (experimental; not all CMake paths wired)" OFF)
-option( OPENEMBER_MSGBUS_USE_ZENOH "Use Zenoh (zenoh-c) for internal msgbus (experimental)" OFF)
-# When LCM is selected: use C++ lcm::LCM for TransportBackend (MsgBusNode); C msg_bus_* still uses lcm_wrapper.c
-option( OPENEMBER_MSGBUS_LCM_USE_CPP "Use C++ lcm::LCM for TransportBackend when LCM msgbus is enabled" ON)
 option( OPENEMBER_WITH_ZENOHCXX "Use zenoh-cpp C++ bindings without Transport component (requires zenoh-c; experimental)" OFF)
 
 if(NOT DEFINED OPENEMBER_COMPONENT_TRANSPORT)
@@ -80,19 +74,6 @@ if(OPENEMBER_ENABLE_LINK)
 else()
     set(OPENEMBER_ENABLE_CORE OFF CACHE BOOL "Build C++ core (Node/Topic/Service)" FORCE)
 endif()
-
-if(OPENEMBER_MSGBUS_USE_NNG AND OPENEMBER_MSGBUS_USE_LCM)
-    message(FATAL_ERROR "OPENEMBER_MSGBUS_USE_NNG and OPENEMBER_MSGBUS_USE_LCM cannot both be ON. Please select exactly one.")
-endif()
-
-if(OPENEMBER_MSGBUS_USE_LCM)
-    set(_OPENEMBER_MSGBUS_HINT "lcm")
-elseif(OPENEMBER_MSGBUS_USE_NNG)
-    set(_OPENEMBER_MSGBUS_HINT "nng")
-else()
-    set(_OPENEMBER_MSGBUS_HINT "nng")
-endif()
-message(STATUS "msgbus: backend = ${_OPENEMBER_MSGBUS_HINT}")
 
 if (DEBUG_ENABLED)
     set(CMAKE_BUILD_TYPE "Debug")
@@ -223,21 +204,11 @@ openember_third_party_resolve_mongoose()
 message(STATUS "├── mongoose: ${MONGOOSE_LIBRARIES}")
 message(STATUS "└── mongoose include: ${MONGOOSE_INCLUDE_DIRS}")
 
-if(OPENEMBER_MSGBUS_USE_LCM)
-    openember_transport_resolve_lcm()
-    message(STATUS "├── lcm: ${OPENEMBER_LCM_LIBRARIES}")
-    message(STATUS "└── lcm include: ${OPENEMBER_LCM_INCLUDE_DIRS}")
-elseif(OPENEMBER_MSGBUS_USE_NNG)
-    openember_transport_resolve_nng()
-    message(STATUS "├── nng: ${OPENEMBER_NNG_LIBRARIES}")
-    message(STATUS "└── nng include: ${OPENEMBER_NNG_INCLUDE_DIRS}")
-endif()
-
 if(NOT DEFINED OPENEMBER_COMPONENT_TRANSPORT OR OPENEMBER_COMPONENT_TRANSPORT)
     openember_transport_resolve_zenoh_cpp()
     message(STATUS "├── zenoh-c: ${OPENEMBER_ZENOHC_LIBRARIES}")
     message(STATUS "└── zenoh-cpp: ${OPENEMBER_ZENOHCXX_LIBRARIES}")
-elseif(OPENEMBER_MSGBUS_USE_ZENOH)
+elseif(OPENEMBER_WITH_ZENOHCXX)
     openember_transport_resolve_zenoh_c()
     message(STATUS "├── zenoh-c: ${OPENEMBER_ZENOHC_LIBRARIES}")
 endif()
@@ -266,22 +237,11 @@ set( OPENEMBER_EXTERNAL_LIBRARIES
     ${SQLITE_LIBRARIES} dl
 )
 
-if(OPENEMBER_MSGBUS_USE_NNG)
-    add_definitions(-DEMBER_LIBS_USING_NNG)
-    list(APPEND OPENEMBER_EXTERNAL_INCLUDE_DIRS ${OPENEMBER_NNG_INCLUDE_DIRS})
-    list(APPEND OPENEMBER_EXTERNAL_LIBRARIES ${OPENEMBER_NNG_LIBRARIES})
-elseif(OPENEMBER_MSGBUS_USE_LCM)
-    add_definitions(-DEMBER_LIBS_USING_LCM)
-    list(APPEND OPENEMBER_EXTERNAL_INCLUDE_DIRS ${OPENEMBER_LCM_INCLUDE_DIRS})
-    list(APPEND OPENEMBER_EXTERNAL_LIBRARIES ${OPENEMBER_LCM_LIBRARIES})
-endif()
-
 set( OPENEMBER_INTERNAL_INCLUDE_DIRS 
     ${CMAKE_BINARY_DIR}/include
     ${CMAKE_SOURCE_DIR}/core/inc
     ${CMAKE_SOURCE_DIR}/components/logging
     ${CMAKE_SOURCE_DIR}/components/logging/include
-    ${CMAKE_SOURCE_DIR}/components/msgbus
 )
 if(OPENEMBER_COMPONENT_MQTT)
     list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/mqtt)
@@ -289,7 +249,6 @@ endif()
 
 set( OPENEMBER_INTERNAL_LIBRARIES 
     logging
-    msgbus
 )
 if(NOT DEFINED OPENEMBER_COMPONENT_NETDEV OR OPENEMBER_COMPONENT_NETDEV)
     list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/netdev/include)
@@ -344,6 +303,12 @@ set( OPENEMBER_LIBRARIES
 add_subdirectory(components)
 add_subdirectory(modules)
 add_subdirectory(core)
+if(OPENEMBER_ENABLE_CORE)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/core/include)
+    list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_core)
+    list(APPEND OPENEMBER_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/core/include)
+    list(APPEND OPENEMBER_LIBRARIES openember_core)
+endif()
 add_subdirectory(system)
 add_subdirectory(services)
 if(EXAMPLES_ENABLED)

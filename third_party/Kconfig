@@ -51,25 +51,25 @@ config OPENEMBER_THIRD_PARTY_BUNDLE_NNG
     bool "Include NNG sources"
     default n
     help
-      When msgbus backend is NNG, forced ON. Otherwise optional pre-fetch.
+      Optional pre-fetch only (not used by OpenEmber Link).
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_LCM
     bool "Include LCM sources"
     default n
     help
-      When msgbus backend is LCM, forced ON. Otherwise optional pre-fetch.
+      Optional pre-fetch only (not used by OpenEmber Link).
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_LIBZMQ
     bool "Include libzmq sources"
     default n
     help
-      When msgbus backend is ZeroMQ, forced ON (with cppzmq). Otherwise optional pre-fetch.
+      Optional pre-fetch only (not used by OpenEmber Link).
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_CPPZMQ
     bool "Include cppzmq headers"
     default n
     help
-      When msgbus backend is ZeroMQ, forced ON (with libzmq). Otherwise optional pre-fetch.
+      Optional pre-fetch only (not used by OpenEmber Link).
 
 config OPENEMBER_THIRD_PARTY_BUNDLE_ZENOH_C
     bool "Include zenoh-c sources"
@@ -128,22 +128,6 @@ config OPENEMBER_TP_LINK_PAHO
     bool
     default y if OPENEMBER_COMPONENT_MQTT
     select OPENEMBER_THIRD_PARTY_BUNDLE_PAHO
-
-config OPENEMBER_TP_LINK_NNG
-    bool
-    default y if OPENEMBER_MSGBUS_BACKEND_NNG
-    select OPENEMBER_THIRD_PARTY_BUNDLE_NNG
-
-config OPENEMBER_TP_LINK_LCM
-    bool
-    default y if OPENEMBER_MSGBUS_BACKEND_LCM
-    select OPENEMBER_THIRD_PARTY_BUNDLE_LCM
-
-config OPENEMBER_TP_LINK_ZMQ
-    bool
-    default y if OPENEMBER_MSGBUS_BACKEND_ZMQ
-    select OPENEMBER_THIRD_PARTY_BUNDLE_LIBZMQ
-    select OPENEMBER_THIRD_PARTY_BUNDLE_CPPZMQ
 
 config OPENEMBER_TP_LINK_RUCKIG
     bool

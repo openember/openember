@@ -1,90 +1,91 @@
 /*
- * Copyright (c) 2022-2023, OpenEmber Team
+ * Copyright (c) 2022-2026, OpenEmber Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
  * Change Logs:
  * Date           Author       Notes
  * 2022-07-07     luhuadong    the first version
+ * 2026-07-25     openember    migrate from msgbus to Link
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <pthread.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <signal.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-#define APPLICATION_NAME     "launch_manager"
-#define LOG_TAG              APPLICATION_NAME
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <memory>
+#include <string>
+
+#define APPLICATION_NAME "launch_manager"
+#define LOG_TAG APPLICATION_NAME
 #include "openember.h"
+
+#include "openember/framework/pod_traits.hpp"
+#include "openember/framework/system_bus.hpp"
+#include "openember/init.hpp"
+#include "openember/node.hpp"
 
 #define EMBER_GLOBALS
 #include "fsm.h"
 #include "smm.h"
 
 EMBER_EXT State context;
-static msg_node_t client;
 
-
-#define DEFAULT_FILE         "/var/run/openember.pid"
+#define DEFAULT_FILE "/var/run/openember.pid"
 
 static pid_t s_pid;
 static int lock_fd;
 
 static void sigroutine(int signal)
 {
-    switch (signal)
-    {
+    switch (signal) {
     case 1:
-        LOG_I("Get a signal -- SIGHUP"); // 1
+        LOG_I("Get a signal -- SIGHUP");
         break;
     case 2:
-        LOG_I("Get a signal -- SIGINT"); // 2: 强制关闭（直接 kill 进程, Ctrl-C）
+        LOG_I("Get a signal -- SIGINT");
         smm_kill_all_modules();
         LOG_I("Exit!");
+        openember::Shutdown();
         exit(0);
         break;
     case 3:
-        LOG_I("Get a signal -- SIGQUIT"); // 3: 正常关闭（通过消息关闭）
+        LOG_I("Get a signal -- SIGQUIT");
         smm_stop_all_modules();
         LOG_I("Exit!");
+        openember::Shutdown();
         exit(0);
         break;
     }
-    return;
 }
 
-static int create_lock_file(const char *lockfile)
+static int create_lock_file(const char* lockfile)
 {
     lock_fd = open(lockfile, O_WRONLY | O_CREAT, 0666);
-    if (lock_fd < 0)
-    {
+    if (lock_fd < 0) {
         perror("Fail to open");
         return -EMBER_ENOFILE;
     }
 
     struct flock lock;
-
     bzero(&lock, sizeof(lock));
 
-    if (fcntl(lock_fd, F_GETLK, &lock) < 0)
-    {
+    if (fcntl(lock_fd, F_GETLK, &lock) < 0) {
         perror("Fail to fcntl F_GETLK");
         close(lock_fd);
         LOG_I("%s has been running", APPLICATION_NAME);
-        return -EMBER_ENOPERM;
     }
 
     lock.l_type = F_WRLCK;
     lock.l_whence = SEEK_SET;
 
-    if (fcntl(lock_fd, F_SETLK, &lock) < 0)
-    {
+    if (fcntl(lock_fd, F_SETLK, &lock) < 0) {
         perror("Fail to fcntl F_SETLK");
         close(lock_fd);
         LOG_I("%s has been running", APPLICATION_NAME);
@@ -93,10 +94,8 @@ static int create_lock_file(const char *lockfile)
 
     char buf[32] = {0};
     s_pid = getpid();
-
     int len = snprintf(buf, 32, "%d\n", (int)s_pid);
-    write(lock_fd, buf, len); // Write pid to the file
-
+    write(lock_fd, buf, len);
     return EMBER_EOK;
 }
 
@@ -107,21 +106,17 @@ static void destroy_lock_file(int fd)
     }
 }
 
-static int get_instance_pid(const char *lockfile)
+static int get_instance_pid(const char* lockfile)
 {
     lock_fd = open(lockfile, O_RDONLY, 0644);
-    if (lock_fd < 0)
-    {
+    if (lock_fd < 0) {
         perror("Fail to open");
         return -EMBER_ENOFILE;
     }
 
     char buf[32] = {0};
-    char cmd[64] = {0};
-    int ret;
-
-    ret = read(lock_fd, buf, sizeof(buf));
-    if(ret == -1) {
+    int ret = read(lock_fd, buf, sizeof(buf));
+    if (ret == -1) {
         LOG_E("read Error");
         close(lock_fd);
         return -EMBER_EIO;
@@ -129,88 +124,26 @@ static int get_instance_pid(const char *lockfile)
 
     LOG_I("PID: %s", buf);
     close(lock_fd);
-    
     return atoi(buf);
 }
 
 static int startup_modules(void)
 {
-    /*
-     * 3 method:
-     * (1) system
-     * (2) exec
-     * (3) fork
-     */
     system("/opt/openember/bin/health_monitor &");
     system("/opt/openember/bin/web_console &");
     system("/opt/openember/bin/ota_agent &");
     system("/opt/openember/bin/config_service &");
     system("/opt/openember/bin/device_manager &");
     system("/opt/openember/bin/sensor_data_reference &");
-
     return EMBER_EOK;
 }
 
-static void _msg_arrived_cb(void *user_data, char *topic, void *payload, size_t payloadlen)
-{
-    (void)user_data;
-    if (0 == strncmp(SYS_EVENT_TOPIC, topic, strlen(topic))) {
-        event_msg_t *e = (event_msg_t *)payload;
-        LOG_I("Payload len = %lu >> event: [%d] %s", payloadlen, e->event_id, e->event_data.event_str);
-
-        if (EMBER_EVENT_EXCEPTION == e->event_id) {
-            context.goWrong();
-        }
-        else if (EMBER_EVENT_RECOVERY == e->event_id) {
-            context.recovery();
-        }
-    }
-    else if (0 == strncmp(MOD_REGISTER_TOPIC, topic, strlen(topic)))
-    {
-        smm_msg_t *msg = (smm_msg_t *)payload;
-        LOG_I("Register: %s, %d", msg->name, msg->pid);
-
-        if (NULL == smm_register(msg->name, msg->cls, msg->pid, NULL)) {
-            LOG_E("Module %s register failed.", msg->name);
-        }
-    }
-    
-}
-
-static int msg_init(void)
-{
-    int rc = 0, cn = 0;
-
-    rc = msg_bus_init(&client, APPLICATION_NAME, NULL, _msg_arrived_cb, NULL);
-    if (rc != EMBER_EOK) {
-        LOG_E("Message bus init failed.\n");
-        return -1;
-    }
-
-    /* Subscription list */
-    rc = msg_bus_subscribe(client, SYS_EVENT_TOPIC);
-    if (rc != EMBER_EOK) cn++;
-    rc = msg_bus_subscribe(client, MOD_REGISTER_TOPIC);
-    if (rc != EMBER_EOK) cn++;
-
-    if (cn != 0) {
-        msg_bus_deinit(client);
-        LOG_E("Message bus subscribe failed.\n");
-        return -EMBER_ERROR;
-    }
-
-    return EMBER_EOK;
-}
-
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     int rc;
 
-
-    if (argc > 1)
-    {
-        if (0 == strncmp("stop", argv[1], strlen("stop")))
-        {
+    if (argc > 1) {
+        if (0 == strncmp("stop", argv[1], strlen("stop"))) {
             LOG_I("** Stop %s", APPLICATION_NAME);
 
             rc = create_lock_file(DEFAULT_FILE);
@@ -220,19 +153,17 @@ int main(int argc, char *argv[])
                 exit(1);
             }
 
-            /* Send SIGQUIT signal */
             s_pid = get_instance_pid(DEFAULT_FILE);
-
             LOG_D("Send SIGQUIT signal to %d", s_pid);
             kill(s_pid, SIGQUIT);
-
             LOG_D("Exit!");
             exit(1);
         }
     }
 
     log_init(APPLICATION_NAME);
-    LOG_I("Start openember app, version: %lu.%lu.%lu", EMBER_VERSION, EMBER_SUBVERSION, EMBER_REVISION);
+    LOG_I("Start openember app, version: %lu.%lu.%lu", EMBER_VERSION, EMBER_SUBVERSION,
+          EMBER_REVISION);
     LOG_I("Process id is %d", getpid());
 
     signal(SIGHUP, sigroutine);
@@ -246,39 +177,57 @@ int main(int argc, char *argv[])
     }
 
     fsm_init();
-    msg_init();
     smm_init();
 
-    context.init();
+    try {
+        openember::framework::InitSystemRouter();
+    } catch (const std::exception& e) {
+        LOG_E("Link init failed: %s", e.what());
+        exit(1);
+    }
 
+    auto node = openember::CreateNode(APPLICATION_NAME);
+
+    auto event_sub = node->Subscribe<event_msg_t>(
+        SYS_EVENT_TOPIC, [](const event_msg_t& e) {
+            LOG_I("event: [%d] %s", e.event_id, e.event_data.event_str);
+            if (EMBER_EVENT_EXCEPTION == e.event_id) {
+                context.goWrong();
+            } else if (EMBER_EVENT_RECOVERY == e.event_id) {
+                context.recovery();
+            }
+        });
+
+    auto reg_sub = node->Subscribe<smm_msg_t>(
+        MOD_REGISTER_TOPIC, [](const smm_msg_t& msg) {
+            LOG_I("Register: %s, %d", msg.name, msg.pid);
+            if (NULL == smm_register(msg.name, msg.cls, msg.pid, NULL)) {
+                LOG_E("Module %s register failed.", msg.name);
+            }
+        });
+
+    context.init();
     startup_modules();
 
     context.sleep();
-    context.init();  // invalid
+    context.init();
     context.wakeUp();
     context.init();
-    //context.powerOff();
-    
 
-    int count = 100;
-    char buf[256] = {0};
-
-    state_msg_t stateMsg;
+    auto state_pub = node->Advertise<state_msg_t>(SYS_STATE_TOPIC);
 
     while (1) {
-        memset(&stateMsg, 0, sizeof(stateMsg));
+        state_msg_t stateMsg{};
         stateMsg.state_id = fsm_get_current_state();
-
-        char *stateText = fsm_get_state_text(stateMsg.state_id);
-        strncpy(stateMsg.state_str, stateText, strlen(stateText));
-
-        msg_bus_publish_raw(client, SYS_STATE_TOPIC, (void *)&stateMsg, sizeof(stateMsg));
-
+        char* stateText = fsm_get_state_text(stateMsg.state_id);
+        if (stateText) {
+            strncpy(stateMsg.state_str, stateText, sizeof(stateMsg.state_str) - 1);
+        }
+        (void)state_pub.Publish(stateMsg);
         fsm_sem_wait();
     }
-    
-    msg_bus_deinit(client);
-    fsm_deinit();
 
+    openember::Shutdown();
+    fsm_deinit();
     return 0;
 }
