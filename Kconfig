@@ -6,6 +6,18 @@ config OPENEMBER_CROSSCOMPILE_ENABLED
     bool "Enable cross compile mode (aarch64)"
     default n
 
+config OPENEMBER_DEBUG_ENABLED
+    bool "Debug build"
+    default y
+
+config OPENEMBER_OPTIMIZATION_DISABLED
+    bool "Disable optimization"
+    default n
+
+config OPENEMBER_ENABLE_OPENMP
+    bool "Enable OpenMP"
+    default n
+
 choice OPENEMBER_THIRD_PARTY_MODE_CHOICE
     prompt "Third-party mode"
     default OPENEMBER_TP_MODE_FETCH
@@ -33,8 +45,13 @@ source "tools/Kconfig"
 
 endmenu
 
+menu "Middleware"
+
 source "communication/Kconfig"
 source "core/Kconfig"
+
+endmenu
+
 source "components/Kconfig"
 source "platform/Kconfig"
 source "third_party/Kconfig"
