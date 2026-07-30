@@ -45,7 +45,7 @@ source "tools/Kconfig"
 
 endmenu
 
-menu "Middleware"
+menu "Middleware Layer"
 
 source "communication/Kconfig"
 source "core/Kconfig"

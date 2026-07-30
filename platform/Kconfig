@@ -1,4 +1,4 @@
-menu "Platform"
+menu "Platform Layer"
 
 menu "OSAL"
 

@@ -41,13 +41,12 @@ OpenEmber 的分层结构设计目标包括：
 
 ## 二、总体分层结构
 
-OpenEmber 推荐采用五层结构模型：
+OpenEmber 当前推荐采用四层结构模型：
 
 1. Application Layer
-2. Module Layer
-3. Component Layer
-4. Core Layer
-5. Platform Layer
+2. Middleware Layer
+3. Components Layer
+4. Platform Layer
 
 目录结构如下：
 
@@ -58,17 +57,17 @@ openember/
 ├── system/
 ├── services/
 ├── examples/
-├── modules/
-├── components/
+├── communication/
 ├── core/
+├── components/
 ├── platform/
 ├── third_party/
-├── vendor/
-├── configs/
+├── protocol/
+├── test/
 └── tools/
 ```
 
-其中前五层构成框架主体结构，其余目录为工程辅助结构。
+其中 Application、Middleware、Components、Platform 构成框架主体结构，其余目录为工程辅助结构。`modules/` 可作为未来外部扩展或插件机制的预留方向，但当前不作为主干架构层。
 
 ## 三、整体层级关系示意
 
@@ -79,11 +78,9 @@ apps
 ↓
 system / services / examples
 ↓
-modules
+communication / core
 ↓
 components
-↓
-core
 ↓
 platform
 ```
@@ -168,15 +165,19 @@ os 未来支持：
 
 无需修改上层代码。
 
-## 五、Core Layer（框架核心层）
+## 五、Middleware Layer（中间件层）
 
-目录：`core/`
+目录：`communication/`、`core/`
 
-职责：提供 middleware 运行核心机制。
+职责：提供 OpenEmber Link、消息协议接入与 middleware 运行核心机制。
 
 典型模块：
 
 ```bash
+communication/
+├── link/
+└── messages/
+
 core/
 
 ├── runtime/
@@ -192,6 +193,8 @@ core/
 
 - Node 生命周期管理
 - 发布订阅系统
+- Link 通信抽象
+- 消息协议接入
 - 参数系统
 - 任务调度器
 - 执行器模型
@@ -204,7 +207,7 @@ class Executor
 class TopicManager
 ```
 
-设计原则：core 层必须保持稳定。
+设计原则：Middleware Layer 对应用暴露稳定通信与运行时接口，具体传输后端和底层实现可以演进。
 
 禁止放入：
 
@@ -215,7 +218,7 @@ class TopicManager
 
 否则会导致核心层膨胀。
 
-## 六、Component Layer（基础组件层）
+## 六、Components Layer（基础组件层）
 
 目录：`components/`
 
@@ -263,11 +266,11 @@ SharedMemoryChannel
 
 如果满足上述条件，则属于 components。
 
-## 七、Module Layer（功能模块层）
+## 七、扩展模块与插件预留
 
-目录：`modules/`
+目录：当前主干不使用固定 `modules/` 顶层菜单；未来可通过 `external_modules/`、`packages/` 或项目私有目录承载扩展模块。
 
-职责：提供插件式功能模块集合。
+职责：提供项目级或生态级插件式功能扩展。
 
 特点：
 
@@ -280,7 +283,7 @@ SharedMemoryChannel
 典型模块分类：
 
 ```bash
-modules/
+external_modules/
 
 ├── transport/
 │   ├── nng/
@@ -309,9 +312,9 @@ modules/
 - imu driver
   用于读取传感器数据
 
-这些模块均属于插件层。
+这些模块均属于扩展插件，不是当前框架核心目录的一部分。
 
-设计原则：modules 是生态扩展层，允许用户新增模块。
+设计原则：扩展模块允许用户新增能力，但不应反向污染 core、communication、components 或 platform 的基础边界。
 
 例如：
 
@@ -488,17 +491,19 @@ third_party/
 ├── zmq/
 └── lcm/
 
-modules/
-├── transport/
-│   ├── nng/
-│   ├── zmq/
-│   └── lcm/
+communication/
+└── link/
+    └── backends/
+        ├── zenoh/
+        ├── nng/
+        ├── zmq/
+        └── lcm/
 ```
 
 说明：
 
 - third_party 存放源码
-- modules 存放适配层
+- communication/link/backends 存放 OpenEmber Link 的传输适配层
 
 ## 十五、数据库组件设计示例
 
@@ -524,7 +529,7 @@ components/
 
 1. platform/lpio
 2. components/transport
-3. modules/drivers
+3. application/system/service driver node
 
 关系如下：
 
@@ -559,7 +564,7 @@ WiFi
 - 是否跨模块复用
 - 是否不依赖具体设备
 
-判断是否属于 modules：
+判断是否属于扩展模块：
 
 - 是否插件能力
 - 是否可裁剪
@@ -571,8 +576,8 @@ WiFi
 ```bash
 RingBuffer → components
 Logger → components
-NNG backend → modules
-IMU driver → modules
+NNG backend → communication/link/backends
+IMU driver → system/service/application node 或未来 external_modules
 ```
 
 
@@ -621,13 +626,13 @@ apps/
 system/
 services/
 examples/
-modules/
+communication/
 components/
 core/
 platform/
 third_party/
-vendor/
-configs/
+protocol/
+test/
 tools/
 ```
 
