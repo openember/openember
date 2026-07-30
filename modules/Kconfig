@@ -1,5 +1,0 @@
-menu "Module"
-
-comment "Framework modules use OpenEmber Link (Zenoh) via components/transport."
-
-endmenu

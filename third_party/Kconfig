@@ -1,4 +1,4 @@
-menu "Third party (bundles)"
+menu "Third party"
 
 comment "Lists all libraries pinned in cmake/Dependencies.cmake."
 comment "Required-by-current-config items are forced ON (shown as <*>, cannot turn off)."

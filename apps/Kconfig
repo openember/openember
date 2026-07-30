@@ -1,4 +1,4 @@
-menu "Application"
+menu "Product Applications"
 
 comment "Product application entry point. Add project-specific options here."
 

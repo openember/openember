@@ -44,9 +44,9 @@
 
 > 链接业务目标时按需 `target_link_libraries(... yaml-cpp::yaml-cpp)`、`target_link_libraries(... ruckig::ruckig)` 等；并非所有目标都会自动链接全部可选库。
 
-## Kconfig：`Third party (bundles)`
+## Kconfig：`Third party`
 
-- 菜单在 **`components/Kconfig` 与 `modules/Kconfig` 之后** 加载，以便 `OPENEMBER_LOG_BACKEND_*`、`OPENEMBER_MSGBUS_BACKEND_*` 等符号已定义。
+- 菜单位于顶层 **Third party**，在 `Communication`、`Core Runtime`、`Components` 与 `Platform` 之后加载，以便功能选择先定义，再由隐藏的 `OPENEMBER_TP_LINK_*` 选项锁定必需依赖。
 - **清单**：`Dependencies.cmake` 中钉死的第三方均在菜单中列出（不再用 `depends on` 隐藏条目）。
 - **必选**：与当前功能绑定的库由隐藏的 `OPENEMBER_TP_LINK_*` 配置通过 **`select`** 强制勾选；在 `menuconfig` 中表现为 **`<*>`（built-in）且不可取消**。
 - **可选**：未绑定当前功能的库默认为关；若手动勾选，则在 **FETCH/VENDOR** 下仅 **预取**（下载到 `third_party/`、解压到 `build/_deps/`），**不参与** 对应 `add_subdirectory` 编译，除非后续在别处启用该功能。实现见 `openember_third_party_prefetch_unused_bundles()`。

@@ -1,4 +1,4 @@
-menu "System"
+menu "System Nodes"
 
 config OPENEMBER_SYSTEM_LAUNCH_MANAGER
     bool "Build system node: launch_manager"

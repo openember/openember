@@ -17,7 +17,6 @@ _layer_kconfigs=(
   "services/Kconfig"
   "examples/Kconfig"
   "examples/references/Kconfig"
-  "modules/Kconfig"
   "communication/Kconfig"
   "core/Kconfig"
   "components/Kconfig"

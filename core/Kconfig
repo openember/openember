@@ -1,4 +1,4 @@
-menu "Core"
+menu "Core Runtime"
 
 config OPENEMBER_DEBUG_ENABLED
     bool "Debug build"

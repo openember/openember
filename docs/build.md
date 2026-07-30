@@ -11,7 +11,7 @@
 > Kconfig 工具链采用 Linux 原生 `kconfig-frontends`。  
 > 项目脚本会自动下载并解压 `kconfig-frontends-nox` 到仓库本地目录 `.kconfig-frontends/`（无需 root 安装）。
 
-仓库根目录仅保留顶层 `Kconfig`；各层选项分文件位于 `apps/Kconfig`、`modules/Kconfig`、`components/Kconfig`、`core/Kconfig`、`platform/Kconfig`（`menuconfig.sh` 会按相同相对路径复制到构建目录供工具解析）。
+仓库根目录仅保留顶层 `Kconfig`；各层选项分文件位于 `apps/Kconfig`、`system/Kconfig`、`services/Kconfig`、`examples/Kconfig`、`tools/Kconfig`、`communication/Kconfig`、`components/Kconfig`、`core/Kconfig`、`platform/Kconfig`、`third_party/Kconfig`、`test/Kconfig`（`menuconfig.sh` 会按相同相对路径复制到构建目录供工具解析）。
 
 安装依赖
 
@@ -152,28 +152,32 @@ source <(ember completion bash)
 
 `menuconfig` 已支持以下关键配置（无需再手工 `-D`）：
 
-- **Build Options**
+- **Build / Toolchain**
   - 单元测试：`test/Kconfig` → `CONFIG_OPENEMBER_ENABLE_TESTS` → `TESTS_ENABLED`（默认关）
   - `EXAMPLES_ENABLED`
   - `OPENMP_ENABLED`
   - `DEBUG_ENABLED`
   - `OPTIMIZATION_DISABLED`
   - `CROSSCOMPILE_ENABLED`
-- **Logging**
+- **Application Layer**
+  - `apps/`：产品或用户项目入口
+  - `system/`：`OPENEMBER_SYSTEM_*`
+  - `services/`：`OPENEMBER_SERVICE_*`
+  - `examples/`：`OPENEMBER_EXAMPLE_*` 与 `OPENEMBER_REFERENCE_*`
+  - `tools/`：`OPENEMBER_ENABLE_TOOLS_*`
+- **Components / Logging**
   - `OPENEMBER_LOG_BACKEND`：`ZLOG` / `SPDLOG` / `BUILTIN`
   - `OPENEMBER_LOG_FILE`：zlog 配置路径（例如 `/etc/openember/zlog.conf`）
-- **Dependencies**
+- **Communication**
+  - `OPENEMBER_ENABLE_LINK`：OpenEmber Link 通信层
+  - `OPENEMBER_ENABLE_MSGS`：openember-msgs 协议绑定
+- **Third party**
   - `OPENEMBER_THIRD_PARTY_MODE`：`FETCH`（先查 `third_party/` 归档，再联网下载到 `third_party/`） / `VENDOR`（仅使用 `third_party/` 或 `*_LOCAL_SOURCE`） / `SYSTEM`
-  - **Third party (bundles)**：各上游源码包是否参与 FETCH/VENDOR（无版本字段；版本在 `cmake/Dependencies.cmake`）
+  - 各上游源码包是否参与 FETCH/VENDOR（无版本字段；版本在 `cmake/Dependencies.cmake`）
   - `OPENEMBER_JSON_LIBRARY`：`CJSON` / `NLOHMANN_JSON`
   - `OPENEMBER_WITH_YAMLCPP`
   - `OPENEMBER_WITH_ASIO`
   - `OPENEMBER_WITH_RUCKIG`（可选轨迹库 [ruckig](https://github.com/pantor/ruckig)，默认关；需 C++20）
-- **Transport / Msgbus**
-  - 内部总线后端（二选一）：NNG / LCM（`OPENEMBER_MSGBUS_USE_*`）；spdlog topic、示例与框架节点共用该传输
-- **Framework Modules（新增）**
-  - 可单独启停：`system/launch_manager` / `examples/hello_node` / `system/log_service` / `system/device_manager` / `system/config_service` / `system/health_monitor` / `services/ota_update_service` / `references/sensor_data_reference` / `services/web_dashboard`；示例还可选 `examples/msgbus_two_nodes`、`examples/msgbus_nng_forwarder`
-  - 映射到 `OPENEMBER_MODULE_*`，由 `apps/CMakeLists.txt` 条件 `add_subdirectory()` 控制
 
 ## 4. 运行说明
 
@@ -196,4 +200,3 @@ source <(ember completion bash)
     OPENEMBER_KCONFIG_NONINTERACTIVE=1 bash scripts/kconfig/menuconfig.sh build
     ```
     该模式会按默认值生成 `.config`。
-
