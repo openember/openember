@@ -14,7 +14,7 @@
 
 namespace {
 
-constexpr const char* kRobotId = "smart-device-demo";
+constexpr const char* kRobotId = "openember";
 constexpr const char* kInstanceId = "demo-instance";
 constexpr const char* kNodeName = "smart_device_app";
 constexpr const char* kHeartbeatTopic = "/product/smart_device/heartbeat";
@@ -25,56 +25,68 @@ enum class LinkMode {
     kClient,
 };
 
+struct LinkCliOptions {
+    LinkMode mode = LinkMode::kAuto;
+    std::string connect = "tcp/127.0.0.1:7447";
+    std::string listen = "tcp/127.0.0.1:7447";
+};
+
 std::uint64_t UnixTimeNs() {
     const auto now = std::chrono::system_clock::now().time_since_epoch();
     return static_cast<std::uint64_t>(
         std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
 }
 
-LinkMode ParseLinkMode(int argc, char** argv) {
+LinkCliOptions ParseLinkOptions(int argc, char** argv) {
+    LinkCliOptions options;
     for (int i = 1; i < argc; ++i) {
         const std::string arg(argv[i]);
         if (arg == "--router") {
-            return LinkMode::kRouter;
-        }
-        if (arg == "--client") {
-            return LinkMode::kClient;
+            options.mode = LinkMode::kRouter;
+        } else if (arg == "--client") {
+            options.mode = LinkMode::kClient;
+        } else if (arg == "--connect" && i + 1 < argc) {
+            options.connect = argv[++i];
+        } else if (arg == "--listen" && i + 1 < argc) {
+            options.listen = argv[++i];
         }
     }
-    return LinkMode::kAuto;
+    return options;
 }
 
-void InitRouter() {
+void InitRouter(const LinkCliOptions& cli) {
     openember::RuntimeOptions options;
     options.robot_id = kRobotId;
-    options.link = openember::link::LocalRouterOptions();
+    options.link.profile = openember::link::Profile::kRouter;
+    options.link.listen = cli.listen;
     openember::Init(options);
 }
 
-void InitClient() {
+void InitClient(const LinkCliOptions& cli) {
     openember::RuntimeOptions options;
     options.robot_id = kRobotId;
-    options.link = openember::link::LocalClientOptions();
+    options.link.profile = openember::link::Profile::kClient;
+    options.link.connect = cli.connect;
     openember::Init(options);
 }
 
-std::string InitLink(LinkMode mode) {
-    if (mode == LinkMode::kRouter) {
-        InitRouter();
+std::string InitLink(const LinkCliOptions& cli) {
+    if (cli.mode == LinkMode::kRouter) {
+        InitRouter(cli);
         return "router";
     }
 
-    if (mode == LinkMode::kClient) {
-        InitClient();
+    if (cli.mode == LinkMode::kClient) {
+        InitClient(cli);
         return "client";
     }
 
     try {
-        InitRouter();
+        InitRouter(cli);
         return "router";
     } catch (const std::exception&) {
         openember::Shutdown();
-        InitClient();
+        InitClient(cli);
         return "client";
     }
 }
@@ -83,7 +95,7 @@ std::string InitLink(LinkMode mode) {
 
 int main(int argc, char** argv) {
     try {
-        const auto link_mode = InitLink(ParseLinkMode(argc, argv));
+        const auto link_mode = InitLink(ParseLinkOptions(argc, argv));
 
         auto node = openember::CreateNode(kNodeName);
         auto heartbeat_pub =

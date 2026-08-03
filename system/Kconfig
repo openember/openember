@@ -3,6 +3,12 @@ menu "System Nodes"
 config OPENEMBER_SYSTEM_LAUNCH_MANAGER
     bool "Build system node: launch_manager"
     default y
+    depends on OPENEMBER_ENABLE_LINK
+    depends on OPENEMBER_USE_YAMLCPP
+    help
+      Build the OpenEmber runtime supervisor. launch_manager starts the local
+      Link router, reads a launch YAML file, starts configured child processes,
+      and supervises their process lifecycle.
 
 config OPENEMBER_SYSTEM_LOG_SERVICE
     bool "Build system node: log_service"

@@ -2,7 +2,7 @@ menu "Product Applications"
 
 config OPENEMBER_APP_SMART_DEVICE_DEMO
     bool "Build product app: smart_device_demo"
-    default n
+    default y
     depends on OPENEMBER_ENABLE_LINK
     depends on OPENEMBER_ENABLE_MSGS
     help

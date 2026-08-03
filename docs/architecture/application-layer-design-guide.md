@@ -6,6 +6,9 @@
 
 > 建立一个长期可扩展、跨行业通用、支持机器人/无人系统/工业控制/智能终端/AI Agent 场景的应用层设计规范。
 
+运行时监督、系统节点与 product app 的职责边界，见
+[Runtime Supervision 与 Product App 设计方案](./runtime-supervision-and-product-app-design.md)。
+
 
 
 ## 一、Applications 层的定位

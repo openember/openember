@@ -1,0 +1,17 @@
+runtime:
+  robot_id: openember
+  namespace: ""
+  link:
+    mode: router
+    listen: tcp/127.0.0.1:7447
+
+nodes:
+  - name: smart_device_app
+    kind: application
+    command: ${openember.bin}/openember_smart_device_demo
+    args: ["--client"]
+    restart: on-failure
+    restart_limit: 3
+    startup_timeout_ms: 5000
+    shutdown_timeout_ms: 3000
+    heartbeat_timeout_ms: 5000
