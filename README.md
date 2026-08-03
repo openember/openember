@@ -83,7 +83,8 @@ OpenEmber 不只是 Robot Application Framework，而是一个通用的 Middlewa
 openember/
 │
 ├── apps/
-│   └── user_app/      # 产品或用户项目入口
+│   ├── smart_device_demo/  # 最小产品应用参考入口
+│   └── user_app/          # 产品或用户项目入口
 │
 ├── system/            # launch_manager、log_service 等系统节点
 │
@@ -131,6 +132,10 @@ openember/
 ├── configs/
 └── tools/
 ```
+
+`smart_device_demo` 默认以 Link auto 模式启动：优先作为本机 router 监听
+`tcp/127.0.0.1:7447`，如果该端口已有 OpenEmber/Zenoh router，则自动切换为
+client 接入。也可以通过 `--router` 或 `--client` 显式指定模式。
 
 OpenEmber v0.1 就采用：
 

@@ -126,6 +126,7 @@ system_log_service="$(onoff CONFIG_OPENEMBER_SYSTEM_LOG_SERVICE)"
 system_device_manager="$(onoff CONFIG_OPENEMBER_SYSTEM_DEVICE_MANAGER)"
 system_config_service="$(onoff CONFIG_OPENEMBER_SYSTEM_CONFIG_SERVICE)"
 system_health_monitor="$(onoff CONFIG_OPENEMBER_SYSTEM_HEALTH_MONITOR)"
+app_smart_device_demo="$(onoff CONFIG_OPENEMBER_APP_SMART_DEVICE_DEMO)"
 service_ota_update="$(onoff CONFIG_OPENEMBER_SERVICE_OTA_AGENT)"
 reference_sensor_data="$(onoff CONFIG_OPENEMBER_REFERENCE_SENSOR_DATA)"
 service_web_console="$(onoff CONFIG_OPENEMBER_SERVICE_WEB_CONSOLE)"
@@ -155,6 +156,9 @@ if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_CORE=" "${CONFIG_FILE}"; then
 fi
 if [[ "${enable_link}" == "OFF" ]] || [[ "${examples_enabled}" == "OFF" ]]; then
   example_core=OFF
+fi
+if [[ "${enable_link}" == "OFF" ]] || [[ "${enable_msgs}" == "OFF" ]]; then
+  app_smart_device_demo=OFF
 fi
 if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS=" "${CONFIG_FILE}"; then
   example_network_sockets=ON
@@ -609,6 +613,7 @@ set(OPENEMBER_SYSTEM_LOG_SERVICE ${system_log_service} CACHE BOOL "Build system/
 set(OPENEMBER_SYSTEM_DEVICE_MANAGER ${system_device_manager} CACHE BOOL "Build system/device_manager" FORCE)
 set(OPENEMBER_SYSTEM_CONFIG_SERVICE ${system_config_service} CACHE BOOL "Build system/config_service" FORCE)
 set(OPENEMBER_SYSTEM_HEALTH_MONITOR ${system_health_monitor} CACHE BOOL "Build system/health_monitor" FORCE)
+set(OPENEMBER_APP_SMART_DEVICE_DEMO ${app_smart_device_demo} CACHE BOOL "Build apps/smart_device_demo" FORCE)
 set(OPENEMBER_SERVICE_OTA_AGENT ${service_ota_update} CACHE BOOL "Build services/ota_agent" FORCE)
 set(OPENEMBER_REFERENCE_SENSOR_DATA ${reference_sensor_data} CACHE BOOL "Build examples/references/sensor_data_reference" FORCE)
 set(OPENEMBER_SERVICE_WEB_CONSOLE ${service_web_console} CACHE BOOL "Build services/web_console" FORCE)

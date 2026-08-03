@@ -346,6 +346,7 @@ tools/       # 开发、调试、运维工具
 apps/
 
 ├── demo_robot/
+├── smart_device_demo/
 ├── smart_gateway/
 └── user_app/
 ```
@@ -361,6 +362,8 @@ apps/
 
 - user_app
   组合 OpenEmber 节点、服务与设备能力，形成具体产品行为
+- smart_device_demo
+  OpenEmber 提供的最小产品应用参考入口，演示 Link 初始化、产品节点创建与 openember-msgs 标准心跳发布。
 
 设计原则：apps 层不属于框架核心，属于最终产品或用户项目入口；框架自带节点不要再放入 apps。
 

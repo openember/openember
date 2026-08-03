@@ -107,6 +107,7 @@ apps/
 
 ```bash
 apps/
+└── smart_device_demo/  # 最小产品应用参考入口
 
 system/            # 系统基础节点
 services/          # 可选运行时服务
@@ -114,6 +115,10 @@ tools/             # 开发、调试、运维工具
 examples/          # 最小示例节点
 └── references/    # 参考实现节点
 ```
+
+`smart_device_demo` 用于演示产品应用入口的最小组织方式：初始化 OpenEmber Link、
+创建产品级节点，并通过 openember-msgs 发布标准心跳。它默认使用 Link auto 模式，
+可以独立作为本机 router 启动，也可以在检测到本机已有 router 时作为 client 接入。
 
 说明如下。
 
@@ -546,6 +551,7 @@ Applications 层核心职责：
 
 ```
 apps/
+└── smart_device_demo/
 system/
 services/
 tools/

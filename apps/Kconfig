@@ -1,5 +1,14 @@
 menu "Product Applications"
 
-comment "Product application entry point. Add project-specific options here."
+config OPENEMBER_APP_SMART_DEVICE_DEMO
+    bool "Build product app: smart_device_demo"
+    default n
+    depends on OPENEMBER_ENABLE_LINK
+    depends on OPENEMBER_ENABLE_MSGS
+    help
+      Build a small product-application entry point that initializes OpenEmber
+      Link, creates a product node, and publishes openember-msgs NodeHeartbeat
+      messages. Use it as a starting point for project-specific apps under
+      apps/.
 
 endmenu
