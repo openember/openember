@@ -17,7 +17,7 @@ namespace {
 constexpr const char* kRobotId = "openember";
 constexpr const char* kInstanceId = "demo-instance";
 constexpr const char* kNodeName = "smart_device_app";
-constexpr const char* kHeartbeatTopic = "/product/smart_device/heartbeat";
+constexpr const char* kHeartbeatTopic = "/nodes/smart_device_app/heartbeat";
 
 enum class LinkMode {
     kAuto,

@@ -9,6 +9,7 @@
 #include <cstring>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #define LOG_TAG "launch_manager"
@@ -32,6 +33,22 @@ bool ExitedSuccessfully(int status) {
     return WIFEXITED(status) && WEXITSTATUS(status) == 0;
 }
 
+std::uint64_t UnixTimeNs() {
+    const auto now = std::chrono::system_clock::now().time_since_epoch();
+    return static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
+}
+
+int ExitCodeFromStatus(int status) {
+    if (WIFEXITED(status)) {
+        return WEXITSTATUS(status);
+    }
+    if (WIFSIGNALED(status)) {
+        return -WTERMSIG(status);
+    }
+    return status;
+}
+
 std::string StatusText(int status) {
     if (WIFEXITED(status)) {
         return "exit_code=" + std::to_string(WEXITSTATUS(status));
@@ -51,6 +68,10 @@ ProcessManager::ProcessManager(std::vector<ProcessSpec> specs) {
     }
 }
 
+void ProcessManager::SetEventCallback(EventCallback callback) {
+    event_callback_ = std::move(callback);
+}
+
 bool ProcessManager::StartAll() {
     bool ok = true;
     for (auto& process : processes_) {
@@ -68,11 +89,17 @@ bool ProcessManager::StartOne(ManagedProcess& process) {
           process.spec.name.c_str(),
           process.spec.command.c_str(),
           RestartPolicyName(process.spec.restart));
+    process.state = ProcessState::kStarting;
+    process.start_time_unix_ns = UnixTimeNs();
+    process.stop_time_unix_ns = 0;
+    process.has_heartbeat = false;
+    EmitEvent(process, process.state, 0, 0, "starting");
 
     const pid_t pid = fork();
     if (pid < 0) {
         LOG_E("fork failed for %s: %s", process.spec.name.c_str(), strerror(errno));
-        process.state = State::kFailed;
+        process.state = ProcessState::kFailed;
+        EmitEvent(process, process.state, errno, UnixTimeNs(), strerror(errno));
         return false;
     }
 
@@ -98,9 +125,10 @@ bool ProcessManager::StartOne(ManagedProcess& process) {
     }
 
     process.pid = pid;
-    process.state = State::kRunning;
+    process.state = ProcessState::kRunning;
     process.start_time = std::chrono::steady_clock::now();
     LOG_I("Started process: name=%s pid=%d", process.spec.name.c_str(), static_cast<int>(pid));
+    EmitEvent(process, process.state, 0, 0, "running");
     return true;
 }
 
@@ -113,6 +141,7 @@ void ProcessManager::Poll() {
             continue;
         }
         if (pid == 0) {
+            CheckHeartbeatTimeouts();
             return;
         }
         if (errno == EINTR) {
@@ -121,6 +150,7 @@ void ProcessManager::Poll() {
         if (errno != ECHILD) {
             LOG_E("waitpid failed: %s", strerror(errno));
         }
+        CheckHeartbeatTimeouts();
         return;
     }
 }
@@ -137,8 +167,16 @@ void ProcessManager::HandleExit(pid_t pid, int status) {
           static_cast<int>(pid),
           StatusText(status).c_str());
 
+    const auto exit_code = ExitCodeFromStatus(status);
+    const auto stop_time_unix_ns = UnixTimeNs();
+    const auto state = stopping_
+        ? ProcessState::kStopped
+        : (ExitedSuccessfully(status) ? ProcessState::kExited : ProcessState::kFailed);
+
+    process->state = state;
+    process->stop_time_unix_ns = stop_time_unix_ns;
+    EmitEvent(*process, state, exit_code, stop_time_unix_ns, StatusText(status));
     process->pid = -1;
-    process->state = ExitedSuccessfully(status) ? State::kExited : State::kFailed;
 
     if (!stopping_ && ShouldRestart(*process, status)) {
         ++process->restart_count;
@@ -198,7 +236,23 @@ void ProcessManager::StopAll() {
     }
 }
 
-void ProcessManager::StopOne(ManagedProcess& process) {
+bool ProcessManager::MarkHeartbeat(const std::string& process_name) {
+    for (auto& process : processes_) {
+        if (process.spec.name != process_name) {
+            continue;
+        }
+        const auto now = std::chrono::steady_clock::now();
+        if (!process.has_heartbeat) {
+            LOG_I("Process heartbeat observed: name=%s", process.spec.name.c_str());
+        }
+        process.has_heartbeat = true;
+        process.last_heartbeat_time = now;
+        return true;
+    }
+    return false;
+}
+
+void ProcessManager::StopOne(ManagedProcess& process, const std::string& message) {
     if (process.pid <= 0) {
         return;
     }
@@ -206,11 +260,44 @@ void ProcessManager::StopOne(ManagedProcess& process) {
     LOG_I("Stop process: name=%s pid=%d",
           process.spec.name.c_str(),
           static_cast<int>(process.pid));
-    process.state = State::kStopping;
+    process.state = ProcessState::kStopping;
     process.stop_deadline =
         std::chrono::steady_clock::now() + process.spec.shutdown_timeout;
+    EmitEvent(process, process.state, 0, 0, message);
     if (kill(process.pid, SIGTERM) != 0 && errno != ESRCH) {
         LOG_E("SIGTERM failed for %s: %s", process.spec.name.c_str(), strerror(errno));
+    }
+}
+
+void ProcessManager::CheckHeartbeatTimeouts() {
+    if (stopping_) {
+        return;
+    }
+
+    const auto now = std::chrono::steady_clock::now();
+    for (auto& process : processes_) {
+        if (process.pid <= 0 || process.state == ProcessState::kStopping) {
+            continue;
+        }
+
+        if (!process.has_heartbeat &&
+            process.spec.startup_timeout.count() > 0 &&
+            now - process.start_time > process.spec.startup_timeout) {
+            LOG_E("Startup heartbeat timeout: name=%s pid=%d",
+                  process.spec.name.c_str(),
+                  static_cast<int>(process.pid));
+            StopOne(process, "startup heartbeat timeout");
+            continue;
+        }
+
+        if (process.has_heartbeat &&
+            process.spec.heartbeat_timeout.count() > 0 &&
+            now - process.last_heartbeat_time > process.spec.heartbeat_timeout) {
+            LOG_E("Heartbeat timeout: name=%s pid=%d",
+                  process.spec.name.c_str(),
+                  static_cast<int>(process.pid));
+            StopOne(process, "heartbeat timeout");
+        }
     }
 }
 
@@ -221,6 +308,26 @@ ProcessManager::ManagedProcess* ProcessManager::FindByPid(pid_t pid) {
         }
     }
     return nullptr;
+}
+
+void ProcessManager::EmitEvent(const ManagedProcess& process,
+                               ProcessState state,
+                               int exit_code,
+                               std::uint64_t stop_time_unix_ns,
+                               const std::string& message) const {
+    if (!event_callback_) {
+        return;
+    }
+
+    ProcessEvent event;
+    event.spec = process.spec;
+    event.pid = process.pid;
+    event.state = state;
+    event.exit_code = exit_code;
+    event.start_time_unix_ns = process.start_time_unix_ns;
+    event.stop_time_unix_ns = stop_time_unix_ns;
+    event.message = message;
+    event_callback_(event);
 }
 
 }  // namespace openember::launch

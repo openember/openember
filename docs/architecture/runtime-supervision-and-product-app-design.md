@@ -563,9 +563,14 @@ Booting
 
 ### Phase 2：发布 ProcessEvent
 
+当前已落地：`launch_manager` 在进程 starting、running、stopping、exited、failed
+等状态变化时发布 `ProcessEvent`。
+调试时可以运行 `openember_runtime_process_listener` 订阅该 topic。
+
 启动、退出、重启、停止时发布：
 
 ```text
+/runtime/process/events
 openember.msgs.runtime.v1.ProcessEvent
 ```
 
@@ -585,6 +590,11 @@ web_console、logger、health_monitor 可以订阅。
 请求和响应使用 `runtime/v1` 消息。
 
 ### Phase 4：接入心跳监督
+
+当前已部分落地：`launch_manager` 订阅 `/nodes/*/heartbeat`，根据 launch
+配置中的 `startup_timeout_ms` 和 `heartbeat_timeout_ms` 监督被管理进程是否
+按期发布 `NodeHeartbeat`。`smart_device_demo` 已改为发布到
+`/nodes/smart_device_app/heartbeat`。
 
 `launch_manager` 记录被管理进程对应节点的最近心跳时间：
 

@@ -15,8 +15,10 @@
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
+#include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
 
 #define APPLICATION_NAME "launch_manager"
 #define LOG_TAG APPLICATION_NAME
@@ -27,11 +29,16 @@
 
 #include "openember/init.hpp"
 #include "openember/link/options.hpp"
+#include "openember/msgs/node/v1/node.pb.h"
+#include "openember/msgs/runtime/v1/runtime.pb.h"
+#include "openember/node.hpp"
 
 namespace {
 
 constexpr const char* kDefaultPidFile = "/tmp/openember-launch_manager.pid";
 constexpr const char* kDefaultLaunchFile = "configs/smart_device.launch.yaml";
+constexpr const char* kRuntimeProcessEventsTopic = "/runtime/process/events";
+constexpr const char* kNodeHeartbeatsTopic = "/nodes/*/heartbeat";
 
 volatile sig_atomic_t g_signal = 0;
 pid_t g_pid = 0;
@@ -47,6 +54,12 @@ std::string EnvOrDefault(const char* name, const char* fallback) {
         return value;
     }
     return fallback;
+}
+
+std::uint64_t UnixTimeNs() {
+    const auto now = std::chrono::system_clock::now().time_since_epoch();
+    return static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
 }
 
 std::string ExecutablePath() {
@@ -193,6 +206,55 @@ void InitLinkRouter(const openember::launch::RuntimeSpec& runtime) {
     openember::Init(options);
 }
 
+openember::msgs::runtime::v1::ProcessState ToProtoState(
+    openember::launch::ProcessManager::ProcessState state) {
+    using LocalState = openember::launch::ProcessManager::ProcessState;
+    using ProtoState = openember::msgs::runtime::v1::ProcessState;
+
+    switch (state) {
+        case LocalState::kStarting:
+            return ProtoState::PROCESS_STATE_STARTING;
+        case LocalState::kRunning:
+            return ProtoState::PROCESS_STATE_RUNNING;
+        case LocalState::kStopping:
+            return ProtoState::PROCESS_STATE_STOPPING;
+        case LocalState::kStopped:
+            return ProtoState::PROCESS_STATE_STOPPED;
+        case LocalState::kExited:
+            return ProtoState::PROCESS_STATE_EXITED;
+        case LocalState::kFailed:
+            return ProtoState::PROCESS_STATE_FAILED;
+    }
+    return ProtoState::PROCESS_STATE_UNSPECIFIED;
+}
+
+openember::msgs::runtime::v1::ProcessEvent BuildProcessEvent(
+    const openember::launch::RuntimeSpec& runtime,
+    const openember::launch::ProcessManager::ProcessEvent& source,
+    std::uint64_t sequence) {
+    openember::msgs::runtime::v1::ProcessEvent event;
+
+    auto* header = event.mutable_header();
+    header->set_source_node(APPLICATION_NAME);
+    header->set_source_instance(APPLICATION_NAME);
+    header->set_robot_id(runtime.robot_id);
+    header->set_namespace_name(runtime.namespace_name);
+    header->set_sequence(sequence);
+    header->set_timestamp_unix_ns(UnixTimeNs());
+
+    auto* process = event.mutable_process();
+    process->set_name(source.spec.name);
+    if (source.pid > 0) {
+        process->set_process_id(static_cast<std::uint32_t>(source.pid));
+    }
+    process->set_state(ToProtoState(source.state));
+    process->set_exit_code(source.exit_code);
+    process->set_start_time_unix_ns(source.start_time_unix_ns);
+    process->set_stop_time_unix_ns(source.stop_time_unix_ns);
+    process->set_message(source.message);
+    return event;
+}
+
 void InstallSignals() {
     signal(SIGHUP, SignalHandler);
     signal(SIGINT, SignalHandler);
@@ -242,13 +304,45 @@ int main(int argc, char* argv[]) {
     try {
         auto config = openember::launch::LoadLaunchConfig(cli.launch_file, bin_dir);
         InitLinkRouter(config.runtime);
+        auto node = openember::CreateNode(APPLICATION_NAME);
+        auto process_event_pub =
+            node->Advertise<openember::msgs::runtime::v1::ProcessEvent>(
+                kRuntimeProcessEventsTopic);
+        std::mutex heartbeat_mutex;
+        std::vector<std::string> pending_heartbeats;
+        auto heartbeat_sub =
+            node->Subscribe<openember::msgs::node::v1::NodeHeartbeat>(
+                kNodeHeartbeatsTopic,
+                [&](const openember::msgs::node::v1::NodeHeartbeat& heartbeat) {
+                    std::lock_guard<std::mutex> lock(heartbeat_mutex);
+                    pending_heartbeats.push_back(heartbeat.node_name());
+                });
+        std::uint64_t process_event_sequence = 0;
 
         openember::launch::ProcessManager process_manager(config.processes);
+        process_manager.SetEventCallback(
+            [&](const openember::launch::ProcessManager::ProcessEvent& event) {
+                auto msg = BuildProcessEvent(
+                    config.runtime, event, process_event_sequence++);
+                if (!process_event_pub.Publish(msg)) {
+                    LOG_E("Publish ProcessEvent failed: name=%s state=%d",
+                          event.spec.name.c_str(),
+                          static_cast<int>(event.state));
+                }
+            });
         if (!process_manager.StartAll()) {
             LOG_E("Some configured processes failed to start.");
         }
 
         while (g_signal == 0) {
+            std::vector<std::string> heartbeats;
+            {
+                std::lock_guard<std::mutex> lock(heartbeat_mutex);
+                heartbeats.swap(pending_heartbeats);
+            }
+            for (const auto& node_name : heartbeats) {
+                (void)process_manager.MarkHeartbeat(node_name);
+            }
             process_manager.Poll();
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }

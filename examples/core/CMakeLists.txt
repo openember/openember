@@ -11,6 +11,7 @@ if(TARGET openember::msgs_cpp)
     list(APPEND _core_examples
         msgs_talker.cpp:openember_msgs_talker
         msgs_listener.cpp:openember_msgs_listener
+        runtime_process_listener.cpp:openember_runtime_process_listener
     )
 endif()
 
