@@ -83,11 +83,7 @@ int main(void)
     try {
         openember::framework::InitSystemClient();
         auto node = openember::CreateNode(MODULE_NAME);
-        if (!openember::framework::RegisterModule(*node, MODULE_NAME, SUBMODULE_CLASS_CONFIG)) {
-            LOG_E("Module register publish failed.");
-            openember::Shutdown();
-            return 1;
-        }
+        (void)node;
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
         openember::Shutdown();
     } catch (const std::exception& e) {

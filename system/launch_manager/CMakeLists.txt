@@ -4,8 +4,6 @@ set(LAUNCH_MANAGER_SRCS
     main.cpp
     launch_config.cpp
     process_manager.cpp
-    fsm.cpp
-    smm.cpp
 )
 
 if(NOT TARGET yaml-cpp::yaml-cpp)

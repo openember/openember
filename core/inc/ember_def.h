@@ -99,68 +99,6 @@ typedef ember_base_t                       ember_off_t;       /* Type for offset
 #define ARRAY_SIZE(arr)                 (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
-/* System state definitions */
-typedef enum state {
-    EMBER_SYSTEM_POWEROFF = 0,  /* Power-off status */
-    EMBER_SYSTEM_INIT,          /* Initialized status */
-    EMBER_SYSTEM_NORMAL,        /* Normal status */
-    EMBER_SYSTEM_ERROR,         /* Error status */
-    EMBER_SYSTEM_DEGRADE,       /* Degrade status */
-    EMBER_SYSTEM_SLEEP,         /* Sleep status */
-    EMBER_SYSTEM_COUNT
-} state_t;
-
-/* Submodule state definitions */
-typedef enum submod_state {
-    EMBER_MODULE_INIT = 0,      /* Initialized status */
-    EMBER_MODULE_READY,         /* Ready status */
-    EMBER_MODULE_RUNNING,       /* Running or runnable (on run queue) */
-    EMBER_MODULE_STOPPED,       /* Stop status */
-    EMBER_MODULE_SLEEP,         /* Sleep status */
-    EMBER_MODULE_DEAD,          /* Dead status */
-    EMBER_MODULE_COUNT
-} mod_state_t;
-
-typedef enum submod_prio {
-    SUBMODULE_PRIO_1 = 1,
-    SUBMODULE_PRIO_2,
-    SUBMODULE_PRIO_3,
-    SUBMODULE_PRIO_4,
-    SUBMODULE_PRIO_5,
-    SUBMODULE_PRIO_6,
-    SUBMODULE_PRIO_7,
-    SUBMODULE_PRIO_8
-} mod_prio_t;
-
-typedef enum submod_class {
-    SUBMODULE_CLASS_MESSAGE = 0,
-    SUBMODULE_CLASS_DEVICE,
-    SUBMODULE_CLASS_CONFIG,
-    SUBMODULE_CLASS_MONITOR,
-    SUBMODULE_CLASS_WEB,
-    SUBMODULE_CLASS_OTA,
-    SUBMODULE_CLASS_ACQUISITION,
-    SUBmod_class_tEST,
-    SUBMODULE_CLASS_MAX
-} mod_class_t;
-
-typedef enum event {
-    EMBER_EVENT_NONE = 0,
-    EMBER_EVENT_EXCEPTION,
-    EMBER_EVENT_RECOVERY,
-    EMBER_EVENT_REBOOT,
-    EMBER_EVENT_POWEROFF,
-    EMBER_EVENT_WAKEUP,
-    EMBER_EVENT_COUNT
-} event_t;
-
-typedef enum control {
-    EMBER_CONTROL_START = 0,
-    EMBER_CONTROL_STOP,
-    EMBER_CONTROL_PAUSE,
-    EMBER_CONTROL_COUNT
-} control_t;
-
 #ifdef __cplusplus
 }
 #endif

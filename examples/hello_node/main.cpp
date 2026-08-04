@@ -57,10 +57,6 @@ int main(void)
                 });
             });
 
-        if (!openember::framework::RegisterModule(*node, MODULE_NAME, SUBmod_class_tEST)) {
-            LOG_E("Module register publish failed.");
-        }
-
         auto pub = node->Advertise<std::string>(TEST_TOPIC);
         int count = 3;
         while (count--) {

@@ -13,7 +13,6 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <exception>
 #include <filesystem>
 #include <string>
@@ -26,17 +25,8 @@
 #include "launch_config.hpp"
 #include "process_manager.hpp"
 
-#include "openember/framework/pod_traits.hpp"
-#include "openember/framework/system_bus.hpp"
 #include "openember/init.hpp"
 #include "openember/link/options.hpp"
-#include "openember/node.hpp"
-
-#define EMBER_GLOBALS
-#include "fsm.h"
-#include "smm.h"
-
-EMBER_EXT State context;
 
 namespace {
 
@@ -246,8 +236,6 @@ int main(int argc, char* argv[]) {
     }
 
     InstallSignals();
-    fsm_init();
-    smm_init();
 
     int exit_code = 0;
 
@@ -255,51 +243,13 @@ int main(int argc, char* argv[]) {
         auto config = openember::launch::LoadLaunchConfig(cli.launch_file, bin_dir);
         InitLinkRouter(config.runtime);
 
-        auto node = openember::CreateNode(APPLICATION_NAME);
-
-        auto event_sub = node->Subscribe<event_msg_t>(
-            SYS_EVENT_TOPIC, [](const event_msg_t& e) {
-                LOG_I("event: [%d] %s", e.event_id, e.event_data.event_str);
-                if (EMBER_EVENT_EXCEPTION == e.event_id) {
-                    context.goWrong();
-                } else if (EMBER_EVENT_RECOVERY == e.event_id) {
-                    context.recovery();
-                }
-            });
-
-        auto reg_sub = node->Subscribe<smm_msg_t>(
-            MOD_REGISTER_TOPIC, [](const smm_msg_t& msg) {
-                LOG_I("Register: %s, %d", msg.name, msg.pid);
-                if (nullptr == smm_register(msg.name, msg.cls, msg.pid, nullptr)) {
-                    LOG_E("Module %s register failed.", msg.name);
-                }
-            });
-
-        context.init();
-
         openember::launch::ProcessManager process_manager(config.processes);
         if (!process_manager.StartAll()) {
             LOG_E("Some configured processes failed to start.");
         }
 
-        auto state_pub = node->Advertise<state_msg_t>(SYS_STATE_TOPIC);
-        auto last_state_publish = std::chrono::steady_clock::now() - std::chrono::seconds(1);
-
         while (g_signal == 0) {
             process_manager.Poll();
-
-            const auto now = std::chrono::steady_clock::now();
-            if (now - last_state_publish >= std::chrono::seconds(1)) {
-                state_msg_t stateMsg {};
-                stateMsg.state_id = fsm_get_current_state();
-                char* stateText = fsm_get_state_text(stateMsg.state_id);
-                if (stateText) {
-                    strncpy(stateMsg.state_str, stateText, sizeof(stateMsg.state_str) - 1);
-                }
-                (void)state_pub.Publish(stateMsg);
-                last_state_publish = now;
-            }
-
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
 
@@ -311,8 +261,6 @@ int main(int argc, char* argv[]) {
     }
 
     openember::Shutdown();
-    smm_stop_all_modules();
-    fsm_deinit();
     DestroyLockFile(cli.pid_file);
     log_deinit();
     return exit_code;

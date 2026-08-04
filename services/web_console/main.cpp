@@ -414,10 +414,6 @@ static int link_init(void)
     try {
         openember::framework::InitSystemClient();
         g_node = openember::CreateNode(MODULE_NAME);
-        if (!openember::framework::RegisterModule(*g_node, MODULE_NAME, SUBMODULE_CLASS_WEB)) {
-            LOG_E("Module register publish failed.");
-            return -EMBER_ERROR;
-        }
 
 #if defined(OPENEMBER_SPDLOG_ENABLE_TOPIC) && OPENEMBER_SPDLOG_ENABLE_TOPIC && \
     defined(OPENEMBER_SPDLOG_TOPIC_NAME)
