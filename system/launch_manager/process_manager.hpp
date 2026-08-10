@@ -39,6 +39,10 @@ public:
 
     void SetEventCallback(EventCallback callback);
     bool StartAll();
+    ProcessEvent StartProcess(ProcessSpec spec);
+    ProcessEvent StopProcess(const std::string& name,
+                             pid_t pid,
+                             std::chrono::milliseconds timeout);
     void Poll();
     void StopAll();
     bool MarkHeartbeat(const std::string& process_name);
@@ -53,16 +57,26 @@ private:
         std::uint64_t start_time_unix_ns = 0;
         std::uint64_t stop_time_unix_ns = 0;
         bool has_heartbeat = false;
+        bool intentional_stop = false;
         std::chrono::steady_clock::time_point last_heartbeat_time;
         std::chrono::steady_clock::time_point stop_deadline;
     };
 
     bool StartOne(ManagedProcess& process);
+    ManagedProcess* FindByName(const std::string& name);
     void HandleExit(pid_t pid, int status);
     bool ShouldRestart(const ManagedProcess& process, int status) const;
-    void StopOne(ManagedProcess& process, const std::string& message = "stopping");
+    void StopOne(ManagedProcess& process,
+                 const std::string& message = "stopping",
+                 std::chrono::milliseconds timeout = std::chrono::milliseconds{0},
+                 bool intentional_stop = true);
     void CheckHeartbeatTimeouts();
     ManagedProcess* FindByPid(pid_t pid);
+    ProcessEvent MakeEvent(const ManagedProcess& process,
+                           ProcessState state,
+                           int exit_code,
+                           std::uint64_t stop_time_unix_ns,
+                           const std::string& message) const;
     void EmitEvent(const ManagedProcess& process,
                    ProcessState state,
                    int exit_code,

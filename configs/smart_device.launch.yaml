@@ -6,6 +6,30 @@ runtime:
     listen: tcp/127.0.0.1:7447
 
 nodes:
+  - name: health_monitor
+    kind: system
+    command: ${openember.bin}/health_monitor
+    restart: always
+    startup_timeout_ms: 3000
+    shutdown_timeout_ms: 3000
+    heartbeat_timeout_ms: 5000
+
+  - name: device_manager
+    kind: system
+    command: ${openember.bin}/device_manager
+    restart: always
+    startup_timeout_ms: 3000
+    shutdown_timeout_ms: 3000
+    heartbeat_timeout_ms: 5000
+
+  - name: config_service
+    kind: system
+    command: ${openember.bin}/config_service
+    restart: always
+    startup_timeout_ms: 3000
+    shutdown_timeout_ms: 3000
+    heartbeat_timeout_ms: 5000
+
   - name: smart_device_app
     kind: application
     command: ${openember.bin}/openember_smart_device_demo

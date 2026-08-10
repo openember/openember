@@ -80,6 +80,70 @@ bool ProcessManager::StartAll() {
     return ok;
 }
 
+ProcessManager::ProcessEvent ProcessManager::StartProcess(ProcessSpec spec) {
+    if (spec.name.empty()) {
+        spec.name = spec.command;
+    }
+
+    if (spec.name.empty() || spec.command.empty()) {
+        ManagedProcess invalid;
+        invalid.spec = std::move(spec);
+        invalid.state = ProcessState::kFailed;
+        return MakeEvent(invalid, ProcessState::kFailed, EINVAL, UnixTimeNs(),
+                         "process name and command are required");
+    }
+
+    ManagedProcess* existing = FindByName(spec.name);
+    if (existing) {
+        if (existing->pid > 0) {
+            return MakeEvent(*existing, existing->state, 0,
+                             existing->stop_time_unix_ns,
+                             "process already running");
+        }
+        existing->spec = std::move(spec);
+        (void)StartOne(*existing);
+        return MakeEvent(*existing, existing->state, 0,
+                         existing->stop_time_unix_ns,
+                         "start requested");
+    }
+
+    processes_.push_back(ManagedProcess{std::move(spec)});
+    auto& process = processes_.back();
+    (void)StartOne(process);
+    return MakeEvent(process, process.state, 0,
+                     process.stop_time_unix_ns,
+                     "start requested");
+}
+
+ProcessManager::ProcessEvent ProcessManager::StopProcess(
+    const std::string& name,
+    pid_t pid,
+    std::chrono::milliseconds timeout) {
+    ManagedProcess* process = nullptr;
+    if (!name.empty()) {
+        process = FindByName(name);
+    }
+    if (!process && pid > 0) {
+        process = FindByPid(pid);
+    }
+    if (!process) {
+        ManagedProcess missing;
+        missing.spec.name = name.empty() ? std::to_string(pid) : name;
+        missing.pid = pid;
+        missing.state = ProcessState::kFailed;
+        return MakeEvent(missing, ProcessState::kFailed, ESRCH,
+                         UnixTimeNs(), "process not found");
+    }
+    if (process->pid <= 0) {
+        return MakeEvent(*process, ProcessState::kStopped, 0,
+                         process->stop_time_unix_ns,
+                         "process already stopped");
+    }
+
+    StopOne(*process, "stop requested", timeout);
+    return MakeEvent(*process, ProcessState::kStopping, 0, 0, "stop requested");
+}
+
 bool ProcessManager::StartOne(ManagedProcess& process) {
     if (process.pid > 0) {
         return true;
@@ -93,6 +157,7 @@ bool ProcessManager::StartOne(ManagedProcess& process) {
     process.start_time_unix_ns = UnixTimeNs();
     process.stop_time_unix_ns = 0;
     process.has_heartbeat = false;
+    process.intentional_stop = false;
     EmitEvent(process, process.state, 0, 0, "starting");
 
     const pid_t pid = fork();
@@ -169,16 +234,18 @@ void ProcessManager::HandleExit(pid_t pid, int status) {
 
     const auto exit_code = ExitCodeFromStatus(status);
     const auto stop_time_unix_ns = UnixTimeNs();
-    const auto state = stopping_
+    const auto state = (stopping_ || process->intentional_stop)
         ? ProcessState::kStopped
         : (ExitedSuccessfully(status) ? ProcessState::kExited : ProcessState::kFailed);
+    const bool intentional_stop = process->intentional_stop;
 
     process->state = state;
     process->stop_time_unix_ns = stop_time_unix_ns;
     EmitEvent(*process, state, exit_code, stop_time_unix_ns, StatusText(status));
     process->pid = -1;
+    process->intentional_stop = false;
 
-    if (!stopping_ && ShouldRestart(*process, status)) {
+    if (!stopping_ && !intentional_stop && ShouldRestart(*process, status)) {
         ++process->restart_count;
         LOG_I("Restart process: name=%s restart_count=%u",
               process->spec.name.c_str(),
@@ -252,7 +319,10 @@ bool ProcessManager::MarkHeartbeat(const std::string& process_name) {
     return false;
 }
 
-void ProcessManager::StopOne(ManagedProcess& process, const std::string& message) {
+void ProcessManager::StopOne(ManagedProcess& process,
+                             const std::string& message,
+                             std::chrono::milliseconds timeout,
+                             bool intentional_stop) {
     if (process.pid <= 0) {
         return;
     }
@@ -261,8 +331,10 @@ void ProcessManager::StopOne(ManagedProcess& process, const std::string& message
           process.spec.name.c_str(),
           static_cast<int>(process.pid));
     process.state = ProcessState::kStopping;
+    process.intentional_stop = intentional_stop;
     process.stop_deadline =
-        std::chrono::steady_clock::now() + process.spec.shutdown_timeout;
+        std::chrono::steady_clock::now() +
+        (timeout.count() > 0 ? timeout : process.spec.shutdown_timeout);
     EmitEvent(process, process.state, 0, 0, message);
     if (kill(process.pid, SIGTERM) != 0 && errno != ESRCH) {
         LOG_E("SIGTERM failed for %s: %s", process.spec.name.c_str(), strerror(errno));
@@ -286,7 +358,10 @@ void ProcessManager::CheckHeartbeatTimeouts() {
             LOG_E("Startup heartbeat timeout: name=%s pid=%d",
                   process.spec.name.c_str(),
                   static_cast<int>(process.pid));
-            StopOne(process, "startup heartbeat timeout");
+            StopOne(process,
+                    "startup heartbeat timeout",
+                    std::chrono::milliseconds{0},
+                    false);
             continue;
         }
 
@@ -296,7 +371,10 @@ void ProcessManager::CheckHeartbeatTimeouts() {
             LOG_E("Heartbeat timeout: name=%s pid=%d",
                   process.spec.name.c_str(),
                   static_cast<int>(process.pid));
-            StopOne(process, "heartbeat timeout");
+            StopOne(process,
+                    "heartbeat timeout",
+                    std::chrono::milliseconds{0},
+                    false);
         }
     }
 }
@@ -310,6 +388,32 @@ ProcessManager::ManagedProcess* ProcessManager::FindByPid(pid_t pid) {
     return nullptr;
 }
 
+ProcessManager::ManagedProcess* ProcessManager::FindByName(const std::string& name) {
+    for (auto& process : processes_) {
+        if (process.spec.name == name) {
+            return &process;
+        }
+    }
+    return nullptr;
+}
+
+ProcessManager::ProcessEvent ProcessManager::MakeEvent(
+    const ManagedProcess& process,
+    ProcessState state,
+    int exit_code,
+    std::uint64_t stop_time_unix_ns,
+    const std::string& message) const {
+    ProcessEvent event;
+    event.spec = process.spec;
+    event.pid = process.pid;
+    event.state = state;
+    event.exit_code = exit_code;
+    event.start_time_unix_ns = process.start_time_unix_ns;
+    event.stop_time_unix_ns = stop_time_unix_ns;
+    event.message = message;
+    return event;
+}
+
 void ProcessManager::EmitEvent(const ManagedProcess& process,
                                ProcessState state,
                                int exit_code,
@@ -319,14 +423,8 @@ void ProcessManager::EmitEvent(const ManagedProcess& process,
         return;
     }
 
-    ProcessEvent event;
-    event.spec = process.spec;
-    event.pid = process.pid;
-    event.state = state;
-    event.exit_code = exit_code;
-    event.start_time_unix_ns = process.start_time_unix_ns;
-    event.stop_time_unix_ns = stop_time_unix_ns;
-    event.message = message;
+    const ProcessEvent event =
+        MakeEvent(process, state, exit_code, stop_time_unix_ns, message);
     event_callback_(event);
 }
 

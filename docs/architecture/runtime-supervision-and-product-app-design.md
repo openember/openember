@@ -199,8 +199,14 @@ nodes:
 2. 当前工作目录下的 `configs/smart_device.launch.yaml`
 3. 相对 `launch_manager` 可执行文件的源码树配置路径
 
-当前默认配置只启动 `smart_device_app`，因为部分 system/service 节点还只是注册后退出的占位实现。
-等这些节点 daemon 化并发布稳定心跳后，再把它们加入默认 launch 配置。
+当前默认配置已经启动：
+
+- `health_monitor`
+- `device_manager`
+- `config_service`
+- `smart_device_app`
+
+其他 system/service 节点仍需先 daemon 化并发布稳定心跳，再加入默认 launch 配置。
 
 ### launch_manager 内部结构
 
@@ -233,6 +239,20 @@ LaunchManagerNode
 - 不需要 shell。
 - 停止、重启、waitpid 更可靠。
 
+当前已在 `launch_manager` 内落地第一版 `RuntimeRegistry`：
+
+- 订阅 `/nodes/*/info` 并记录 `NodeInfo`。
+- 订阅 `/nodes/*/heartbeat` 并记录最近心跳时间。
+- 提供 `/nodes/query` service，使用 `NodeQuery/NodeQueryResponse` 查询节点注册表。
+- 继续把被管理进程的心跳转交给 `ProcessManager` 执行 runtime alive 监督。
+
+调试时可以使用：
+
+```bash
+./build/bin/openember_node_query
+./build/bin/openember_node_query smart_device_app
+```
+
 ## 四、health_monitor 的职责边界
 
 `health_monitor` 是系统健康聚合器。
@@ -248,6 +268,18 @@ LaunchManagerNode
 7. 必要时向 `launch_manager` 请求重启某个进程。
 
 它不应该直接 `kill` 或 `fork` 进程。进程控制统一走 `launch_manager`。
+
+当前第一版 `health_monitor` 已落地：
+
+- 作为 Link client 由 `launch_manager` 启动。
+- 发布 `/nodes/health_monitor/info`。
+- 发布 `/nodes/health_monitor/heartbeat`。
+- 订阅 `/nodes/*/heartbeat`。
+- 发布 `/diagnostics/health_monitor`，消息类型为 `DiagnosticArray`。
+- 根据最近心跳时间把节点诊断为 OK/WARNING/ERROR/STALE。
+
+当前它只做轻量聚合，不直接请求重启进程。后续当 runtime restart/query 协议完善后，
+可由 `health_monitor` 根据健康策略向 `launch_manager` 发起恢复请求。
 
 ### 心跳归属
 
@@ -289,6 +321,25 @@ launch_manager 只是 runtime restart policy 的执行者。
 
 这些决策应该由 product app 根据 `device_manager` 和 `health_monitor` 的状态做出。
 
+当前第一版 `device_manager` 已落地：
+
+- 作为 Link client 由 `launch_manager` 启动。
+- 发布 `/nodes/device_manager/info`。
+- 发布 `/nodes/device_manager/heartbeat`。
+- 发布 `/devices/runtime_demo/info` 与 `/devices/runtime_demo/state`。
+- 提供 `/devices/query` service，使用 `DeviceQuery/DeviceQueryResponse`。
+- 内置一个 `runtime_demo` 虚拟设备，作为设备协议和查询链路的最小示例。
+
+调试时可以使用：
+
+```bash
+./build/bin/openember_device_query
+./build/bin/openember_device_query runtime_demo
+```
+
+后续应把静态虚拟设备替换或扩展为真实发现来源，例如 LPIO 中的 GPIO、PWM、I2C、SPI、
+CAN、Serial、RS485、SBUSReader 等设备描述。
+
 ## 六、config_service 的职责边界
 
 `config_service` 管配置和参数。
@@ -310,6 +361,26 @@ product app 读取配置；
 config_service 保存配置；
 launch_manager 决定是否因配置变化重启节点。
 ```
+
+当前第一版 `config_service` 已落地：
+
+- 作为 Link client 由 `launch_manager` 启动。
+- 发布 `/nodes/config_service/info`。
+- 发布 `/nodes/config_service/heartbeat`。
+- 发布 `/parameters/events`。
+- 提供 `/parameters/get` service，使用 `GetParameterRequest/Response`。
+- 提供 `/parameters/set` service，使用 `SetParameterRequest/Response`。
+- 内置内存参数表，默认包含 `product.mode` 与只读 `runtime.robot_id`。
+
+调试时可以使用：
+
+```bash
+./build/bin/openember_parameter_get
+./build/bin/openember_parameter_get product.mode
+```
+
+第一版暂不做持久化。后续可在保持 service 协议不变的前提下，把内存参数表替换为
+SQLite、JSON/TOML 文件或产品自定义配置后端。
 
 ## 七、Product App 的职责边界
 
@@ -466,6 +537,7 @@ OpenEmber 已有 `openember-msgs`，其中可直接服务该设计：
 /runtime/process/start
 /runtime/process/stop
 /runtime/process/restart
+/nodes/query
 /nodes/<node>/info
 /nodes/<node>/heartbeat
 /diagnostics/<node>
@@ -487,20 +559,24 @@ openember/<robot_id>/<namespace>/services/...
 ```text
 初始化 Link
 创建 smart_device_app 节点
+发布 NodeInfo
 发布 NodeHeartbeat
+维护最小 ProductState
 ```
 
 下一步应演化为真正 product app：
 
 ### Phase 1：Product App Skeleton
 
-目标：
+当前已部分落地：
 
 - 固定作为 Link client，由 `launch_manager` 启动。
-- 发布 `NodeInfo`。
-- 发布 `NodeHeartbeat`。
-- 引入 `ProductState`。
-- 引入最小 FSM。
+- 发布 `/nodes/smart_device_app/info`，消息类型为 `NodeInfo`。
+- 发布 `/nodes/smart_device_app/heartbeat`，消息类型为 `NodeHeartbeat`。
+- 引入最小 `ProductState`：`Booting -> Initializing -> Ready -> Running`。
+- 在心跳中通过 `status_message` 和 `product.state` 指标暴露当前产品状态。
+
+后续可继续拆分为更清晰的 product app skeleton：
 
 目录建议：
 
@@ -516,10 +592,15 @@ apps/smart_device_demo/
 
 ### Phase 2：接入系统节点
 
-目标：
+当前已部分落地：
 
-- 从 `config_service` 读取产品配置。
-- 从 `device_manager` 查询设备能力。
+- 从 `config_service` 读取 `product.mode`。
+- 从 `device_manager` 查询设备列表。
+- 只有配置和设备都准备好后，`smart_device_demo` 才从 `Initializing` 推进到 `Ready`。
+- `NodeInfo` 中声明了 product app 对 `/parameters/get` 与 `/devices/query` 的 service client 依赖。
+
+后续目标：
+
 - 从 `health_monitor` 获取系统健康状态。
 - 根据健康/设备/配置变化调整 product state。
 
@@ -578,16 +659,33 @@ web_console、logger、health_monitor 可以订阅。
 
 ### Phase 3：提供 Runtime Service
 
-提供：
+当前已落地：
 
 ```text
 /runtime/process/start
 /runtime/process/stop
+```
+
+请求和响应使用 `runtime/v1 StartProcessRequest/Response` 与
+`StopProcessRequest/Response`。
+
+`launch_manager` 的 service 回调不会直接修改进程表，而是把 runtime command 投递到
+主循环线程执行。这样 `fork/exec`、`waitpid`、stop、restart policy 和心跳监督都仍在
+同一个监督上下文里完成，避免 transport 回调线程和进程监督逻辑相互抢状态。
+
+调试时可以使用：
+
+```bash
+./build/bin/openember_runtime_process_control stop smart_device_app 1000
+./build/bin/openember_runtime_process_control start adhoc_sleep /bin/sleep 5
+```
+
+后续待 `openember-msgs` 补充对应协议后，再继续增加：
+
+```text
 /runtime/process/restart
 /runtime/process/query
 ```
-
-请求和响应使用 `runtime/v1` 消息。
 
 ### Phase 4：接入心跳监督
 
@@ -696,6 +794,13 @@ auto 模式只用于开发调试
 这个顺序能先建立稳定 runtime，再逐步加健康和业务行为，避免一开始就把所有复杂度塞进
 `launch_manager`。
 
+当前进度：
+
+- 1-6 已落地。
+- 7 已覆盖 `health_monitor` 与 `smart_device_app`。
+- 8 已落地第一版节点心跳聚合与 diagnostics 发布。
+- 9 已在 `smart_device_demo` 中落地最小 FSM，后续还需要拆分产品应用结构并接入系统节点。
+
 ## 十四、最终目标
 
 最终用户的典型体验应是：
@@ -712,6 +817,8 @@ auto 模式只用于开发调试
 启动 services
 启动 product app
 监督进程状态
+注册节点信息
+提供节点/设备/参数查询
 聚合健康状态
 暴露 web_console / tools 观测入口
 由 product app 管理整机行为

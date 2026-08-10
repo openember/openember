@@ -12,6 +12,10 @@ if(TARGET openember::msgs_cpp)
         msgs_talker.cpp:openember_msgs_talker
         msgs_listener.cpp:openember_msgs_listener
         runtime_process_listener.cpp:openember_runtime_process_listener
+        runtime_process_control.cpp:openember_runtime_process_control
+        node_query.cpp:openember_node_query
+        device_query.cpp:openember_device_query
+        parameter_get.cpp:openember_parameter_get
     )
 endif()
 

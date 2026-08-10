@@ -10,14 +10,21 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <cstdint>
 #include <cstdlib>
 #include <exception>
+#include <functional>
+#include <future>
 #include <filesystem>
+#include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #define APPLICATION_NAME "launch_manager"
@@ -38,11 +45,89 @@ namespace {
 constexpr const char* kDefaultPidFile = "/tmp/openember-launch_manager.pid";
 constexpr const char* kDefaultLaunchFile = "configs/smart_device.launch.yaml";
 constexpr const char* kRuntimeProcessEventsTopic = "/runtime/process/events";
+constexpr const char* kRuntimeProcessStartService = "/runtime/process/start";
+constexpr const char* kRuntimeProcessStopService = "/runtime/process/stop";
+constexpr const char* kNodeInfoTopic = "/nodes/*/info";
 constexpr const char* kNodeHeartbeatsTopic = "/nodes/*/heartbeat";
+constexpr const char* kNodeQueryService = "/nodes/query";
 
 volatile sig_atomic_t g_signal = 0;
 pid_t g_pid = 0;
 int g_lock_fd = -1;
+
+std::uint64_t UnixTimeNs();
+
+class RuntimeRegistry {
+public:
+    void UpdateNodeInfo(const openember::msgs::node::v1::NodeInfo& info) {
+        if (info.node_name().empty()) {
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto& record = nodes_[info.node_name()];
+        const bool first_seen = record.info.node_name().empty();
+        record.info = info;
+        record.last_info_unix_ns = UnixTimeNs();
+
+        if (first_seen) {
+            LOG_I("Node registered: name=%s kind=%d pid=%u",
+                  info.node_name().c_str(),
+                  static_cast<int>(info.kind()),
+                  info.process_id());
+        }
+    }
+
+    void UpdateHeartbeat(const openember::msgs::node::v1::NodeHeartbeat& heartbeat) {
+        if (heartbeat.node_name().empty()) {
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto& record = nodes_[heartbeat.node_name()];
+        if (record.info.node_name().empty()) {
+            record.info.set_node_name(heartbeat.node_name());
+            record.info.set_instance_id(heartbeat.instance_id());
+            record.info.set_kind(openember::msgs::node::v1::NODE_KIND_UNSPECIFIED);
+        }
+        record.last_heartbeat_unix_ns = UnixTimeNs();
+    }
+
+    std::vector<openember::msgs::node::v1::NodeInfo> Query(
+        const openember::msgs::node::v1::NodeQuery& query) const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        std::vector<openember::msgs::node::v1::NodeInfo> result;
+
+        for (const auto& [name, record] : nodes_) {
+            if (!query.node_name().empty() && query.node_name() != name) {
+                continue;
+            }
+            if (!query.namespace_name().empty() &&
+                query.namespace_name() != record.info.namespace_name()) {
+                continue;
+            }
+
+            auto info = record.info;
+            if (!query.include_endpoints()) {
+                info.clear_topics();
+                info.clear_services();
+            }
+            result.push_back(std::move(info));
+        }
+
+        return result;
+    }
+
+private:
+    struct NodeRecord {
+        openember::msgs::node::v1::NodeInfo info;
+        std::uint64_t last_info_unix_ns = 0;
+        std::uint64_t last_heartbeat_unix_ns = 0;
+    };
+
+    mutable std::mutex mutex_;
+    std::map<std::string, NodeRecord> nodes_;
+};
 
 void SignalHandler(int signo) {
     g_signal = signo;
@@ -228,21 +313,25 @@ openember::msgs::runtime::v1::ProcessState ToProtoState(
     return ProtoState::PROCESS_STATE_UNSPECIFIED;
 }
 
-openember::msgs::runtime::v1::ProcessEvent BuildProcessEvent(
-    const openember::launch::RuntimeSpec& runtime,
-    const openember::launch::ProcessManager::ProcessEvent& source,
-    std::uint64_t sequence) {
-    openember::msgs::runtime::v1::ProcessEvent event;
-
-    auto* header = event.mutable_header();
+void FillHeader(openember::msgs::common::v1::Header* header,
+                const openember::launch::RuntimeSpec& runtime,
+                const openember::msgs::common::v1::Header* request_header,
+                std::uint64_t sequence) {
     header->set_source_node(APPLICATION_NAME);
     header->set_source_instance(APPLICATION_NAME);
     header->set_robot_id(runtime.robot_id);
     header->set_namespace_name(runtime.namespace_name);
     header->set_sequence(sequence);
     header->set_timestamp_unix_ns(UnixTimeNs());
+    if (request_header) {
+        header->set_trace_id(request_header->trace_id());
+        header->set_request_id(request_header->request_id());
+    }
+}
 
-    auto* process = event.mutable_process();
+void FillProcessInfo(
+    openember::msgs::runtime::v1::ProcessInfo* process,
+    const openember::launch::ProcessManager::ProcessEvent& source) {
     process->set_name(source.spec.name);
     if (source.pid > 0) {
         process->set_process_id(static_cast<std::uint32_t>(source.pid));
@@ -252,7 +341,133 @@ openember::msgs::runtime::v1::ProcessEvent BuildProcessEvent(
     process->set_start_time_unix_ns(source.start_time_unix_ns);
     process->set_stop_time_unix_ns(source.stop_time_unix_ns);
     process->set_message(source.message);
+}
+
+bool IsProcessCommandOk(const openember::launch::ProcessManager::ProcessEvent& event) {
+    return event.state != openember::launch::ProcessManager::ProcessState::kFailed;
+}
+
+void FillStatus(openember::msgs::common::v1::Status* status,
+                bool ok,
+                const std::string& message) {
+    status->set_code(ok ? 0 : 1);
+    status->set_message(message);
+}
+
+openember::launch::ProcessSpec ToLaunchProcessSpec(
+    const openember::msgs::runtime::v1::ProcessSpec& source) {
+    openember::launch::ProcessSpec spec;
+    spec.name = source.name();
+    spec.command = source.executable();
+    spec.args.assign(source.args().begin(), source.args().end());
+    for (const auto& env : source.env()) {
+        spec.env[env.key()] = env.value();
+    }
+    spec.working_directory = source.working_directory();
+    spec.restart = source.restart_on_failure()
+        ? openember::launch::RestartPolicy::kOnFailure
+        : openember::launch::RestartPolicy::kNever;
+    spec.restart_limit = source.restart_limit();
+    return spec;
+}
+
+openember::msgs::runtime::v1::StartProcessResponse BuildStartProcessResponse(
+    const openember::launch::RuntimeSpec& runtime,
+    const openember::msgs::runtime::v1::StartProcessRequest& request,
+    const openember::launch::ProcessManager::ProcessEvent& event,
+    std::uint64_t sequence) {
+    openember::msgs::runtime::v1::StartProcessResponse response;
+    FillHeader(response.mutable_header(), runtime, &request.header(), sequence);
+    FillStatus(response.mutable_status(), IsProcessCommandOk(event), event.message);
+    FillProcessInfo(response.mutable_process(), event);
+    return response;
+}
+
+openember::msgs::runtime::v1::StopProcessResponse BuildStopProcessResponse(
+    const openember::launch::RuntimeSpec& runtime,
+    const openember::msgs::runtime::v1::StopProcessRequest& request,
+    const openember::launch::ProcessManager::ProcessEvent& event,
+    std::uint64_t sequence) {
+    openember::msgs::runtime::v1::StopProcessResponse response;
+    FillHeader(response.mutable_header(), runtime, &request.header(), sequence);
+    FillStatus(response.mutable_status(), IsProcessCommandOk(event), event.message);
+    FillProcessInfo(response.mutable_process(), event);
+    return response;
+}
+
+openember::msgs::runtime::v1::StartProcessResponse BuildStartTimeoutResponse(
+    const openember::launch::RuntimeSpec& runtime,
+    const openember::msgs::runtime::v1::StartProcessRequest& request,
+    std::uint64_t sequence) {
+    openember::msgs::runtime::v1::StartProcessResponse response;
+    FillHeader(response.mutable_header(), runtime, &request.header(), sequence);
+    FillStatus(response.mutable_status(), false, "runtime command timeout");
+    response.mutable_process()->set_name(request.process().name());
+    response.mutable_process()->set_state(
+        openember::msgs::runtime::v1::PROCESS_STATE_FAILED);
+    return response;
+}
+
+openember::msgs::runtime::v1::StopProcessResponse BuildStopTimeoutResponse(
+    const openember::launch::RuntimeSpec& runtime,
+    const openember::msgs::runtime::v1::StopProcessRequest& request,
+    std::uint64_t sequence) {
+    openember::msgs::runtime::v1::StopProcessResponse response;
+    FillHeader(response.mutable_header(), runtime, &request.header(), sequence);
+    FillStatus(response.mutable_status(), false, "runtime command timeout");
+    response.mutable_process()->set_name(request.name());
+    response.mutable_process()->set_process_id(request.process_id());
+    response.mutable_process()->set_state(
+        openember::msgs::runtime::v1::PROCESS_STATE_FAILED);
+    return response;
+}
+
+openember::msgs::node::v1::NodeQueryResponse BuildNodeQueryResponse(
+    const openember::launch::RuntimeSpec& runtime,
+    const openember::msgs::node::v1::NodeQuery& request,
+    const std::vector<openember::msgs::node::v1::NodeInfo>& nodes,
+    std::uint64_t sequence) {
+    openember::msgs::node::v1::NodeQueryResponse response;
+    FillHeader(response.mutable_header(), runtime, &request.header(), sequence);
+    FillStatus(response.mutable_status(), true, "ok");
+    for (const auto& node : nodes) {
+        *response.add_nodes() = node;
+    }
+    return response;
+}
+
+openember::msgs::runtime::v1::ProcessEvent BuildProcessEvent(
+    const openember::launch::RuntimeSpec& runtime,
+    const openember::launch::ProcessManager::ProcessEvent& source,
+    std::uint64_t sequence) {
+    openember::msgs::runtime::v1::ProcessEvent event;
+    FillHeader(event.mutable_header(), runtime, nullptr, sequence);
+    FillProcessInfo(event.mutable_process(), source);
     return event;
+}
+
+template <typename ResponseT, typename WorkT>
+ResponseT EnqueueRuntimeCommand(std::mutex& mutex,
+                                std::vector<std::function<void()>>& pending_commands,
+                                WorkT&& work,
+                                ResponseT timeout_response) {
+    auto promise = std::make_shared<std::promise<ResponseT>>();
+    auto future = promise->get_future();
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        pending_commands.push_back(
+            [promise, work = std::forward<WorkT>(work)]() mutable {
+                try {
+                    promise->set_value(work());
+                } catch (...) {
+                    promise->set_exception(std::current_exception());
+                }
+            });
+    }
+    if (future.wait_for(std::chrono::seconds(3)) != std::future_status::ready) {
+        return timeout_response;
+    }
+    return future.get();
 }
 
 void InstallSignals() {
@@ -308,12 +523,24 @@ int main(int argc, char* argv[]) {
         auto process_event_pub =
             node->Advertise<openember::msgs::runtime::v1::ProcessEvent>(
                 kRuntimeProcessEventsTopic);
+        RuntimeRegistry registry;
         std::mutex heartbeat_mutex;
         std::vector<std::string> pending_heartbeats;
+        std::mutex runtime_command_mutex;
+        std::vector<std::function<void()>> pending_runtime_commands;
+        std::atomic_uint64_t runtime_service_sequence{0};
+        std::atomic_uint64_t node_query_sequence{0};
+        auto node_info_sub =
+            node->Subscribe<openember::msgs::node::v1::NodeInfo>(
+                kNodeInfoTopic,
+                [&](const openember::msgs::node::v1::NodeInfo& info) {
+                    registry.UpdateNodeInfo(info);
+                });
         auto heartbeat_sub =
             node->Subscribe<openember::msgs::node::v1::NodeHeartbeat>(
                 kNodeHeartbeatsTopic,
                 [&](const openember::msgs::node::v1::NodeHeartbeat& heartbeat) {
+                    registry.UpdateHeartbeat(heartbeat);
                     std::lock_guard<std::mutex> lock(heartbeat_mutex);
                     pending_heartbeats.push_back(heartbeat.node_name());
                 });
@@ -330,11 +557,79 @@ int main(int argc, char* argv[]) {
                           static_cast<int>(event.state));
                 }
             });
+
+        auto node_query_service = node->CreateService<
+            openember::msgs::node::v1::NodeQuery,
+            openember::msgs::node::v1::NodeQueryResponse>(
+            kNodeQueryService,
+            [&](const openember::msgs::node::v1::NodeQuery& request) {
+                return BuildNodeQueryResponse(
+                    config.runtime,
+                    request,
+                    registry.Query(request),
+                    node_query_sequence.fetch_add(1));
+            });
+
+        auto start_service = node->CreateService<
+            openember::msgs::runtime::v1::StartProcessRequest,
+            openember::msgs::runtime::v1::StartProcessResponse>(
+            kRuntimeProcessStartService,
+            [&](const openember::msgs::runtime::v1::StartProcessRequest& request) {
+                auto timeout_response = BuildStartTimeoutResponse(
+                    config.runtime, request, runtime_service_sequence.fetch_add(1));
+                return EnqueueRuntimeCommand(
+                    runtime_command_mutex,
+                    pending_runtime_commands,
+                    [&, request]() {
+                        const auto event =
+                            process_manager.StartProcess(ToLaunchProcessSpec(request.process()));
+                        return BuildStartProcessResponse(
+                            config.runtime,
+                            request,
+                            event,
+                            runtime_service_sequence.fetch_add(1));
+                    },
+                    timeout_response);
+            });
+
+        auto stop_service = node->CreateService<
+            openember::msgs::runtime::v1::StopProcessRequest,
+            openember::msgs::runtime::v1::StopProcessResponse>(
+            kRuntimeProcessStopService,
+            [&](const openember::msgs::runtime::v1::StopProcessRequest& request) {
+                auto timeout_response = BuildStopTimeoutResponse(
+                    config.runtime, request, runtime_service_sequence.fetch_add(1));
+                return EnqueueRuntimeCommand(
+                    runtime_command_mutex,
+                    pending_runtime_commands,
+                    [&, request]() {
+                        const auto event = process_manager.StopProcess(
+                            request.name(),
+                            static_cast<pid_t>(request.process_id()),
+                            std::chrono::milliseconds(request.timeout_ms()));
+                        return BuildStopProcessResponse(
+                            config.runtime,
+                            request,
+                            event,
+                            runtime_service_sequence.fetch_add(1));
+                    },
+                    timeout_response);
+            });
+
         if (!process_manager.StartAll()) {
             LOG_E("Some configured processes failed to start.");
         }
 
         while (g_signal == 0) {
+            std::vector<std::function<void()>> runtime_commands;
+            {
+                std::lock_guard<std::mutex> lock(runtime_command_mutex);
+                runtime_commands.swap(pending_runtime_commands);
+            }
+            for (auto& command : runtime_commands) {
+                command();
+            }
+
             std::vector<std::string> heartbeats;
             {
                 std::lock_guard<std::mutex> lock(heartbeat_mutex);
