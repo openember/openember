@@ -60,6 +60,11 @@ onoff() {
   fi
 }
 
+has_symbol() {
+  local sym="$1"
+  grep -Eq "^${sym}=|^# ${sym} is not set$" "${CONFIG_FILE}"
+}
+
 tests_enabled="$(onoff CONFIG_OPENEMBER_ENABLE_TESTS)"
 examples_enabled="$(onoff CONFIG_OPENEMBER_ENABLE_EXAMPLES)"
 openmp_enabled="$(onoff CONFIG_OPENEMBER_ENABLE_OPENMP)"
@@ -67,6 +72,9 @@ debug_enabled="$(onoff CONFIG_OPENEMBER_DEBUG_ENABLED)"
 opt_disabled="$(onoff CONFIG_OPENEMBER_OPTIMIZATION_DISABLED)"
 crosscompile_enabled="$(onoff CONFIG_OPENEMBER_CROSSCOMPILE_ENABLED)"
 use_yamlcpp="$(onoff CONFIG_OPENEMBER_USE_YAMLCPP)"
+if ! grep -q "^CONFIG_OPENEMBER_USE_YAMLCPP=" "${CONFIG_FILE}"; then
+  use_yamlcpp=ON
+fi
 enable_link="$(onoff CONFIG_OPENEMBER_ENABLE_LINK)"
 if ! grep -q "^CONFIG_OPENEMBER_ENABLE_LINK=" "${CONFIG_FILE}"; then
   enable_link=ON
@@ -131,9 +139,41 @@ service_ota_update="$(onoff CONFIG_OPENEMBER_SERVICE_OTA_AGENT)"
 reference_sensor_data="$(onoff CONFIG_OPENEMBER_REFERENCE_SENSOR_DATA)"
 service_web_console="$(onoff CONFIG_OPENEMBER_SERVICE_WEB_CONSOLE)"
 service_logger="$(onoff CONFIG_OPENEMBER_SERVICE_LOGGER)"
+service_hardware_interface="$(onoff CONFIG_OPENEMBER_SERVICE_HARDWARE_INTERFACE)"
+if ! has_symbol CONFIG_OPENEMBER_SERVICE_HARDWARE_INTERFACE; then
+  service_hardware_interface=ON
+fi
 component_algorithm="$(onoff CONFIG_OPENEMBER_COMPONENT_ALGORITHM)"
 if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_ALGORITHM=" "${CONFIG_FILE}"; then
   component_algorithm=ON
+fi
+component_hardware="$(onoff CONFIG_OPENEMBER_COMPONENT_HARDWARE)"
+if ! has_symbol CONFIG_OPENEMBER_COMPONENT_HARDWARE; then
+  component_hardware=ON
+fi
+component_sensor="$(onoff CONFIG_OPENEMBER_COMPONENT_SENSOR)"
+if ! has_symbol CONFIG_OPENEMBER_COMPONENT_SENSOR; then
+  component_sensor=ON
+fi
+component_actuator="$(onoff CONFIG_OPENEMBER_COMPONENT_ACTUATOR)"
+if ! has_symbol CONFIG_OPENEMBER_COMPONENT_ACTUATOR; then
+  component_actuator=ON
+fi
+hardware_endpoint_imu="$(onoff CONFIG_OPENEMBER_HARDWARE_ENDPOINT_IMU)"
+if ! has_symbol CONFIG_OPENEMBER_HARDWARE_ENDPOINT_IMU; then
+  hardware_endpoint_imu=ON
+fi
+hardware_endpoint_temperature="$(onoff CONFIG_OPENEMBER_HARDWARE_ENDPOINT_TEMPERATURE)"
+if ! has_symbol CONFIG_OPENEMBER_HARDWARE_ENDPOINT_TEMPERATURE; then
+  hardware_endpoint_temperature=ON
+fi
+hardware_endpoint_gnss="$(onoff CONFIG_OPENEMBER_HARDWARE_ENDPOINT_GNSS)"
+if ! has_symbol CONFIG_OPENEMBER_HARDWARE_ENDPOINT_GNSS; then
+  hardware_endpoint_gnss=ON
+fi
+hardware_endpoint_joint_controller="$(onoff CONFIG_OPENEMBER_HARDWARE_ENDPOINT_JOINT_CONTROLLER)"
+if ! has_symbol CONFIG_OPENEMBER_HARDWARE_ENDPOINT_JOINT_CONTROLLER; then
+  hardware_endpoint_joint_controller=OFF
 fi
 component_thread_pool="$(onoff CONFIG_OPENEMBER_COMPONENT_THREAD_POOL)"
 if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_THREAD_POOL=" "${CONFIG_FILE}"; then
@@ -157,8 +197,30 @@ fi
 if [[ "${enable_link}" == "OFF" ]] || [[ "${examples_enabled}" == "OFF" ]]; then
   example_core=OFF
 fi
+example_hardware_interface="$(onoff CONFIG_OPENEMBER_EXAMPLE_HARDWARE_INTERFACE)"
+if ! has_symbol CONFIG_OPENEMBER_EXAMPLE_HARDWARE_INTERFACE; then
+  example_hardware_interface=ON
+fi
+if [[ "${enable_link}" == "OFF" ]] || [[ "${enable_msgs}" == "OFF" ]] || [[ "${examples_enabled}" == "OFF" ]]; then
+  example_hardware_interface=OFF
+fi
 if [[ "${enable_link}" == "OFF" ]] || [[ "${enable_msgs}" == "OFF" ]]; then
   app_smart_device_demo=OFF
+fi
+if [[ "${component_hardware}" == "OFF" ]]; then
+  component_sensor=OFF
+  component_actuator=OFF
+fi
+if [[ "${enable_link}" == "OFF" ]] || [[ "${enable_msgs}" == "OFF" ]] || [[ "${component_sensor}" == "OFF" ]] || [[ "${use_yamlcpp}" == "OFF" ]]; then
+  service_hardware_interface=OFF
+fi
+if [[ "${component_sensor}" == "OFF" ]] || [[ "${service_hardware_interface}" == "OFF" ]]; then
+  hardware_endpoint_imu=OFF
+  hardware_endpoint_temperature=OFF
+  hardware_endpoint_gnss=OFF
+fi
+if [[ "${component_actuator}" == "OFF" ]] || [[ "${service_hardware_interface}" == "OFF" ]]; then
+  hardware_endpoint_joint_controller=OFF
 fi
 if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS=" "${CONFIG_FILE}"; then
   example_network_sockets=ON
@@ -618,11 +680,20 @@ set(OPENEMBER_SERVICE_OTA_AGENT ${service_ota_update} CACHE BOOL "Build services
 set(OPENEMBER_REFERENCE_SENSOR_DATA ${reference_sensor_data} CACHE BOOL "Build examples/references/sensor_data_reference" FORCE)
 set(OPENEMBER_SERVICE_WEB_CONSOLE ${service_web_console} CACHE BOOL "Build services/web_console" FORCE)
 set(OPENEMBER_SERVICE_LOGGER ${service_logger} CACHE BOOL "Build services/logger" FORCE)
+set(OPENEMBER_SERVICE_HARDWARE_INTERFACE ${service_hardware_interface} CACHE BOOL "Build services/hardware_interface" FORCE)
 set(OPENEMBER_COMPONENT_ALGORITHM ${component_algorithm} CACHE BOOL "Build Algorithm component" FORCE)
+set(OPENEMBER_COMPONENT_HARDWARE ${component_hardware} CACHE BOOL "Build Hardware common component" FORCE)
+set(OPENEMBER_COMPONENT_SENSOR ${component_sensor} CACHE BOOL "Build Sensor Framework component" FORCE)
+set(OPENEMBER_COMPONENT_ACTUATOR ${component_actuator} CACHE BOOL "Build Actuator Framework component" FORCE)
+set(OPENEMBER_HARDWARE_ENDPOINT_IMU ${hardware_endpoint_imu} CACHE BOOL "Build Hardware Interface IMU endpoint" FORCE)
+set(OPENEMBER_HARDWARE_ENDPOINT_TEMPERATURE ${hardware_endpoint_temperature} CACHE BOOL "Build Hardware Interface Temperature endpoint" FORCE)
+set(OPENEMBER_HARDWARE_ENDPOINT_GNSS ${hardware_endpoint_gnss} CACHE BOOL "Build Hardware Interface GNSS endpoint" FORCE)
+set(OPENEMBER_HARDWARE_ENDPOINT_JOINT_CONTROLLER ${hardware_endpoint_joint_controller} CACHE BOOL "Build Hardware Interface Joint Controller endpoint" FORCE)
 set(OPENEMBER_COMPONENT_THREAD_POOL ${component_thread_pool} CACHE BOOL "Build Thread Pool component" FORCE)
 set(OPENEMBER_EXAMPLE_NETWORK_SOCKETS ${example_network_sockets} CACHE BOOL "Build example network_sockets" FORCE)
 set(OPENEMBER_EXAMPLE_TRANSPORT ${example_transport} CACHE BOOL "Build examples transport_talker/listener" FORCE)
 set(OPENEMBER_EXAMPLE_CORE ${example_core} CACHE BOOL "Build examples openember_topic_* / openember_service_*" FORCE)
+set(OPENEMBER_EXAMPLE_HARDWARE_INTERFACE ${example_hardware_interface} CACHE BOOL "Build examples/hardware_interface" FORCE)
 set(OPENEMBER_EXAMPLE_MQTT_EMQX ${example_mqtt_emqx} CACHE BOOL "Build example mqtt_emqx_client" FORCE)
 set(OPENEMBER_MQTT_EMQX_BROKER_URI "${mqtt_emqx_broker_uri}" CACHE STRING "MQTT broker URI for mqtt_emqx example" FORCE)
 set(OPENEMBER_MQTT_EMQX_CLIENT_ID "${mqtt_emqx_client_id}" CACHE STRING "MQTT client id for mqtt_emqx example" FORCE)

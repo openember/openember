@@ -1,7 +1,7 @@
 # OpenEmber Hardware Interface 设计文档
 
 状态：Draft  
-版本：v0.2  
+版本：v0.6
 目标：为 OpenEmber 建立一套稳定、简洁、可扩展的硬件接入架构，使智能设备、机器人和边缘设备可以用统一的运行时边界接入传感器、执行器、电源和基础 I/O。
 
 ## 1. 背景
@@ -34,6 +34,50 @@ Component Framework 定义类型安全的 C++ 领域接口；
 Hardware Package 实现具体型号、厂商协议和硬件 I/O；
 openember-msgs 定义跨语言、跨进程的消息契约。
 ```
+
+## 0. 当前 V1 落地范围
+
+截至 2026-09-12，OpenEmber 已完成 Hardware Interface 的第一条 sensor runtime 闭环，并完成 JointController mock command/state 闭环：
+
+```text
+Mock IMU / Temperature / GNSS
+  -> components/sensor
+  -> services/hardware_interface
+  -> openember-msgs sensor/v1 Protobuf
+  -> OpenEmber Link
+  -> openember_hardware_mock_listener
+
+Mock JointController
+  -> components/actuator
+  -> services/hardware_interface JointControllerEndpoint
+  -> openember-msgs actuator/v1 Protobuf
+  -> OpenEmber Link
+  -> openember_joint_command_sender / openember_hardware_mock_listener
+```
+
+已落地内容：
+
+- `openember-msgs` 新增 `sensor/v1`、`actuator/v1`、`power/v1` 协议域。
+- OpenEmber 新增 `components/hardware`，提供 `Result`、`Error`、`Timestamp`、`DeviceStatus` 等基础类型。
+- OpenEmber 新增 `components/sensor`，提供 `IImu`、`ITemperatureSensor`、`IGnss` 和 Mock 实现。
+- OpenEmber 新增 `components/actuator`，提供 `IActuator`、`IJointController`、`JointCommand`、`JointState` 和 `MockJointController`。
+- OpenEmber 新增 `services/hardware_interface`，支持默认 Mock 配置，也支持通过 `--config <path>` 加载本地 YAML。
+- Hardware Interface 会发布 NodeInfo、NodeHeartbeat、DiagnosticArray、三类 sensor sample，以及启用 Joint Controller endpoint 时的 JointState。
+- Hardware Interface 会为每个 endpoint 发布 `/devices/<endpoint_id>/info` 和 `/devices/<endpoint_id>/state`。
+- `device_manager` 会订阅 `/devices/*/info`、`/devices/*/state` 并纳入 `/devices/query` 查询结果。
+- `health_monitor` 会订阅 `/diagnostics/*`，聚合 Hardware Interface 的 endpoint diagnostics。
+- Kconfig / CMake 已接入 Hardware、Sensor Framework、Actuator Framework、Hardware Interface service、yaml-cpp 依赖和 endpoint 开关。
+- 示例 `openember_hardware_mock_listener` 可订阅并解析 Mock sensor 和 JointState Protobuf 消息。
+- 示例配置 `examples/hardware_interface/mock.yaml` 可直接启动 Mock IMU / Temperature / GNSS。
+- 示例配置 `examples/hardware_interface/mock_joint.yaml` 可启动 Mock JointController endpoint。
+- 示例 `openember_joint_command_sender` 可发布 `JointCommand`，演示 command/state 和 command timeout safe output。
+- critical Endpoint 不可用或启动失败时，Hardware Interface 启动失败；非 critical Endpoint 在构建中不可用时输出警告，运行时失败则通过设备状态和诊断暴露。
+
+仍未落地：
+
+- `PowerEndpoint`。
+- 真实硬件 package 接入。
+- 面向真实执行器的产品级安全策略和硬件在环测试。
 
 ## 2. Android HAL 经验与 OpenEmber 取舍
 
@@ -493,7 +537,7 @@ motor drivers
   -> hardware package
   -> IJointController::ReadState()
   -> JointControllerEndpoint
-  -> JointMessageAdapter
+  -> ActuatorMessageAdapter
   -> openember.msgs.actuator.v1.JointState
   -> Link
   -> Product App / health_monitor / logger
@@ -601,8 +645,8 @@ services/
 
 examples/
   hardware_interface/
-    mock_listener/
-    joint_command_sender/
+    mock_listener.cpp
+    joint_command_sender.cpp
 
 tools/
   hardware/
@@ -610,7 +654,7 @@ tools/
     joint_command/
 ```
 
-V1 可以先实现 `components/hardware`、`components/sensor`、`services/hardware_interface`、IMU/Temperature/GNSS mock endpoint；执行器在后续阶段加入。
+V1 已实现 `components/hardware`、`components/sensor`、`components/actuator`、`services/hardware_interface`、IMU/Temperature/GNSS mock endpoint，以及第一版 `JointControllerEndpoint` mock command/state 闭环。
 
 ## 8. Kconfig 规划
 
@@ -701,6 +745,7 @@ endif
 
 - `Hardware Interface` 可以默认开启，便于形成标准系统拓扑。
 - Mock sensor endpoints 可以默认开启，方便无硬件开发。
+- `Actuator Framework` 可以默认开启；它只是轻量 C++ 领域接口和 Mock，不直接驱动硬件。
 - `JointControllerEndpoint` 默认关闭，避免普通智能设备默认引入执行器安全语义。
 - 真实硬件 package 由产品工程或 Third party / bundle 配置选择。
 
@@ -845,89 +890,101 @@ openember.msgs.power.v1.PowerCommand
 
 ## 12. 配置模型
 
-建议按 endpoint 划分配置：
+V1 已支持本地 YAML 配置。无 `--config` 时，`openember_hardware_interface` 会使用内置 Mock 配置；传入 `--config <path>` 时，会在启动 OpenEmber runtime 前加载文件并校验 endpoint 拓扑。
+
+当前实际支持 sensor endpoint 和 joint controller endpoint 的 schema：
 
 ```yaml
 hardware_interface:
-  enabled: true
+  robot_id: openember
+  node_name: hardware_interface
+  instance_id: hardware_interface
 
-  endpoints:
-    imu0:
-      type: imu
-      enabled: true
-      mode: mock
-      driver: mock_imu
-      frame_id: imu_link
-      topic: /sensors/imu/imu0/sample
-      publish_rate_hz: 100
-      critical: false
-      config:
-        rate_hz: 100
+endpoints:
+  - id: imu0
+    type: imu
+    enabled: true
+    mode: mock
+    driver: mock_imu
+    topic: /sensors/imu/imu0/sample
+    frame_id: imu_link
+    publish_rate_hz: 100.0
+    critical: false
 
-    temp0:
-      type: temperature
-      enabled: true
-      mode: mock
-      driver: mock_temperature
-      topic: /sensors/temperature/temp0/sample
-      publish_rate_hz: 2
-      critical: false
-      config:
-        initial_temperature_celsius: 25.0
+  - id: temp0
+    type: temperature
+    enabled: true
+    mode: mock
+    driver: mock_temperature
+    topic: /sensors/temperature/temp0/sample
+    frame_id: temperature_link
+    publish_rate_hz: 2.0
+    critical: false
 
-    gnss0:
-      type: gnss
-      enabled: true
-      mode: mock
-      driver: mock_gnss
-      topic: /sensors/gnss/gnss0/fix
-      publish_rate_hz: 1
-      critical: false
-      config:
-        latitude_deg: 31.2304
-        longitude_deg: 121.4737
-        altitude_m: 10.0
+  - id: gnss0
+    type: gnss
+    enabled: true
+    mode: mock
+    driver: mock_gnss
+    topic: /sensors/gnss/gnss0/fix
+    frame_id: gnss_link
+    publish_rate_hz: 1.0
+    critical: false
 
-    joint_controller0:
-      type: joint_controller
-      enabled: false
-      mode: mock
-      driver: mock_joint_controller
-      command_topic: /actuators/joints/joint_controller0/command
-      state_topic: /actuators/joints/joint_controller0/state
-      publish_rate_hz: 100
-      command_timeout_ms: 100
-      safe_mode: zero_torque
-      disabled_on_start: true
-      disable_on_stop: true
-      critical: true
-      config:
-        joints:
-          - id: 1
-            name: FL_hip_joint
-          - id: 2
-            name: FL_thigh_joint
+  - id: joint_controller0
+    type: joint_controller
+    enabled: true
+    mode: mock
+    driver: mock_joint_controller
+    state_topic: /actuators/joints/joint_controller0/state
+    command_topic: /actuators/joints/joint_controller0/command
+    frame_id: base_link
+    publish_rate_hz: 10.0
+    command_timeout_ms: 200
+    disabled_on_start: true
+    critical: true
 ```
 
 公共字段：
 
 ```text
+id
+endpoint_id
 type
 enabled
 mode
 driver
 topic
-command_topic
-state_topic
-publish_rate_hz
-command_timeout_ms
-safe_mode
 frame_id
+publish_rate_hz
 critical
-config
 ```
 
-`config:` 内部字段由具体 package 解释。
+执行器 endpoint 额外支持：
+
+```text
+command_topic
+state_topic
+command_timeout_ms
+disabled_on_start
+```
+
+其中 `id` 与 `endpoint_id` 等价；推荐统一使用 `id`，保留 `endpoint_id` 方便后续工具生成配置。`id` 和 `type` 必填，`publish_rate_hz` 必须大于 0，endpoint id 必须唯一。
+
+sensor endpoint 使用 `topic` 作为发布 topic；`joint_controller` endpoint 使用 `state_topic` 作为状态发布 topic，使用 `command_topic` 订阅命令。为了让 NodeInfo / DeviceState 仍能使用统一字段，配置加载后会把 `joint_controller.topic` 归一为 `state_topic`。
+
+后续真实硬件 package 接入时，会在 endpoint 下增加更细的安全和驱动参数：
+
+```yaml
+safety:
+  disable_on_stop: true
+  safe_mode: zero_torque
+params:
+  device: /dev/ttyUSB0
+  baudrate: 1000000
+```
+
+当前 `disabled_on_start` 仍是 endpoint 顶层字段；后续如果安全策略变复杂，再收敛到 `safety:` 子结构。`params:` 内部字段由具体 package 解释，Hardware Interface 只负责把配置传给对应 Endpoint / package。
 
 ## 13. Runtime 模式
 

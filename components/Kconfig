@@ -156,6 +156,43 @@ config OPENEMBER_USE_RUCKIG
 
 endmenu
 
+menu "Hardware"
+
+config OPENEMBER_COMPONENT_HARDWARE
+    bool "Build component: Hardware common interfaces"
+    default y
+    help
+      Build lightweight C++ hardware domain primitives such as Result, Error,
+      Timestamp, DeviceStatus, and lifecycle states. This component does not
+      depend on Link, Protobuf, services, or concrete hardware packages.
+
+endmenu
+
+menu "Sensor Framework"
+
+config OPENEMBER_COMPONENT_SENSOR
+    bool "Build component: Sensor Framework"
+    default y
+    depends on OPENEMBER_COMPONENT_HARDWARE
+    help
+      Build typed C++ sensor interfaces such as IImu, ITemperatureSensor, IGnss,
+      plus mock sensor implementations for CI and no-hardware development.
+
+endmenu
+
+menu "Actuator Framework"
+
+config OPENEMBER_COMPONENT_ACTUATOR
+    bool "Build component: Actuator Framework"
+    default y
+    depends on OPENEMBER_COMPONENT_HARDWARE
+    help
+      Build typed C++ actuator interfaces such as IActuator and
+      IJointController, plus MockJointController for no-hardware development
+      and runtime supervision tests.
+
+endmenu
+
 menu "Algorithm"
 
 config OPENEMBER_COMPONENT_ALGORITHM

@@ -8,6 +8,8 @@
 #include <chrono>
 #include <cstdint>
 #include <exception>
+#include <map>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -32,6 +34,8 @@ constexpr const char* kNodeInfoTopic = "/nodes/device_manager/info";
 constexpr const char* kHeartbeatTopic = "/nodes/device_manager/heartbeat";
 constexpr const char* kDeviceInfoTopic = "/devices/runtime_demo/info";
 constexpr const char* kDeviceStateTopic = "/devices/runtime_demo/state";
+constexpr const char* kAllDeviceInfoTopic = "/devices/*/info";
+constexpr const char* kAllDeviceStateTopic = "/devices/*/state";
 constexpr const char* kDeviceQueryService = "/devices/query";
 constexpr auto kHeartbeatPeriod = std::chrono::seconds(1);
 constexpr std::uint64_t kNodeInfoPublishInterval = 10;
@@ -103,6 +107,8 @@ void AddLabel(openember::msgs::node::v1::NodeInfo* info,
 struct ManagedDevice {
     openember::msgs::device::v1::DeviceInfo info;
     openember::msgs::device::v1::DeviceState state;
+    bool has_info = false;
+    bool has_state = false;
 };
 
 openember::msgs::node::v1::NodeInfo BuildNodeInfo(std::uint64_t sequence,
@@ -133,6 +139,14 @@ openember::msgs::node::v1::NodeInfo BuildNodeInfo(std::uint64_t sequence,
              kDeviceStateTopic,
              "openember.msgs.device.v1.DeviceState",
              openember::msgs::node::v1::ENDPOINT_DIRECTION_PUBLISHER);
+    AddTopic(&info,
+             kAllDeviceInfoTopic,
+             "openember.msgs.device.v1.DeviceInfo",
+             openember::msgs::node::v1::ENDPOINT_DIRECTION_SUBSCRIBER);
+    AddTopic(&info,
+             kAllDeviceStateTopic,
+             "openember.msgs.device.v1.DeviceState",
+             openember::msgs::node::v1::ENDPOINT_DIRECTION_SUBSCRIBER);
     AddService(&info,
                kDeviceQueryService,
                "openember.msgs.device.v1.DeviceQuery",
@@ -141,6 +155,7 @@ openember::msgs::node::v1::NodeInfo BuildNodeInfo(std::uint64_t sequence,
     AddLabel(&info, "role", "system");
     info.add_capabilities("device_registry");
     info.add_capabilities("device_query");
+    info.add_capabilities("device_topic_aggregation");
     return info;
 }
 
@@ -167,37 +182,101 @@ std::vector<ManagedDevice> BuildInitialDevices() {
         openember::msgs::device::v1::DEVICE_AVAILABILITY_ONLINE);
     runtime.state.set_health(openember::msgs::common::v1::HEALTH_STATE_OK);
     runtime.state.set_message("runtime demo device online");
+    runtime.has_info = true;
+    runtime.has_state = true;
 
     return {runtime};
 }
 
-openember::msgs::device::v1::DeviceQueryResponse BuildDeviceQueryResponse(
-    const openember::msgs::device::v1::DeviceQuery& request,
-    const std::vector<ManagedDevice>& devices,
-    std::uint64_t sequence) {
-    openember::msgs::device::v1::DeviceQueryResponse response;
-    FillHeader(response.mutable_header(), sequence, &request.header());
-    FillStatus(response.mutable_status(), true, "ok");
-
-    for (const auto& device : devices) {
-        if (!request.device_id().empty() &&
-            request.device_id() != device.info.device_id()) {
-            continue;
-        }
-        if (request.category() !=
-                openember::msgs::device::v1::DEVICE_CATEGORY_UNSPECIFIED &&
-            request.category() != device.info.category()) {
-            continue;
-        }
-
-        *response.add_devices() = device.info;
-        if (request.include_state()) {
-            *response.add_states() = device.state;
+class DeviceRegistry {
+public:
+    explicit DeviceRegistry(const std::vector<ManagedDevice>& initial_devices) {
+        for (const auto& device : initial_devices) {
+            if (device.has_info) {
+                UpdateInfo(device.info);
+            }
+            if (device.has_state) {
+                UpdateState(device.state);
+            }
         }
     }
 
-    return response;
-}
+    void UpdateInfo(const openember::msgs::device::v1::DeviceInfo& info) {
+        if (info.device_id().empty()) {
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto& device = devices_[info.device_id()];
+        device.info = info;
+        device.has_info = true;
+        if (!device.has_state) {
+            device.state.set_device_id(info.device_id());
+            device.state.set_availability(
+                openember::msgs::device::v1::DEVICE_AVAILABILITY_OFFLINE);
+            device.state.set_health(openember::msgs::common::v1::HEALTH_STATE_STALE);
+            device.state.set_message("device state not reported yet");
+            device.has_state = true;
+        }
+    }
+
+    void UpdateState(const openember::msgs::device::v1::DeviceState& state) {
+        if (state.device_id().empty()) {
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto& device = devices_[state.device_id()];
+        device.state = state;
+        device.has_state = true;
+    }
+
+    std::size_t Size() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        std::size_t count = 0;
+        for (const auto& [_, device] : devices_) {
+            if (device.has_info) {
+                ++count;
+            }
+        }
+        return count;
+    }
+
+    openember::msgs::device::v1::DeviceQueryResponse Query(
+        const openember::msgs::device::v1::DeviceQuery& request,
+        std::uint64_t sequence) const {
+        openember::msgs::device::v1::DeviceQueryResponse response;
+        FillHeader(response.mutable_header(), sequence, &request.header());
+        FillStatus(response.mutable_status(), true, "ok");
+
+        std::lock_guard<std::mutex> lock(mutex_);
+        for (const auto& [_, device] : devices_) {
+            if (!device.has_info) {
+                continue;
+            }
+            if (!request.device_id().empty() &&
+                request.device_id() != device.info.device_id()) {
+                continue;
+            }
+            if (request.category() !=
+                    openember::msgs::device::v1::DEVICE_CATEGORY_UNSPECIFIED &&
+                request.category() != device.info.category()) {
+                continue;
+            }
+
+            *response.add_devices() = device.info;
+            if (request.include_state() && device.has_state) {
+                *response.add_states() = device.state;
+            }
+        }
+
+        return response;
+    }
+
+private:
+    mutable std::mutex mutex_;
+    std::map<std::string, ManagedDevice> devices_;
+};
 
 }  // namespace
 
@@ -218,14 +297,28 @@ int main() {
         auto device_state_pub =
             node->Advertise<openember::msgs::device::v1::DeviceState>(kDeviceStateTopic);
 
-        auto devices = BuildInitialDevices();
+        auto static_devices = BuildInitialDevices();
+        DeviceRegistry registry(static_devices);
+        auto device_info_sub =
+            node->Subscribe<openember::msgs::device::v1::DeviceInfo>(
+                kAllDeviceInfoTopic,
+                [&](const openember::msgs::device::v1::DeviceInfo& info) {
+                    registry.UpdateInfo(info);
+                });
+        auto device_state_sub =
+            node->Subscribe<openember::msgs::device::v1::DeviceState>(
+                kAllDeviceStateTopic,
+                [&](const openember::msgs::device::v1::DeviceState& state) {
+                    registry.UpdateState(state);
+                });
+
         std::uint64_t query_sequence = 0;
         auto query_service = node->CreateService<
             openember::msgs::device::v1::DeviceQuery,
             openember::msgs::device::v1::DeviceQueryResponse>(
             kDeviceQueryService,
             [&](const openember::msgs::device::v1::DeviceQuery& request) {
-                return BuildDeviceQueryResponse(request, devices, query_sequence++);
+                return registry.Query(request, query_sequence++);
             });
 
         const auto start = std::chrono::steady_clock::now();
@@ -236,8 +329,9 @@ int main() {
         while (openember::Ok()) {
             if (sequence % kNodeInfoPublishInterval == 0) {
                 (void)node_info_pub.Publish(BuildNodeInfo(info_sequence, start_time_unix_ns));
-                for (auto& device : devices) {
+                for (auto& device : static_devices) {
                     FillHeader(device.info.mutable_header(), sequence);
+                    registry.UpdateInfo(device.info);
                     (void)device_info_pub.Publish(device.info);
                 }
                 ++info_sequence;
@@ -257,13 +351,14 @@ int main() {
 
             auto* devices_metric = heartbeat.add_metrics();
             devices_metric->set_name("device_manager.devices");
-            devices_metric->set_value(static_cast<double>(devices.size()));
+            devices_metric->set_value(static_cast<double>(registry.Size()));
             devices_metric->set_unit("count");
 
             (void)heartbeat_pub.Publish(heartbeat);
 
-            for (auto& device : devices) {
+            for (auto& device : static_devices) {
                 FillHeader(device.state.mutable_header(), sequence);
+                registry.UpdateState(device.state);
                 (void)device_state_pub.Publish(device.state);
             }
 

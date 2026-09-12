@@ -40,6 +40,15 @@ config OPENEMBER_EXAMPLE_CORE
       Requires OpenEmber Link and openember::core.
       Start listener/server first (router + listen), then talker/client (peer + connect).
 
+config OPENEMBER_EXAMPLE_HARDWARE_INTERFACE
+    bool "Build examples: Hardware Interface"
+    default y
+    depends on OPENEMBER_ENABLE_EXAMPLES
+    depends on OPENEMBER_ENABLE_LINK
+    depends on OPENEMBER_ENABLE_MSGS
+    help
+      Build small listeners for Hardware Interface mock sensor messages.
+
 config OPENEMBER_EXAMPLE_MQTT_EMQX
     bool "Build example: mqtt_emqx_client (Paho C client → EMQX / MQTT broker)"
     default n

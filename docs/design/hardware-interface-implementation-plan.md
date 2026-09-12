@@ -1,13 +1,88 @@
 # OpenEmber Hardware Interface 实施与验收计划
 
 状态：Draft  
-版本：v0.2  
+版本：v0.6
 关联设计：
 
 - [OpenEmber Hardware Interface 设计文档](./hardware-interface.md)
 - [OpenEmber Sensor Framework 设计文档](./sensor-framework.md)
 
 目标：把 Hardware Interface 从架构设计推进到可运行、可测试、可逐步扩展的实现，并为后续开发提供统一验收清单。
+
+## 0. 当前实现状态
+
+截至 2026-09-12，第一版 Mock sensor runtime 闭环、本地 YAML 配置加载、actuator component 基础接口和 JointControllerEndpoint mock command/state 闭环已经完成：
+
+```text
+Mock sensor
+  -> components/sensor
+  -> Hardware Endpoint
+  -> openember-msgs sensor/v1
+  -> OpenEmber Link
+  -> openember_hardware_mock_listener
+
+Mock JointController
+  -> components/actuator
+  -> JointControllerEndpoint
+  -> openember-msgs actuator/v1
+  -> OpenEmber Link
+  -> openember_joint_command_sender / openember_hardware_mock_listener
+```
+
+已完成：
+
+- `openember-msgs` 增加 `sensor/v1`、`actuator/v1`、`power/v1` proto，并接入 C++ Protobuf 生成。
+- `openember-msgs` Nanopb options 增加 sensor / actuator / power 的静态内存约束。
+- OpenEmber 增加 `components/hardware` target：`openember_hardware`。
+- OpenEmber 增加 `components/sensor` target：`openember_sensor`。
+- OpenEmber 增加 `components/actuator` target：`openember_actuator`。
+- OpenEmber 增加 Mock IMU / Temperature / GNSS。
+- OpenEmber 增加 `MockJointController`，支持 enable / disable / emergency stop / clear fault、command/state 闭环、command timeout 和 fault injection。
+- OpenEmber 增加 `services/hardware_interface` 和可执行文件 `openember_hardware_interface`。
+- Hardware Interface V1 默认创建 `ImuEndpoint`、`TemperatureEndpoint`、`GnssEndpoint`。
+- Hardware Interface 支持 `--config <path>` 读取本地 YAML endpoint 拓扑。
+- Hardware Interface 增加 `ActuatorMessageAdapter`，负责 `JointCommand` / `JointState` 的 Protobuf 与 domain struct 转换。
+- Hardware Interface 增加 `JointControllerEndpoint`，在启用 `OPENEMBER_HARDWARE_ENDPOINT_JOINT_CONTROLLER` 时订阅 command topic、调用 `MockJointController` 并发布 JointState。
+- `examples/hardware_interface/mock.yaml` 提供可直接运行的 Mock sensor 配置。
+- `examples/hardware_interface/mock_joint.yaml` 提供可直接运行的 Mock JointController 配置。
+- Hardware Interface 发布 NodeInfo、NodeHeartbeat、DiagnosticArray 和三类 sensor sample。
+- 启用 Joint Controller endpoint 后，Hardware Interface 发布 JointState，并把 command_count / timeout_count 纳入 DeviceState 和 diagnostics。
+- Hardware Interface 发布 endpoint DeviceInfo / DeviceState。
+- `device_manager` 聚合 `/devices/*/info` 和 `/devices/*/state`，并通过 `/devices/query` 返回硬件 endpoint。
+- `health_monitor` 聚合 `/diagnostics/*`，并在 `/diagnostics/health_monitor` 中输出 Hardware Interface endpoint diagnostics。
+- OpenEmber 增加 `openember_hardware_mock_listener` 和 `openember_joint_command_sender` 示例。
+- Kconfig / CMake / `scripts/kconfig/genconfig.sh` 已接入新增配置和 yaml-cpp 依赖关系。
+- Kconfig 生成会区分“配置未出现”和“用户明确关闭”，Endpoint 开关可正确传递到 CMake。
+- 配置中的 critical Endpoint 不可用或启动失败时，Hardware Interface 拒绝启动；非 critical Endpoint 在构建中不可用时输出警告，运行时启动失败则保留诊断并继续运行。
+- Joint command timeout 会进入 safe output，并累加 endpoint `timeout_count`。
+
+已验证：
+
+```bash
+cmake -S . -B build
+cmake --build build -j 4
+scripts/kconfig/genconfig.sh build
+./build/bin/openember_hardware_interface --help
+```
+
+运行时 smoke test 已验证 listener 能收到：
+
+```text
+/sensors/imu/imu0/sample
+/sensors/temperature/temp0/sample
+/sensors/gnss/gnss0/fix
+/devices/imu0/info
+/devices/imu0/state
+/diagnostics/health_monitor
+/actuators/joints/joint_controller0/state
+/diagnostics/hardware_interface
+```
+
+未完成，继续按后续 Phase 推进：
+
+- PowerEndpoint。
+- 真实 hardware package 接入。
+- Product App 对 Hardware Interface 的正式使用。
 
 ## 1. 总体验收目标
 
@@ -292,8 +367,8 @@ services/
 ```text
 examples/
   hardware_interface/
-    mock_listener/
-    joint_command_sender/
+    mock_listener.cpp
+    joint_command_sender.cpp
 
 tools/
   hardware/
@@ -737,20 +812,22 @@ namespace openember::actuator {
 class IActuator {
 public:
     virtual ~IActuator() = default;
+    virtual const ActuatorInfo& Info() const = 0;
+    virtual ActuatorStatus Status() const = 0;
     virtual hardware::Result<void> Start() = 0;
-    virtual hardware::Result<void> Stop() = 0;
+    virtual void Stop() noexcept = 0;
     virtual hardware::Result<void> Enable() = 0;
     virtual hardware::Result<void> Disable() = 0;
-    virtual ActuatorStatus Status() const = 0;
+    virtual hardware::Result<void> EmergencyStop() = 0;
+    virtual hardware::Result<void> ClearFault() = 0;
 };
 
 class IJointController : public IActuator {
 public:
+    virtual const std::vector<JointInfo>& Joints() const = 0;
     virtual hardware::Result<void> SetCommand(const JointCommand& command) = 0;
     virtual hardware::Result<void> Step() = 0;
     virtual hardware::Result<JointState> ReadState(std::chrono::milliseconds timeout) = 0;
-    virtual hardware::Result<void> EmergencyStop() = 0;
-    virtual hardware::Result<void> ClearFault() = 0;
 };
 
 }
@@ -779,8 +856,11 @@ public:
 - command 超时后输出 safe state。
 - state 中 joint 顺序稳定。
 - sequence 单调递增。
+- 当前已用临时 smoke 程序验证 command / state 闭环和 command timeout safe output。
 
 ## 12. Phase 7：JointControllerEndpoint
+
+当前状态：第一版已落地。`JointControllerEndpoint` 目前使用 `MockJointController`，重点验证 actuator command/state、安全默认值、command timeout 和 Link 消息闭环；真实电机总线 package 留到 Phase 9。
 
 ### 12.1 定位
 
@@ -946,17 +1026,41 @@ smart_device_demo
 
 建议保留：
 
+手工运行时先启动 listener，它会创建本地 Link router；`openember_hardware_interface` 作为 system client 连接该 router。后续完整系统中，router 应由 `launch_manager` 启动和监督。
+
 ```bash
 ember menuconfig
 ember update
 ember build
 
+./build/bin/openember_hardware_mock_listener
 ./build/bin/openember_hardware_interface --config examples/hardware_interface/mock.yaml
-./build/bin/openember_msgs_listener --topic /sensors/imu/imu0/sample
-./build/bin/openember_joint_command_sender --topic /actuators/joints/joint_controller0/command
 ```
 
-具体命令以后以实际 CLI 为准。
+Joint Controller endpoint 默认关闭。验证 joint command/state 闭环时，先在 menuconfig 中启用：
+
+```text
+Application Layer
+  Services
+    Hardware Interface Endpoints
+      Joint Controller
+```
+
+然后运行：
+
+```bash
+./build/bin/openember_hardware_mock_listener
+./build/bin/openember_hardware_interface --config examples/hardware_interface/mock_joint.yaml
+./build/bin/openember_joint_command_sender --count 6 --period-ms 40 --position 0.5
+```
+
+验证 command timeout safe output：
+
+```bash
+./build/bin/openember_joint_command_sender --count 3 --period-ms 40 --position 0.25 --no-disable
+```
+
+listener 中应能看到 `mock joint controller command timeout; safe output active`，并看到 joint effort 回到 0。
 
 ## 17. 阶段 Definition of Done
 
@@ -968,8 +1072,9 @@ ember build
 | Phase 3 | `openember_hardware_interface` skeleton | service 可启动、可停止、无 endpoint 可优雅退出 |
 | Phase 4 | Imu / Temperature / GNSS Endpoints | mock sensor 数据可经 Link 发布并被 listener 解析 |
 | Phase 5 | device_manager / health_monitor 集成 | DeviceState 和 DiagnosticArray 可观察 |
+| Phase 5.5 | 本地 YAML 配置加载 | `--config examples/hardware_interface/mock.yaml` 可启动并发布 sample |
 | Phase 6 | `components/actuator`，MockJointController | command / state 闭环测试通过 |
-| Phase 7 | JointControllerEndpoint | command timeout、safe output、disable-on-stop 生效 |
+| Phase 7 | JointControllerEndpoint | command/state 闭环、command timeout、safe output、disable-on-stop 生效 |
 | Phase 8 | Product App 集成 | Product App 只依赖消息，不依赖硬件 package |
 | Phase 9 | 真实硬件 package | mock 可替换为真实硬件，异常可观测 |
 
@@ -1043,17 +1148,20 @@ Camera、LiDAR、Radar、Audio 等高带宽设备暂缓。
 
 ## 20. 建议下一步
 
-下一步从 Phase 0 开始：
+下一步建议从三个方向继续推进：
 
-1. 在 openember-msgs 增加 `sensor/v1` 和 `actuator/v1` proto。
-2. 在 OpenEmber 增加 Hardware Interface 的 Kconfig / CMake skeleton。
-3. 实现 `components/hardware` 和 `components/sensor` 的 Mock IMU。
-4. 实现 `openember_hardware_interface` + `ImuEndpoint`。
+1. 增加 `PowerEndpoint`，形成 sensor / actuator / power 三类核心硬件域。
+2. 让 `smart_device_demo` 或新的 Product App 订阅 sensor state、观察 diagnostics，并按产品行为发布 JointCommand。
+3. 接入第一个真实 hardware package，让 Mock JointController 可以被真实总线实现替换。
 
-优先跑通：
+这会把当前链路：
 
 ```text
-Mock IMU -> ImuEndpoint -> Protobuf -> Link -> listener
+Mock sensor / Mock actuator -> Endpoint -> Protobuf -> Link -> listener
 ```
 
-这条链路稳定后，再扩展 Temperature、GNSS、JointController、device_manager、health_monitor 和真实硬件 package。
+扩展为：
+
+```text
+Mock/real hardware -> configured Endpoint -> Link -> Product App / device_manager / health_monitor
+```

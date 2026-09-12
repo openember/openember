@@ -1,0 +1,18 @@
+hardware_interface:
+  robot_id: openember
+  node_name: hardware_interface
+  instance_id: hardware_interface
+
+endpoints:
+  - id: joint_controller0
+    type: joint_controller
+    enabled: true
+    mode: mock
+    driver: mock_joint_controller
+    state_topic: /actuators/joints/joint_controller0/state
+    command_topic: /actuators/joints/joint_controller0/command
+    frame_id: base_link
+    publish_rate_hz: 10.0
+    command_timeout_ms: 200
+    disabled_on_start: true
+    critical: true

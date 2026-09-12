@@ -1,5 +1,50 @@
 menu "Services"
 
+config OPENEMBER_SERVICE_HARDWARE_INTERFACE
+    bool "Build service: hardware_interface"
+    default y
+    depends on OPENEMBER_ENABLE_LINK
+    depends on OPENEMBER_ENABLE_MSGS
+    depends on OPENEMBER_COMPONENT_SENSOR
+    depends on OPENEMBER_USE_YAMLCPP
+    help
+      Build the OpenEmber Hardware Interface runtime service. The V1 service
+      manages configured sensor endpoints and publishes samples, heartbeat,
+      devices, and diagnostics through OpenEmber Link. The service can load
+      its endpoint topology from a local YAML file.
+
+if OPENEMBER_SERVICE_HARDWARE_INTERFACE
+
+menu "Hardware Interface Endpoints"
+
+config OPENEMBER_HARDWARE_ENDPOINT_IMU
+    bool "IMU"
+    default y
+    depends on OPENEMBER_COMPONENT_SENSOR
+
+config OPENEMBER_HARDWARE_ENDPOINT_TEMPERATURE
+    bool "Temperature"
+    default y
+    depends on OPENEMBER_COMPONENT_SENSOR
+
+config OPENEMBER_HARDWARE_ENDPOINT_GNSS
+    bool "GNSS"
+    default y
+    depends on OPENEMBER_COMPONENT_SENSOR
+
+config OPENEMBER_HARDWARE_ENDPOINT_JOINT_CONTROLLER
+    bool "Joint Controller"
+    default n
+    depends on OPENEMBER_COMPONENT_ACTUATOR
+    help
+      Build the first actuator endpoint for JointController command/state
+      loop testing. V1 uses MockJointController and is disabled by default
+      until a product explicitly opts into actuator endpoint validation.
+
+endmenu
+
+endif
+
 config OPENEMBER_SERVICE_OTA_AGENT
     bool "Build service: ota_agent"
     default y

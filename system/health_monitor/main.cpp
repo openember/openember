@@ -12,6 +12,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #define MODULE_NAME "health_monitor"
@@ -34,8 +35,10 @@ constexpr const char* kNodeInfoTopic = "/nodes/health_monitor/info";
 constexpr const char* kHeartbeatTopic = "/nodes/health_monitor/heartbeat";
 constexpr const char* kAllHeartbeatsTopic = "/nodes/*/heartbeat";
 constexpr const char* kDiagnosticsTopic = "/diagnostics/health_monitor";
+constexpr const char* kAllDiagnosticsTopic = "/diagnostics/*";
 constexpr auto kHeartbeatPeriod = std::chrono::seconds(1);
 constexpr auto kNodeStaleTimeout = std::chrono::seconds(5);
+constexpr auto kDiagnosticStaleTimeout = std::chrono::seconds(5);
 constexpr std::uint64_t kNodeInfoPublishInterval = 10;
 
 std::uint64_t UnixTimeNs() {
@@ -106,9 +109,14 @@ openember::msgs::node::v1::NodeInfo BuildNodeInfo(std::uint64_t sequence,
              kDiagnosticsTopic,
              "openember.msgs.diagnostics.v1.DiagnosticArray",
              openember::msgs::node::v1::ENDPOINT_DIRECTION_PUBLISHER);
+    AddTopic(&info,
+             kAllDiagnosticsTopic,
+             "openember.msgs.diagnostics.v1.DiagnosticArray",
+             openember::msgs::node::v1::ENDPOINT_DIRECTION_SUBSCRIBER);
 
     AddLabel(&info, "role", "system");
     info.add_capabilities("node_heartbeat_aggregation");
+    info.add_capabilities("diagnostics_aggregation");
     info.add_capabilities("diagnostics_publisher");
     return info;
 }
@@ -127,6 +135,34 @@ public:
         node.lifecycle_state = heartbeat.lifecycle_state();
         node.status_message = heartbeat.status_message();
         node.last_seen = std::chrono::steady_clock::now();
+    }
+
+    void UpdateDiagnostics(
+        const openember::msgs::diagnostics::v1::DiagnosticArray& diagnostics) {
+        if (diagnostics.header().source_node() == MODULE_NAME) {
+            return;
+        }
+
+        const auto now = std::chrono::steady_clock::now();
+        std::lock_guard<std::mutex> lock(mutex_);
+        for (const auto& status : diagnostics.status()) {
+            if (status.name().empty()) {
+                continue;
+            }
+            if (status.node_name() == MODULE_NAME) {
+                continue;
+            }
+
+            ExternalDiagnostic diagnostic;
+            diagnostic.status = status;
+            if (diagnostic.status.node_name().empty()) {
+                diagnostic.status.set_node_name(diagnostics.header().source_node());
+            }
+            diagnostic.last_seen = now;
+
+            external_diagnostics_[ExternalKey(diagnostic.status)] =
+                std::move(diagnostic);
+        }
     }
 
     std::vector<openember::msgs::diagnostics::v1::DiagnosticStatus> Snapshot() const {
@@ -160,6 +196,25 @@ public:
                 std::chrono::duration_cast<std::chrono::milliseconds>(
                     now - node.last_seen).count()));
             last_seen->set_unit("ms");
+
+            result.push_back(std::move(status));
+        }
+
+        for (const auto& [_, diagnostic] : external_diagnostics_) {
+            const bool stale = now - diagnostic.last_seen > kDiagnosticStaleTimeout;
+            auto status = diagnostic.status;
+            if (stale) {
+                status.set_level(
+                    openember::msgs::diagnostics::v1::DIAGNOSTIC_LEVEL_STALE);
+                status.set_message("diagnostic stale: " + status.message());
+            }
+
+            auto* age = status.add_metrics();
+            age->set_name("diagnostic.age");
+            age->set_value(static_cast<double>(
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    now - diagnostic.last_seen).count()));
+            age->set_unit("ms");
 
             result.push_back(std::move(status));
         }
@@ -199,8 +254,19 @@ private:
         std::chrono::steady_clock::time_point last_seen;
     };
 
+    struct ExternalDiagnostic {
+        openember::msgs::diagnostics::v1::DiagnosticStatus status;
+        std::chrono::steady_clock::time_point last_seen;
+    };
+
+    static std::string ExternalKey(
+        const openember::msgs::diagnostics::v1::DiagnosticStatus& status) {
+        return status.node_name() + "|" + status.name() + "|" + status.hardware_id();
+    }
+
     mutable std::mutex mutex_;
     std::map<std::string, NodeHealth> nodes_;
+    std::map<std::string, ExternalDiagnostic> external_diagnostics_;
 };
 
 }  // namespace
@@ -226,6 +292,12 @@ int main() {
                 kAllHeartbeatsTopic,
                 [&](const openember::msgs::node::v1::NodeHeartbeat& heartbeat) {
                     registry.Update(heartbeat);
+                });
+        auto diagnostics_sub =
+            node->Subscribe<openember::msgs::diagnostics::v1::DiagnosticArray>(
+                kAllDiagnosticsTopic,
+                [&](const openember::msgs::diagnostics::v1::DiagnosticArray& diagnostics) {
+                    registry.UpdateDiagnostics(diagnostics);
                 });
 
         const auto start = std::chrono::steady_clock::now();

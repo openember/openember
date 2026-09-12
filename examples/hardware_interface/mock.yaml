@@ -1,0 +1,35 @@
+hardware_interface:
+  robot_id: openember
+  node_name: hardware_interface
+  instance_id: hardware_interface
+
+endpoints:
+  - id: imu0
+    type: imu
+    enabled: true
+    mode: mock
+    driver: mock_imu
+    topic: /sensors/imu/imu0/sample
+    frame_id: imu_link
+    publish_rate_hz: 100.0
+    critical: false
+
+  - id: temp0
+    type: temperature
+    enabled: true
+    mode: mock
+    driver: mock_temperature
+    topic: /sensors/temperature/temp0/sample
+    frame_id: temperature_link
+    publish_rate_hz: 2.0
+    critical: false
+
+  - id: gnss0
+    type: gnss
+    enabled: true
+    mode: mock
+    driver: mock_gnss
+    topic: /sensors/gnss/gnss0/fix
+    frame_id: gnss_link
+    publish_rate_hz: 1.0
+    critical: false
