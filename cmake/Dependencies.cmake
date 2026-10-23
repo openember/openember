@@ -66,17 +66,17 @@ set(OPENEMBER_CPPZMQ_URL
     "https://github.com/zeromq/cppzmq/archive/refs/tags/v${OPENEMBER_CPPZMQ_VERSION}.tar.gz")
 
 # Eclipse Zenoh C / C++（https://github.com/eclipse-zenoh/zenoh-c / zenoh-cpp）
-set(OPENEMBER_ZENOHC_VERSION "1.9.0")
+set(OPENEMBER_ZENOHC_VERSION "1.10.1")
 set(OPENEMBER_ZENOHC_URL
     "https://github.com/eclipse-zenoh/zenoh-c/archive/refs/tags/${OPENEMBER_ZENOHC_VERSION}.tar.gz")
 
-set(OPENEMBER_ZENOHCXX_VERSION "1.9.0")
+set(OPENEMBER_ZENOHCXX_VERSION "1.10.1")
 set(OPENEMBER_ZENOHCXX_URL
     "https://github.com/eclipse-zenoh/zenoh-cpp/archive/refs/tags/${OPENEMBER_ZENOHCXX_VERSION}.tar.gz")
 
 # zenoh-c 上游 rust-toolchain.toml 钉版本；空=自动检测，损坏时回退 +stable
 set(OPENEMBER_ZENOHC_CARGO_CHANNEL "" CACHE STRING
-    "Override zenoh-c Cargo channel (e.g. +stable, +1.93.0). Empty = auto from rust-toolchain.toml")
+    "Override zenoh-c Cargo channel (e.g. +stable, +1.97.1). Empty = auto from rust-toolchain.toml")
 
 include(${CMAKE_SOURCE_DIR}/cmake/GetLibzmq.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/GetNng.cmake)

@@ -21,7 +21,7 @@ function(openember_zenoh_select_cargo_channel zenoh_src)
         return()
     endif()
 
-    set(_required "1.93.0")
+    set(_required "1.97.1")
     if(EXISTS "${zenoh_src}/rust-toolchain.toml")
         file(READ "${zenoh_src}/rust-toolchain.toml" _rtc)
         string(REGEX MATCH "channel[ \t]*=[ \t]*\"([^\"]+)\"" _m "${_rtc}")

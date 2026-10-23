@@ -79,8 +79,18 @@
 ## 升级流程（简要）
 
 1. 在 `cmake/Dependencies.cmake` 中更新版本与 URL（及必要时 `*_CACHE_KEY` / `*_STAGE_DIR_NAME`）。
-2. 更新或删除 `third_party/` 中旧归档后重新 `cmake`。
+2. 准备新版本归档并重新 `cmake`；带版本号的旧归档可以保留。
 3. 全量编译与链接验证。
+
+### Zenoh 1.10.1
+
+2026-10-23 将 zenoh-c / zenoh-cpp 从 1.9.0 统一升级到 1.10.1，使用固定 release tag，不跟随 main。上游发布说明：[zenoh-c](https://github.com/eclipse-zenoh/zenoh-c/releases/tag/1.10.1)、[zenoh-cpp](https://github.com/eclipse-zenoh/zenoh-cpp/releases/tag/1.10.1)。EmberLite 对应使用 zenoh-pico 1.10.1。
+
+zenoh-c 1.10.1 的 `rust-toolchain.toml` 指定 Rust 1.97.1；推荐安装 `rustup toolchain install 1.97.1 --profile minimal`，不需要更改全局默认 toolchain。项目继续读取上游工具链文件；显式 `OPENEMBER_ZENOHC_CARGO_CHANNEL` 覆盖仍有效。
+
+重新配置会选择 `_deps/zenoh-c-1.10.1` 和 `_deps/zenoh-cpp-1.10.1`，不会先删除旧版目录或归档。若设置了 `*_LOCAL_SOURCE` 或使用 SYSTEM 模式，必须自行确认实际源码 / 安装库版本。建议在 `build-regression/` 运行构建和 CTest，验证后再重新构建产品 `build/`；仅修改版本文件不会更新已有可执行文件。
+
+2026-10-23 在 Linux x86_64 上验证：Rust 1.97.1、CMake / Cargo 并发均限制为 2，`build-regression` 全量构建通过，CTest 7/7 通过。使用 EmberLite 构建的 zenoh-pico 1.10.1 静态库编译上游 `z_pub.c`，通过本机 TCP 向 OpenEmber transport listener 发布三条原始消息，全部接收。此项是单向传输冒烟验证，不代表已完成 EmberLite Link / Nanopb 应用层互通或嵌入式目标验证；消息绑定仍使用本地 openember-msgs checkout。
 
 ## 日志后端（`OPENEMBER_LOG_BACKEND`）
 
