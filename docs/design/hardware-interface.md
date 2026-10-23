@@ -1009,6 +1009,8 @@ V1 先实现 `mock`。
 
 Hardware Interface 是硬件运行时边界，可靠性要求高于普通 example。
 
+当前服务入口处理 SIGINT / SIGTERM：信号处理器只设置 `sig_atomic_t` 标志，`HardwareInterfaceApp::Spin()` 在主循环检查停止条件后返回，由主线程调用 `Stop()` 和 `openember::Shutdown()`。不在信号处理器中执行锁、设备 I/O 或对象析构。正常退出的响应受主循环周期和 Endpoint 停止耗时约束，不是实时急停；SIGKILL、崩溃或断电仍需独立安全机制。
+
 通用要求：
 
 - Endpoint 启动失败必须有明确日志和状态。

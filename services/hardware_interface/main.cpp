@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <csignal>
 #include <exception>
 #include <iostream>
 #include <string>
@@ -15,6 +16,12 @@
 #include "openember/services/hardware_interface/hardware_interface_app.hpp"
 
 namespace {
+
+volatile std::sig_atomic_t g_stop_signal = 0;
+
+void HandleStopSignal(int signal) {
+    g_stop_signal = signal;
+}
 
 struct CliOptions {
     std::string config_path;
@@ -63,6 +70,9 @@ int main(int argc, char** argv) {
         return 0;
     }
 
+    std::signal(SIGINT, HandleStopSignal);
+    std::signal(SIGTERM, HandleStopSignal);
+
     try {
         auto config = openember::services::hardware_interface::DefaultMockConfig();
         if (!cli.config_path.empty()) {
@@ -100,7 +110,7 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        app.Spin();
+        app.Spin([] { return g_stop_signal != 0; });
         app.Stop();
         openember::Shutdown();
         return 0;

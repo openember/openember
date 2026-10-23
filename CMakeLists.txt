@@ -39,7 +39,7 @@ option( DEBUG_ENABLED "Whether to enable debug mode" ON)
 option( OPTIMIZATION_DISABLED "Whether to disable the optimization of compilation. " OFF)
 option( CROSSCOMPILE_ENABLED "Whether to build for ARM" OFF)
 option( OPENMP_ENABLED "Whether to enable omp feature" OFF)
-option( TESTS_ENABLED "Whether to build/register unit tests (test/); prefer Kconfig test/Kconfig" OFF)
+option( TESTS_ENABLED "Whether to build/register tests (test/); prefer Kconfig test/Kconfig" OFF)
 option( OPENEMBER_ENABLE_OSAL "Build platform OSAL (Linux pthread)" ON)
 option( OPENEMBER_ENABLE_LPIO "Build platform LPIO (C++ Linux peripherals)" ON)
 option( OPENEMBER_ENABLE_LPIO_EXAMPLES "Build platform LPIO examples (serial_echo, i2c_scan, can_logger)" OFF)
@@ -337,7 +337,7 @@ endif()
 add_subdirectory(apps)
 
 #========================================================
-# for unittest, call "cmake .. -DUNIT_TEST=ON"
+# Tests are opt-in through Kconfig or -DTESTS_ENABLED=ON.
 if(TESTS_ENABLED)
     enable_testing()
     add_subdirectory(test)

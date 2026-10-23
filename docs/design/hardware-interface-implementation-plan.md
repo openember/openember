@@ -11,6 +11,8 @@
 
 ## 0. 当前实现状态
 
+2026-09-16 补充：已接入 [优化计划阶段 1](../architecture/openember-optimization-plan.md) 的 CTest 宿主机回归，覆盖 Mock 消息、关节命令超时、配置错误与服务重启。服务入口新增 SIGINT / SIGTERM 协作退出，主线程执行 Stop 和 Shutdown。运行方式与验证环境见 [测试说明](../unit-test.md)；不代表本计划中真实硬件、完整安全执行模型和后续 Phase 已完成。
+
 截至 2026-09-12，第一版 Mock sensor runtime 闭环、本地 YAML 配置加载、actuator component 基础接口和 JointControllerEndpoint mock command/state 闭环已经完成：
 
 ```text

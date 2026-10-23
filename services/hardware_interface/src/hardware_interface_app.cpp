@@ -230,11 +230,11 @@ void HardwareInterfaceApp::Stop() noexcept {
     }
 }
 
-void HardwareInterfaceApp::Spin() {
+void HardwareInterfaceApp::Spin(const std::function<bool()>& should_stop) {
     std::uint64_t sequence = 0;
     std::uint64_t info_sequence = 0;
 
-    while (openember::Ok()) {
+    while (openember::Ok() && !(should_stop && should_stop())) {
         if (sequence % kNodeInfoPublishInterval == 0) {
             (void)node_info_pub_.Publish(BuildNodeInfo(info_sequence));
             ++info_sequence;

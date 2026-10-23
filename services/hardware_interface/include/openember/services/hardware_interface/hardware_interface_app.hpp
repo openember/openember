@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -31,7 +32,7 @@ public:
 
     bool Start();
     void Stop() noexcept;
-    void Spin();
+    void Spin(const std::function<bool()>& should_stop = {});
 
 private:
     bool BuildEndpoints();
