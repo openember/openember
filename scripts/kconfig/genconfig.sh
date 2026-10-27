@@ -135,6 +135,10 @@ system_device_manager="$(onoff CONFIG_OPENEMBER_SYSTEM_DEVICE_MANAGER)"
 system_config_service="$(onoff CONFIG_OPENEMBER_SYSTEM_CONFIG_SERVICE)"
 system_health_monitor="$(onoff CONFIG_OPENEMBER_SYSTEM_HEALTH_MONITOR)"
 app_smart_device_demo="$(onoff CONFIG_OPENEMBER_APP_SMART_DEVICE_DEMO)"
+app_turtle_demo="$(onoff CONFIG_OPENEMBER_APP_TURTLE_DEMO)"
+if ! has_symbol CONFIG_OPENEMBER_APP_TURTLE_DEMO; then
+  app_turtle_demo=ON
+fi
 service_ota_update="$(onoff CONFIG_OPENEMBER_SERVICE_OTA_AGENT)"
 reference_sensor_data="$(onoff CONFIG_OPENEMBER_REFERENCE_SENSOR_DATA)"
 service_web_console="$(onoff CONFIG_OPENEMBER_SERVICE_WEB_CONSOLE)"
@@ -206,6 +210,7 @@ if [[ "${enable_link}" == "OFF" ]] || [[ "${enable_msgs}" == "OFF" ]] || [[ "${e
 fi
 if [[ "${enable_link}" == "OFF" ]] || [[ "${enable_msgs}" == "OFF" ]]; then
   app_smart_device_demo=OFF
+  app_turtle_demo=OFF
 fi
 if [[ "${component_hardware}" == "OFF" ]]; then
   component_sensor=OFF
@@ -676,6 +681,7 @@ set(OPENEMBER_SYSTEM_DEVICE_MANAGER ${system_device_manager} CACHE BOOL "Build s
 set(OPENEMBER_SYSTEM_CONFIG_SERVICE ${system_config_service} CACHE BOOL "Build system/config_service" FORCE)
 set(OPENEMBER_SYSTEM_HEALTH_MONITOR ${system_health_monitor} CACHE BOOL "Build system/health_monitor" FORCE)
 set(OPENEMBER_APP_SMART_DEVICE_DEMO ${app_smart_device_demo} CACHE BOOL "Build apps/smart_device_demo" FORCE)
+set(OPENEMBER_APP_TURTLE_DEMO ${app_turtle_demo} CACHE BOOL "Build apps/turtle_demo" FORCE)
 set(OPENEMBER_SERVICE_OTA_AGENT ${service_ota_update} CACHE BOOL "Build services/ota_agent" FORCE)
 set(OPENEMBER_REFERENCE_SENSOR_DATA ${reference_sensor_data} CACHE BOOL "Build examples/references/sensor_data_reference" FORCE)
 set(OPENEMBER_SERVICE_WEB_CONSOLE ${service_web_console} CACHE BOOL "Build services/web_console" FORCE)

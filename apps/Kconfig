@@ -11,4 +11,15 @@ config OPENEMBER_APP_SMART_DEVICE_DEMO
       messages. Use it as a starting point for project-specific apps under
       apps/.
 
+config OPENEMBER_APP_TURTLE_DEMO
+    bool "Build product app: turtle_demo (host sim + teleop)"
+    default y
+    depends on OPENEMBER_ENABLE_LINK
+    depends on OPENEMBER_ENABLE_MSGS
+    help
+      Build a turtlesim-style host demo: openember_turtle_sim integrates
+      Twist2D commands into Pose2D and opens an SDL2 window on Linux
+      (install libsdl2-dev; use --no-gui for headless). teleop publishes
+      keyboard or --demo motion. See configs/turtle.launch.yaml.
+
 endmenu

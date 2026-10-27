@@ -1,0 +1,37 @@
+# Host-side turtlesim-style demo (no target board).
+# launch_manager is the Link router; sim + teleop attach as clients.
+# turtle_sim opens an SDL2 window by default (needs a display).
+#
+# Manual alternative (two terminals):
+#   ./build/bin/openember_turtle_sim --router
+#   ./build/bin/openember_turtle_teleop --client --demo
+# Headless:
+#   ./build/bin/openember_turtle_sim --router --no-gui
+
+runtime:
+  robot_id: openember
+  namespace: ""
+  link:
+    mode: router
+    listen: tcp/127.0.0.1:7447
+
+nodes:
+  - name: turtle_sim
+    kind: application
+    command: ${openember.bin}/openember_turtle_sim
+    args: ["--client"]
+    restart: on-failure
+    restart_limit: 3
+    startup_timeout_ms: 5000
+    shutdown_timeout_ms: 3000
+    heartbeat_timeout_ms: 0
+
+  - name: turtle_teleop
+    kind: application
+    command: ${openember.bin}/openember_turtle_teleop
+    args: ["--client", "--demo"]
+    restart: on-failure
+    restart_limit: 3
+    startup_timeout_ms: 5000
+    shutdown_timeout_ms: 3000
+    heartbeat_timeout_ms: 0
