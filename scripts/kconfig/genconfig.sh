@@ -147,6 +147,13 @@ app_agri_station_demo="$(onoff CONFIG_OPENEMBER_APP_AGRI_STATION_DEMO)"
 if ! has_symbol CONFIG_OPENEMBER_APP_AGRI_STATION_DEMO; then
   app_agri_station_demo=ON
 fi
+app_agri_station_gui="$(onoff CONFIG_OPENEMBER_AGRI_STATION_GUI)"
+if ! has_symbol CONFIG_OPENEMBER_AGRI_STATION_GUI; then
+  app_agri_station_gui=ON
+fi
+if [ "${app_agri_station_demo}" != "ON" ]; then
+  app_agri_station_gui=OFF
+fi
 service_ota_update="$(onoff CONFIG_OPENEMBER_SERVICE_OTA_AGENT)"
 reference_sensor_data="$(onoff CONFIG_OPENEMBER_REFERENCE_SENSOR_DATA)"
 service_web_console="$(onoff CONFIG_OPENEMBER_SERVICE_WEB_CONSOLE)"
@@ -697,6 +704,7 @@ set(OPENEMBER_APP_SMART_DEVICE_DEMO ${app_smart_device_demo} CACHE BOOL "Build a
 set(OPENEMBER_APP_TURTLE_DEMO ${app_turtle_demo} CACHE BOOL "Build apps/turtle_demo" FORCE)
 set(OPENEMBER_APP_ROVER_DEMO ${app_rover_demo} CACHE BOOL "Build apps/rover_demo" FORCE)
 set(OPENEMBER_APP_AGRI_STATION_DEMO ${app_agri_station_demo} CACHE BOOL "Build apps/agri_station_demo" FORCE)
+set(OPENEMBER_AGRI_STATION_GUI ${app_agri_station_gui} CACHE BOOL "Build agri_station_app Qt field console" FORCE)
 set(OPENEMBER_SERVICE_OTA_AGENT ${service_ota_update} CACHE BOOL "Build services/ota_agent" FORCE)
 set(OPENEMBER_REFERENCE_SENSOR_DATA ${reference_sensor_data} CACHE BOOL "Build examples/references/sensor_data_reference" FORCE)
 set(OPENEMBER_SERVICE_WEB_CONSOLE ${service_web_console} CACHE BOOL "Build services/web_console" FORCE)

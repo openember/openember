@@ -1,10 +1,15 @@
 # Smart-agri station host demo (mock sensors + product app).
 # Separate climate / soil mock processes so killing one exercises degrade.
+# agri_station_app opens a Qt field console by default when built with GUI;
+# this launch file passes --no-gui so supervised runs work without a display.
+# For the console: drop --no-gui (needs DISPLAY + qt6-base-dev at build time).
 #
-# Manual:
+# Manual (GUI):
 #   ./build/bin/openember_agri_mock_sensors --router --role climate
 #   ./build/bin/openember_agri_mock_sensors --client --role soil
 #   ./build/bin/openember_agri_station_app --client
+# Headless app:
+#   ./build/bin/openember_agri_station_app --client --no-gui
 
 runtime:
   robot_id: openember
@@ -37,7 +42,7 @@ nodes:
   - name: agri_station_app
     kind: application
     command: ${openember.bin}/openember_agri_station_app
-    args: ["--client"]
+    args: ["--client", "--no-gui"]
     restart: on-failure
     restart_limit: 3
     startup_timeout_ms: 5000

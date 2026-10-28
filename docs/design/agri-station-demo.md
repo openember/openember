@@ -1,7 +1,7 @@
 # Agri Station Demo（智慧农业监测站）设计草案
 
-- 状态：宿主机 Mock MVP 已落地（`apps/agri_station_demo`，`configs/agri_station.launch.yaml`）；`smart_device_demo` 仍保留；真机传感驱动待后续
-- 更新日期：2026-10-28
+- 状态：宿主机 Mock MVP 已落地；`agri_station_app` 可选 **系统 Qt** 现场操作台（非 Web、不进 `third_party/`）；`smart_device_demo` 仍保留；真机传感驱动待后续
+- 更新日期：2026-10-29
 - 相关：
   - 三档总览：[demos-overview.md](./demos-overview.md)
   - [Runtime Supervision 与 Product App](../architecture/runtime-supervision-and-product-app-design.md)
@@ -30,14 +30,13 @@ OpenEmber 跑在 **Linux** 上，带着多进程 Link、launch 监督、config /
 
 ```text
 launch_manager (router + 监督)
-  ├── agri_station_app         # Product App：灌溉/通风相关阈值策略与告警（逻辑层，第一版可不驱实泵）
-  ├── hardware_interface(*)    # 气候 / 光照 / 土壤等 Mock 或真机 package
-  ├── health_monitor
-  ├── config_service           # 采样周期、湿度下限、光照告警等
-  ├── device_manager
-  ├── web_console
-  └── host_monitor（可选）
+  ├── agri_station_app         # Product App：阈值/告警 + 可选 Qt 现场操作台（同一进程；--no-gui 无头）
+  ├── agri_mock_* / HI(*)      # 气候 / 土壤等 Mock 或真机 package（分进程便于降级演示）
+  ├── health_monitor / config_service / device_manager（可选组合）
+  ├── web_console / host_monitor（可选运维面，与现场 Qt 台不同职责）
 ```
+
+现场 UI 约定：界面做进 `agri_station_app`，不另起 `handheld_console`；依赖 **系统 Qt6/Qt5 Widgets**（`find_package`，如 `qt6-base-dev`），由 `OPENEMBER_AGRI_STATION_GUI` 控制是否编译 GUI。
 
 | 架构要点 | 在本 Demo 中的体现 |
 |----------|-------------------|
@@ -52,10 +51,10 @@ launch_manager (router + 监督)
 
 ## 3. 产品故事（用户可感知）
 
-1. launch 拉起站端；web_console 显示棚内温湿、光照、土壤湿度（Mock 或真值）。  
-2. 调低土壤湿度阈值 → 出现告警 / 状态变化。  
-3. 停掉土壤传感进程 → health 降级，空气与光照仍更新。  
-4. （可选）外发告警摘要；第一版以站内 Link + Web 为主。
+1. launch 拉起站端；`agri_station_app` 以 Qt 现场台或 `--no-gui` 运行，显示/打印温湿、光照、土壤湿度。  
+2. 土壤过干 → 告警横幅 / Topic；可再接 config 调阈值。  
+3. 停掉土壤传感进程 → 降级，空气与光照仍更新。  
+4. （可选）web_console / 外发告警作运维面；与现场 Qt 台职责分开。
 
 ## 4. 话题与消息（草案）
 
