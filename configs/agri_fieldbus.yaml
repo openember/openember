@@ -1,0 +1,45 @@
+# OE-AFP instance topology (buses / units / poll). Protocol constants live in
+# apps/agri_station_demo/agri_afp_regs.hpp and agri_afp_uplink.hpp — do not
+# redefine register offsets here.
+#
+# Design: docs/design/agri-fieldbus-protocol.md
+# proto must match afp::kProtoId
+
+agri_fieldbus:
+  proto: oe-afp/1.0
+  station_id: agri-station-demo
+
+  buses:
+    - id: io0
+      role: io_card
+      transport: modbus_tcp
+      endpoint: "127.0.0.1:1502"
+      timeout_ms: 500
+      units:
+        - unit_id: 1
+          device_class: io_card
+          channels: 10
+          caps: [air_temp, air_humidity, illuminance, soil_moisture, soil_temp]
+          poll_period_ms: 500
+
+    - id: gw0
+      role: radio_gateway
+      transport: modbus_tcp
+      endpoint: "127.0.0.1:1503"
+      timeout_ms: 500
+      # Southbound uplink from wireless node mocks (UDP).
+      uplink:
+        transport: udp
+        listen: "0.0.0.0:15100"
+      units:
+        - unit_id: 10
+          device_class: gateway_virtual_slave
+          # Mapped from radio node_id via gateway table when mocks land.
+          channels: 1
+          caps: [air_temp, air_humidity, soil_moisture]
+          poll_period_ms: 1000
+        - unit_id: 11
+          device_class: gateway_virtual_slave
+          channels: 1
+          caps: [air_temp, air_humidity]
+          poll_period_ms: 2000

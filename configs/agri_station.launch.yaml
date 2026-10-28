@@ -1,15 +1,14 @@
-# Smart-agri station host demo (mock sensors + product app).
-# Separate climate / soil mock processes so killing one exercises degrade.
+# Smart-agri station host demo (OE-AFP IO card mock + field master + app).
 # agri_station_app opens a Qt field console by default when built with GUI;
 # this launch file passes --no-gui so supervised runs work without a display.
-# For the console: drop --no-gui (needs DISPLAY + qt6-base-dev at build time).
 #
-# Manual (GUI):
-#   ./build/bin/openember_agri_mock_sensors --router --role climate
-#   ./build/bin/openember_agri_mock_sensors --client --role soil
+# Manual (GUI) — first Link process must be --router (io_card_mock has no Link):
+#   ./build/bin/openember_agri_io_card_mock --port 1502 --channels 10
+#   ./build/bin/openember_agri_field_master --router --endpoint 127.0.0.1:1502
 #   ./build/bin/openember_agri_station_app --client
-# Headless app:
-#   ./build/bin/openember_agri_station_app --client --no-gui
+# Under this launch file, launch_manager is the router so nodes use --client.
+# Legacy direct Topic mocks: openember_agri_mock_sensors
+# Topology defaults: configs/agri_fieldbus.yaml
 
 runtime:
   robot_id: openember
@@ -19,20 +18,33 @@ runtime:
     listen: tcp/127.0.0.1:7447
 
 nodes:
-  - name: agri_mock_climate
+  - name: agri_io_card_mock
     kind: application
-    command: ${openember.bin}/openember_agri_mock_sensors
-    args: ["--client", "--role", "climate"]
+    command: ${openember.bin}/openember_agri_io_card_mock
+    args: ["--bind", "127.0.0.1", "--port", "1502", "--unit", "1", "--channels", "10"]
     restart: on-failure
     restart_limit: 3
     startup_timeout_ms: 5000
     shutdown_timeout_ms: 3000
     heartbeat_timeout_ms: 0
 
-  - name: agri_mock_soil
+  - name: agri_field_master
     kind: application
-    command: ${openember.bin}/openember_agri_mock_sensors
-    args: ["--client", "--role", "soil"]
+    command: ${openember.bin}/openember_agri_field_master
+    args:
+      - "--client"
+      - "--endpoint"
+      - "127.0.0.1:1502"
+      - "--unit"
+      - "1"
+      - "--channels"
+      - "10"
+      - "--bus-id"
+      - "io0"
+      - "--poll-ms"
+      - "500"
+      - "--ui-channel"
+      - "0"
     restart: on-failure
     restart_limit: 3
     startup_timeout_ms: 5000

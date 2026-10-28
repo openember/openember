@@ -7,6 +7,20 @@ OPENEMBER_ADD_EXECUTABLE(TARGET openember_agri_mock_sensors
     DESTINATION bin
 )
 
+OPENEMBER_ADD_EXECUTABLE(TARGET openember_agri_io_card_mock
+    SRCS     agri_io_card_mock.cpp
+    LIBS     openember::core
+    INCLUDES ${OPENEMBER_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}
+    DESTINATION bin
+)
+
+OPENEMBER_ADD_EXECUTABLE(TARGET openember_agri_field_master
+    SRCS     agri_field_master.cpp
+    LIBS     openember::core
+    INCLUDES ${OPENEMBER_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}
+    DESTINATION bin
+)
+
 set(_agri_app_srcs agri_station_app.cpp)
 set(_agri_app_libs openember::core)
 set(_agri_app_defs)
@@ -53,7 +67,11 @@ OPENEMBER_ADD_EXECUTABLE(TARGET openember_agri_station_app
 
 target_compile_definitions(openember_agri_station_app PRIVATE ${_agri_app_defs})
 
-foreach(_target openember_agri_mock_sensors openember_agri_station_app)
+foreach(_target
+        openember_agri_mock_sensors
+        openember_agri_io_card_mock
+        openember_agri_field_master
+        openember_agri_station_app)
     set_property(TARGET ${_target} PROPERTY CXX_STANDARD 17)
     set_property(TARGET ${_target} PROPERTY CXX_STANDARD_REQUIRED ON)
 endforeach()

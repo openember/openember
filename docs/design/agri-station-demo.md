@@ -1,9 +1,10 @@
 # Agri Station Demo（智慧农业监测站）设计草案
 
-- 状态：宿主机 Mock MVP 已落地；`agri_station_app` 可选 **系统 Qt** 现场操作台（非 Web、不进 `third_party/`）；`smart_device_demo` 仍保留；真机传感驱动待后续
+- 状态：宿主机 MVP 已落地；默认 launch 走 **OE-AFP IO 卡 Mock + field master**；`agri_station_app` 可选系统 Qt 现场台；直发 Topic 的 `agri_mock_sensors` 仍保留；无线网关 Mock / 真机驱动待后续
 - 更新日期：2026-10-29
 - 相关：
   - 三档总览：[demos-overview.md](./demos-overview.md)
+  - 现场通信契约：[agri-fieldbus-protocol.md](./agri-fieldbus-protocol.md)（OE-AFP：Modbus 寄存器图 + 无线上联 PDU）
   - [Runtime Supervision 与 Product App](../architecture/runtime-supervision-and-product-app-design.md)
   - [Hardware Interface](./hardware-interface.md)
   - [Rover Demo](./rover-demo.md)、`apps/turtle_demo`
@@ -44,10 +45,25 @@ launch_manager (router + 监督)
 | App ≠ 监督 | App 决定「土壤过干告警 / 传感降级」；不起停其它进程 |
 | health 事实 vs App 行为 | 土壤传感掉线 → degraded；App 可关闭墒情告警、保留空气监测 |
 | config 调参 | 改土壤湿度阈值、采样周期，不重编 |
-| HI 可替换 | Mock → I2C/ADC 真传感，话题不变 |
+| HI 可替换 | Mock → IO 卡 / 无线网关 / I2C 真传感，话题不变 |
 | 弱实时监测 | 相对 Rover 的运动急停；本站强调可观测、可配置、可降级 |
 
 第一版 **只监测 + 告警**（可模拟「建议灌溉」事件）；实驱水泵/风机留作后续，避免 Demo 变成灌控项目。
+
+### 2.1 采集拓扑（相对「进程直接写 Topic」的下一步）
+
+现场数据通常不经探头直连 App，而是经 **IO 采集卡** 或 **无线采集节点 + 网关** 进入站端：
+
+```text
+探头 ──► IO 卡（SPI/UART/RS485/以太）──Modbus──► HI ──/agri/...──► App
+探头 ──► 无线节点 ──上联 PDU──► 网关 ──同语义──► HI ──/agri/...──► App
+```
+
+协议与寄存器图、无线 PDU、Topic 映射见 **[agri-fieldbus-protocol.md](./agri-fieldbus-protocol.md)**。  
+P0：`agri_afp_regs.hpp` / `agri_afp_uplink.hpp` + [`configs/agri_fieldbus.yaml`](../../configs/agri_fieldbus.yaml)。  
+P1：`openember_agri_io_card_mock`（Modbus TCP Slave）+ `openember_agri_field_master`（轮询 → `/agri/...`）；App/UI 仍订扁平 Topic（默认 `ui-channel=0`）；Master 日志输出全部通道。`agri_mock_sensors` 作捷径保留。
+
+手跑注意：`io_card_mock` **不**起 Link；须让 `field_master --router`，再 `agri_station_app --client`。全 `--client` 且无 launch_manager 时会报 `failed to initialize OpenEmber context`。
 
 ## 3. 产品故事（用户可感知）
 
@@ -80,7 +96,8 @@ launch_manager (router + 监督)
 | B. App 行为 | `agri_station_app`：订传感、状态/告警 | Mock 过干可观测告警 |
 | C. 多路传感 | ≥2 路可独立停 | 降级符合策略 |
 | D. 配置驱动 | 阈值/周期走 config | 改参不重编 |
-| E. 真机 | §6 模块接入 HI | 与 Mock 同话题 |
+| D2. 现场总线 | OE-AFP IO 卡 Mock + Master（已）；无线 node/gateway（P2） | 多通道日志；停 Master/卡 → App 降级；见 fieldbus 文 |
+| E. 真机 | §6 模块接入 HI；或真 RS485 映射到 OE-AFP 图 | 与 Mock 同话题 |
 | F. 面板 | web_console 农业站页 | 浏览器可演示 |
 
 ## 6. 确定传感清单（可采购真机）

@@ -74,7 +74,16 @@ inline void InitClient(const LinkCliOptions& cli) {
     options.robot_id = kRobotId;
     options.link.profile = openember::link::Profile::kClient;
     options.link.connect = cli.connect;
-    openember::Init(options);
+    try {
+        openember::Init(options);
+    } catch (const std::exception& e) {
+        throw std::runtime_error(
+            std::string(e.what()) +
+            "; Link client needs a router. Start one process with --router "
+            "(or omit --client/--router for auto), then connect others with "
+            "--client. connect=" +
+            cli.connect);
+    }
 }
 
 inline std::string InitLink(const LinkCliOptions& cli) {
