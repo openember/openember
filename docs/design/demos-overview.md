@@ -10,8 +10,8 @@
 | Demo | App（现 / 规划） | 故事 | 状态 | 设计 | 用户文档 |
 |------|------------------|------|------|------|----------|
 | **Turtle** | `apps/turtle_demo` | 平面通信入门（Link + msgs + launch；类 turtlesim） | 已落地 | （以用户文档为准，不单独立项） | openember-docs `docs/turtle-demo.md` |
-| **Rover** | `apps/rover_demo` | 差速巡游小车：执行、传感、急停；仿 + DIY ≤¥3000 | 设计中 | [rover-demo.md](./rover-demo.md) | openember-docs `docs/rover-demo.md` |
-| **Agri Station** | `apps/agri_station_demo` ← `smart_device_demo` | 智慧农业监测站：多传感、告警/降级、运维面 | 设计中 | [agri-station-demo.md](./agri-station-demo.md) | openember-docs `docs/agri-station-demo.md` |
+| **Rover** | `apps/rover_demo` | 差速巡游小车：执行、传感、急停；仿 + DIY ≤¥3000 | 宿主机 MVP 已落地（sim/teleop） | [rover-demo.md](./rover-demo.md) | openember-docs `docs/rover-demo.md` |
+| **Agri Station** | `apps/agri_station_demo`（`smart_device_demo` 仍保留） | 智慧农业监测站：多传感、告警/降级、运维面 | 宿主机 Mock MVP 已落地 | [agri-station-demo.md](./agri-station-demo.md) | openember-docs `docs/agri-station-demo.md` |
 
 ## 分工（避免重叠）
 

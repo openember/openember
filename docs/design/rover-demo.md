@@ -1,6 +1,6 @@
 # Rover Demo（巡游小车）设计草案
 
-- 状态：设计草案（代码尚未落地）
+- 状态：宿主机 MVP 已落地（`openember_rover_sim` / `openember_rover_teleop`，`configs/rover.launch.yaml`）；真机 HI / 激光待后续
 - 更新日期：2026-10-28
 - 相关：
   - 三档总览：[demos-overview.md](./demos-overview.md)

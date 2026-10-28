@@ -1,6 +1,6 @@
 # Agri Station Demo（智慧农业监测站）设计草案
 
-- 状态：设计草案（由现有 `smart_device_demo` 演进；应用目录拟为 `apps/agri_station_demo`）
+- 状态：宿主机 Mock MVP 已落地（`apps/agri_station_demo`，`configs/agri_station.launch.yaml`）；`smart_device_demo` 仍保留；真机传感驱动待后续
 - 更新日期：2026-10-28
 - 相关：
   - 三档总览：[demos-overview.md](./demos-overview.md)
