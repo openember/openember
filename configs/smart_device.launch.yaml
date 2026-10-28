@@ -30,6 +30,23 @@ nodes:
     shutdown_timeout_ms: 3000
     heartbeat_timeout_ms: 5000
 
+  - name: host_monitor
+    kind: service
+    command: ${openember.bin}/host_monitor
+    restart: always
+    startup_timeout_ms: 3000
+    shutdown_timeout_ms: 3000
+    heartbeat_timeout_ms: 5000
+
+  - name: web_console
+    kind: service
+    command: ${openember.bin}/web_console
+    restart: on-failure
+    restart_limit: 3
+    startup_timeout_ms: 5000
+    shutdown_timeout_ms: 3000
+    heartbeat_timeout_ms: 5000
+
   - name: smart_device_app
     kind: application
     command: ${openember.bin}/openember_smart_device_demo

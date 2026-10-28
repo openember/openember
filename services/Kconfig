@@ -63,11 +63,22 @@ config OPENEMBER_WEB_CONSOLE_ROOT_DIR
 
 config OPENEMBER_WEB_CONSOLE_PORT
     int "web_console HTTP port"
-    default 8000
+    default 18080
     range 1 65535
     depends on OPENEMBER_SERVICE_WEB_CONSOLE
     help
       HTTP listen port for web_console. Server binds to 0.0.0.0:<port>.
+      Default 18080 avoids clashing with common FastAPI/uvicorn :8000.
+
+config OPENEMBER_SERVICE_HOST_MONITOR
+    bool "Build service: host_monitor"
+    default y
+    depends on OPENEMBER_ENABLE_LINK
+    depends on OPENEMBER_ENABLE_MSGS
+    help
+      Sample host CPU, memory, load, and disk usage from /proc and publish
+      openember.msgs.host.v1.HostResourceSnapshot on /host/resources for
+      web_console and other subscribers.
 
 config OPENEMBER_SERVICE_LOGGER
     bool "Build service: logger"

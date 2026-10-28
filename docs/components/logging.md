@@ -325,7 +325,7 @@ dashboard
 建议首版 topic payload 用 **单行 JSON**（便于跨语言与调试）：
 
 ```json
-{"ts":"2026-03-27T12:34:56.789Z","lvl":"info","pid":1234,"proc":"web_console","tag":"services.web_console","msg":"Listening on 0.0.0.0:8000"}
+{"ts":"2026-03-27T12:34:56.789Z","lvl":"info","pid":1234,"proc":"web_console","tag":"services.web_console","msg":"Listening on 0.0.0.0:18080"}
 ```
 
 字段建议：

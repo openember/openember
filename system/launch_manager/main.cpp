@@ -195,7 +195,7 @@ std::string ResolveDefaultLaunchFile(const std::string& bin_dir) {
 void PrintUsage(const char* argv0) {
     std::printf(
         "Usage:\n"
-        "  %s [--launch <file>] [--pid-file <file>]\n"
+        "  %s [--launch <file>] [launch_file] [--pid-file <file>]\n"
         "  %s stop [--pid-file <file>]\n",
         argv0,
         argv0);
@@ -204,6 +204,7 @@ void PrintUsage(const char* argv0) {
 struct CliOptions {
     bool stop = false;
     bool help = false;
+    bool parse_error = false;
     std::string launch_file;
     std::string pid_file = EnvOrDefault("OPENEMBER_PID_FILE", kDefaultPidFile);
 };
@@ -222,9 +223,13 @@ CliOptions ParseArgs(int argc, char* argv[], const std::string& bin_dir) {
             options.launch_file = argv[++i];
         } else if (arg == "--pid-file" && i + 1 < argc) {
             options.pid_file = argv[++i];
+        } else if (!arg.empty() && arg[0] != '-') {
+            // Positional launch file, e.g. launch_manager configs/foo.launch.yaml
+            options.launch_file = arg;
         } else {
             std::fprintf(stderr, "unknown argument: %s\n", arg.c_str());
             options.help = true;
+            options.parse_error = true;
         }
     }
 
@@ -485,7 +490,7 @@ int main(int argc, char* argv[]) {
 
     if (cli.help) {
         PrintUsage(argv[0]);
-        return cli.stop ? 1 : 0;
+        return (cli.stop || cli.parse_error) ? 1 : 0;
     }
 
     if (cli.stop) {

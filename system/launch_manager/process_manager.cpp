@@ -352,7 +352,10 @@ void ProcessManager::CheckHeartbeatTimeouts() {
             continue;
         }
 
-        if (!process.has_heartbeat &&
+        // heartbeat_timeout_ms == 0 means the process is not heartbeat-supervised.
+        // Do not require a startup heartbeat in that case (e.g. web_console).
+        if (process.spec.heartbeat_timeout.count() > 0 &&
+            !process.has_heartbeat &&
             process.spec.startup_timeout.count() > 0 &&
             now - process.start_time > process.spec.startup_timeout) {
             LOG_E("Startup heartbeat timeout: name=%s pid=%d",

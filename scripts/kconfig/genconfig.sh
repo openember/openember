@@ -143,6 +143,10 @@ service_ota_update="$(onoff CONFIG_OPENEMBER_SERVICE_OTA_AGENT)"
 reference_sensor_data="$(onoff CONFIG_OPENEMBER_REFERENCE_SENSOR_DATA)"
 service_web_console="$(onoff CONFIG_OPENEMBER_SERVICE_WEB_CONSOLE)"
 service_logger="$(onoff CONFIG_OPENEMBER_SERVICE_LOGGER)"
+service_host_monitor="$(onoff CONFIG_OPENEMBER_SERVICE_HOST_MONITOR)"
+if ! has_symbol CONFIG_OPENEMBER_SERVICE_HOST_MONITOR; then
+  service_host_monitor=ON
+fi
 service_hardware_interface="$(onoff CONFIG_OPENEMBER_SERVICE_HARDWARE_INTERFACE)"
 if ! has_symbol CONFIG_OPENEMBER_SERVICE_HARDWARE_INTERFACE; then
   service_hardware_interface=ON
@@ -211,6 +215,7 @@ fi
 if [[ "${enable_link}" == "OFF" ]] || [[ "${enable_msgs}" == "OFF" ]]; then
   app_smart_device_demo=OFF
   app_turtle_demo=OFF
+  service_host_monitor=OFF
 fi
 if [[ "${component_hardware}" == "OFF" ]]; then
   component_sensor=OFF
@@ -366,7 +371,7 @@ if [[ -z "${web_root_dir}" ]]; then
   web_root_dir="services/web_console/web_root"
 fi
 
-web_port="8000"
+web_port="18080"
 web_port="$(awk '
   /^CONFIG_OPENEMBER_WEB_CONSOLE_PORT=/ {
     v=$0
@@ -376,7 +381,7 @@ web_port="$(awk '
   }
 ' "${CONFIG_FILE}")"
 if [[ -z "${web_port}" ]]; then
-  web_port="8000"
+  web_port="18080"
 fi
 
 logger_port="18081"
@@ -686,6 +691,7 @@ set(OPENEMBER_SERVICE_OTA_AGENT ${service_ota_update} CACHE BOOL "Build services
 set(OPENEMBER_REFERENCE_SENSOR_DATA ${reference_sensor_data} CACHE BOOL "Build examples/references/sensor_data_reference" FORCE)
 set(OPENEMBER_SERVICE_WEB_CONSOLE ${service_web_console} CACHE BOOL "Build services/web_console" FORCE)
 set(OPENEMBER_SERVICE_LOGGER ${service_logger} CACHE BOOL "Build services/logger" FORCE)
+set(OPENEMBER_SERVICE_HOST_MONITOR ${service_host_monitor} CACHE BOOL "Build services/host_monitor" FORCE)
 set(OPENEMBER_SERVICE_HARDWARE_INTERFACE ${service_hardware_interface} CACHE BOOL "Build services/hardware_interface" FORCE)
 set(OPENEMBER_COMPONENT_ALGORITHM ${component_algorithm} CACHE BOOL "Build Algorithm component" FORCE)
 set(OPENEMBER_COMPONENT_HARDWARE ${component_hardware} CACHE BOOL "Build Hardware common component" FORCE)

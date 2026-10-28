@@ -11,12 +11,16 @@
 #include <mongoose.h>
 
 #include <cctype>
+#include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 #include <deque>
 #include <mutex>
+#include <optional>
+#include <sstream>
 #include <vector>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -32,10 +36,23 @@
 
 #include "openember/framework/system_bus.hpp"
 #include "openember/init.hpp"
+#include "openember/msgs/common/v1/common.pb.h"
+#include "openember/msgs/host/v1/host.pb.h"
+#include "openember/msgs/lifecycle/v1/lifecycle.pb.h"
+#include "openember/msgs/node/v1/node.pb.h"
 #include "openember/node.hpp"
 
 static std::shared_ptr<openember::Node> g_node;
 static openember::Subscriber<std::string> g_log_sub;
+static openember::Subscriber<openember::msgs::host::v1::HostResourceSnapshot> g_host_sub;
+static openember::Publisher<openember::msgs::node::v1::NodeHeartbeat> g_heartbeat_pub;
+
+static std::mutex s_host_mu;
+static std::optional<openember::msgs::host::v1::HostResourceSnapshot> s_host_snapshot;
+static std::chrono::steady_clock::time_point s_start_time;
+static std::uint64_t s_heartbeat_sequence = 0;
+static std::chrono::steady_clock::time_point s_last_heartbeat =
+    std::chrono::steady_clock::time_point::min();
 
 static std::string json_escape(std::string_view v);
 
@@ -321,6 +338,61 @@ static std::string host_product()
     return s;
 }
 
+static std::string host_metrics_json()
+{
+    openember::msgs::host::v1::HostResourceSnapshot snap;
+    {
+        std::lock_guard<std::mutex> lk(s_host_mu);
+        if (!s_host_snapshot.has_value()) {
+            return "{\"available\":false,\"hint\":\"start services/host_monitor\"}";
+        }
+        snap = *s_host_snapshot;
+    }
+
+    const double cpu_pct = snap.cpu().usage_ratio() * 100.0;
+    double mem_pct = 0.0;
+    if (snap.memory().total_bytes() > 0) {
+        mem_pct = 100.0 * static_cast<double>(snap.memory().used_bytes()) /
+                  static_cast<double>(snap.memory().total_bytes());
+    }
+
+    std::ostringstream out;
+    out.setf(std::ios::fixed);
+    out.precision(2);
+    out << "{\"available\":true"
+        << ",\"uptime_sec\":" << snap.uptime_sec()
+        << ",\"load1\":" << snap.load1()
+        << ",\"load5\":" << snap.load5()
+        << ",\"load15\":" << snap.load15()
+        << ",\"cpu_percent\":" << cpu_pct
+        << ",\"cpu_online\":" << snap.cpu().online_cpus()
+        << ",\"memory_total_bytes\":" << snap.memory().total_bytes()
+        << ",\"memory_used_bytes\":" << snap.memory().used_bytes()
+        << ",\"memory_available_bytes\":" << snap.memory().available_bytes()
+        << ",\"memory_percent\":" << mem_pct
+        << ",\"disks\":[";
+    for (int i = 0; i < snap.disks_size(); ++i) {
+        const auto& d = snap.disks(i);
+        double disk_pct = 0.0;
+        if (d.total_bytes() > 0) {
+            disk_pct = 100.0 * static_cast<double>(d.used_bytes()) /
+                       static_cast<double>(d.total_bytes());
+        }
+        if (i > 0) {
+            out << ',';
+        }
+        out << "{\"mount\":\"" << json_escape(d.mount_point()) << "\""
+            << ",\"filesystem\":\"" << json_escape(d.filesystem()) << "\""
+            << ",\"total_bytes\":" << d.total_bytes()
+            << ",\"used_bytes\":" << d.used_bytes()
+            << ",\"available_bytes\":" << d.available_bytes()
+            << ",\"percent\":" << disk_pct
+            << '}';
+    }
+    out << "]}";
+    return out.str();
+}
+
 static std::string system_info_json()
 {
     struct utsname u {};
@@ -377,6 +449,15 @@ static void fn(struct mg_connection *c, int ev, void *ev_data)
                           body.c_str());
             return;
         }
+        if (mg_strcmp(hm->uri, mg_str("/api/metrics")) == 0) {
+            std::string body = host_metrics_json();
+            mg_http_reply(c,
+                          200,
+                          "Content-Type: application/json\r\nCache-Control: no-store\r\n",
+                          "%s",
+                          body.c_str());
+            return;
+        }
         if (mg_strcmp(hm->uri, mg_str("/api/logs")) == 0) {
 #if defined(OPENEMBER_SPDLOG_ENABLE_TOPIC) && OPENEMBER_SPDLOG_ENABLE_TOPIC
             char b_limit[32] = {0};
@@ -423,6 +504,19 @@ static int link_init(void)
             });
         LOG_I("log topic subscribed via Link: topic=%s", OPENEMBER_SPDLOG_TOPIC_NAME);
 #endif
+
+        g_host_sub = g_node->Subscribe<openember::msgs::host::v1::HostResourceSnapshot>(
+            "/host/resources",
+            [](const openember::msgs::host::v1::HostResourceSnapshot& snap) {
+                std::lock_guard<std::mutex> lk(s_host_mu);
+                s_host_snapshot = snap;
+            });
+        LOG_I("host metrics subscribed via Link: topic=/host/resources");
+
+        g_heartbeat_pub =
+            g_node->Advertise<openember::msgs::node::v1::NodeHeartbeat>(
+                "/nodes/web_console/heartbeat");
+        s_start_time = std::chrono::steady_clock::now();
     } catch (const std::exception& e) {
         LOG_E("Link init failed: %s", e.what());
         return -EMBER_ERROR;
@@ -430,12 +524,47 @@ static int link_init(void)
     return EMBER_EOK;
 }
 
+static void maybe_publish_heartbeat()
+{
+    if (!g_heartbeat_pub.Valid()) {
+        return;
+    }
+    const auto now = std::chrono::steady_clock::now();
+    if (s_last_heartbeat != std::chrono::steady_clock::time_point::min() &&
+        now - s_last_heartbeat < std::chrono::seconds(1)) {
+        return;
+    }
+    s_last_heartbeat = now;
+
+    openember::msgs::node::v1::NodeHeartbeat heartbeat;
+    auto* header = heartbeat.mutable_header();
+    header->set_source_node(MODULE_NAME);
+    header->set_source_instance(MODULE_NAME);
+    header->set_robot_id("openember");
+    header->set_sequence(s_heartbeat_sequence++);
+    const auto unix_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                             std::chrono::system_clock::now().time_since_epoch())
+                             .count();
+    header->set_timestamp_unix_ns(static_cast<std::uint64_t>(unix_ns));
+
+    heartbeat.set_node_name(MODULE_NAME);
+    heartbeat.set_instance_id(MODULE_NAME);
+    heartbeat.set_lifecycle_state(
+        openember::msgs::lifecycle::v1::LIFECYCLE_STATE_ACTIVE);
+    heartbeat.set_health(openember::msgs::common::v1::HEALTH_STATE_OK);
+    heartbeat.set_uptime_ms(static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(now - s_start_time)
+            .count()));
+    heartbeat.set_status_message("web_console ok");
+    (void)g_heartbeat_pub.Publish(heartbeat);
+}
+
 int main()
 {
     int rc;
     struct mg_mgr mgr;
     char listening_addr[64];
-    unsigned port = 8000;
+    unsigned port = 18080;
 #ifdef OPENEMBER_WEB_CONSOLE_PORT
     port = (unsigned)OPENEMBER_WEB_CONSOLE_PORT;
 #endif
@@ -468,11 +597,14 @@ int main()
     MG_INFO(("Web root         : [%s]", s_root_dir));
 
     while (s_signo == 0) {
-        mg_mgr_poll(&mgr, 1000);    // Block forever
+        maybe_publish_heartbeat();
+        mg_mgr_poll(&mgr, 200);
     }
 
     mg_mgr_free(&mgr);
     g_log_sub = {};
+    g_host_sub = {};
+    g_heartbeat_pub = {};
     g_node.reset();
     openember::Shutdown();
     MG_INFO(("Exiting on signal %d", s_signo));

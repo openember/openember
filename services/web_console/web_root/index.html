@@ -134,15 +134,23 @@
                     <div class="oe-muted">CPU</div><div class="oe-mono" id="kvCPU">--</div>
                     <div class="oe-muted">GPU</div><div class="oe-mono" id="kvGPU">--</div>
                     <div class="oe-muted">Memory</div><div class="oe-mono" id="kvMem">--</div>
+                    <div class="oe-muted">Load</div><div class="oe-mono" id="kvLoad">--</div>
+                    <div class="oe-muted">Disk</div><div class="oe-mono" id="kvDisk">--</div>
                     <div class="oe-muted">Web root</div><div class="oe-mono" id="kvWebRoot">/</div>
-                    <div class="oe-muted">HTTP</div><div class="oe-mono" id="kvHttp">0.0.0.0:8000</div>
+                    <div class="oe-muted">HTTP</div><div class="oe-mono" id="kvHttp">0.0.0.0:18080</div>
                   </div>
                   <hr class="layui-border-blue" />
+                  <div class="oe-muted" style="margin-bottom:6px;">CPU</div>
                   <div class="layui-progress layui-progress-big" lay-showpercent="true">
                     <div class="layui-progress-bar" lay-percent="0%" id="barCpu"></div>
                   </div>
-                  <div class="layui-progress layui-progress-big" lay-showpercent="true" style="margin-top: 10px;">
+                  <div class="oe-muted" style="margin:10px 0 6px;">Memory</div>
+                  <div class="layui-progress layui-progress-big" lay-showpercent="true">
                     <div class="layui-progress-bar layui-bg-orange" lay-percent="0%" id="barMem"></div>
+                  </div>
+                  <div class="oe-muted" style="margin:10px 0 6px;">Root disk</div>
+                  <div class="layui-progress layui-progress-big" lay-showpercent="true">
+                    <div class="layui-progress-bar layui-bg-green" lay-percent="0%" id="barDisk"></div>
                   </div>
                 </div>
               </div>
@@ -404,7 +412,7 @@
           about: '关于'
         };
 
-        /** 与 URL 片段同步，例如 http://host:8000/#/control */
+        /** 与 URL 片段同步，例如 http://host:18080/#/control */
         function pageFromHash() {
           var h = (location.hash || '').replace(/^#/, '').replace(/^\/+/, '');
           var part = (h.split('/')[0] || 'overview').trim();
@@ -528,15 +536,91 @@
           });
         }
 
-        function refreshMockMeters() {
-          var cpu = rand(3, 68);
-          var mem = rand(8, 84);
-          document.getElementById('barCpu').setAttribute('lay-percent', cpu + '%');
-          document.getElementById('barMem').setAttribute('lay-percent', mem + '%');
-          if (element && typeof element.render === 'function') {
-            element.render('progress');
-          }
-          log('refresh cpu=' + cpu + '% mem=' + mem + '%');
+        function fmtBytes(n) {
+          n = Number(n) || 0;
+          if (n < 1024) return n + 'B';
+          if (n < 1024 * 1024) return (n / 1024).toFixed(1) + 'KiB';
+          if (n < 1024 * 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + 'MiB';
+          return (n / (1024 * 1024 * 1024)).toFixed(2) + 'GiB';
+        }
+
+        function setBar(id, pct) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          var v = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
+          el.setAttribute('lay-percent', v + '%');
+        }
+
+        function refreshMetrics(done) {
+          httpGetJson('/api/metrics', function (err, j) {
+            if (err || !j || !j.available) {
+              var loadEl = document.getElementById('kvLoad');
+              var diskEl = document.getElementById('kvDisk');
+              if (loadEl) loadEl.textContent = '--';
+              if (diskEl) diskEl.textContent = 'host_monitor offline';
+              setBar('barCpu', 0);
+              setBar('barMem', 0);
+              setBar('barDisk', 0);
+              if (element && typeof element.render === 'function') {
+                element.render('progress');
+              }
+              if (err) {
+                log('metrics fetch failed: ' + (err && err.message ? err.message : err));
+              } else {
+                log('metrics unavailable (start host_monitor)');
+              }
+              if (done) done(err || null);
+              return;
+            }
+
+            var cpu = Number(j.cpu_percent) || 0;
+            var mem = Number(j.memory_percent) || 0;
+            setBar('barCpu', cpu);
+            setBar('barMem', mem);
+
+            var loadEl = document.getElementById('kvLoad');
+            if (loadEl) {
+              loadEl.textContent =
+                (Number(j.load1) || 0).toFixed(2) + ' / ' +
+                (Number(j.load5) || 0).toFixed(2) + ' / ' +
+                (Number(j.load15) || 0).toFixed(2);
+            }
+
+            var rootDisk = null;
+            var disks = j.disks || [];
+            for (var i = 0; i < disks.length; i++) {
+              if (disks[i].mount === '/') {
+                rootDisk = disks[i];
+                break;
+              }
+            }
+            if (!rootDisk && disks.length) rootDisk = disks[0];
+            var diskPct = rootDisk ? (Number(rootDisk.percent) || 0) : 0;
+            setBar('barDisk', diskPct);
+            var diskEl = document.getElementById('kvDisk');
+            if (diskEl) {
+              if (rootDisk) {
+                diskEl.textContent =
+                  (rootDisk.mount || '/') + ' ' +
+                  fmtBytes(rootDisk.used_bytes) + ' / ' + fmtBytes(rootDisk.total_bytes) +
+                  ' (' + Math.round(diskPct) + '%)';
+              } else {
+                diskEl.textContent = '--';
+              }
+            }
+
+            if (j.memory_total_bytes) {
+              document.getElementById('kvMem').textContent =
+                fmtBytes(j.memory_used_bytes) + ' / ' + fmtBytes(j.memory_total_bytes) +
+                ' (' + Math.round(mem) + '%)';
+            }
+
+            if (element && typeof element.render === 'function') {
+              element.render('progress');
+            }
+            log('metrics cpu=' + Math.round(cpu) + '% mem=' + Math.round(mem) + '% disk=' + Math.round(diskPct) + '%');
+            if (done) done(null);
+          });
         }
 
         function refreshLogCenter(done) {
@@ -566,10 +650,10 @@
         function refresh() {
           var path = location.pathname.replace(/\/[^\/]*$/, '/') || '/';
           document.getElementById('kvWebRoot').textContent = path + (location.hash || '');
-          document.getElementById('kvHttp').textContent = location.host || '0.0.0.0:8000';
+          document.getElementById('kvHttp').textContent = location.host || '0.0.0.0:18080';
           refreshSystem(function () {
             renderModules();
-            refreshMockMeters();
+            refreshMetrics();
           });
         }
 
