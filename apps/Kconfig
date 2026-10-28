@@ -48,9 +48,10 @@ config OPENEMBER_AGRI_STATION_GUI
     default y
     depends on OPENEMBER_APP_AGRI_STATION_DEMO
     help
-      Link agri_station_app against system Qt6/Qt5 Widgets for an on-device
-      field console (not web). Install qt6-base-dev or qtbase5-dev. Use
-      --no-gui / --headless when no display is available. Qt is NOT fetched
-      into third_party/.
+      Link agri_station_app against system Qt6/Qt5 Widgets+Charts for an
+      on-device field console with nav bar and chart cards (not web). Install
+      qt6-base-dev and qt6-charts-dev (or Qt5 equivalents). Use --no-gui /
+      --headless when no display is available. Qt is NOT fetched into
+      third_party/.
 
 endmenu

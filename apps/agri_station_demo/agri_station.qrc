@@ -1,0 +1,6 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/agri">
+        <file>assets/agri_station_logo.png</file>
+    </qresource>
+</RCC>

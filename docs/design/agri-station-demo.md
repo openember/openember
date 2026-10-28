@@ -36,7 +36,7 @@ launch_manager (router + 监督)
   ├── web_console / host_monitor（可选运维面，与现场 Qt 台不同职责）
 ```
 
-现场 UI 约定：界面做进 `agri_station_app`，不另起 `handheld_console`；依赖 **系统 Qt6/Qt5 Widgets**（`find_package`，如 `qt6-base-dev`），由 `OPENEMBER_AGRI_STATION_GUI` 控制是否编译 GUI。
+现场 UI 约定：界面做进 `agri_station_app`，不另起 `handheld_console`；依赖 **系统 Qt6/Qt5 Widgets + Charts**（`find_package`，如 `qt6-base-dev`、`qt6-charts-dev`），由 `OPENEMBER_AGRI_STATION_GUI` 控制是否编译 GUI。布局参考工业现场台：顶栏 HOME/DASHBOARD/ALARMS/REPORTS + 浅灰底白卡片曲线/柱状图。
 
 | 架构要点 | 在本 Demo 中的体现 |
 |----------|-------------------|
