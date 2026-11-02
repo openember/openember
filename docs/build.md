@@ -96,7 +96,18 @@ make all BUILD_DIR=build-dev JOBS=16
 
 - 若 `build/.config` 不存在：自动以非交互默认配置生成，并执行 `genconfig`
 - 若 `build/config.cmake` 不存在：自动执行 `genconfig`
-- 然后自动执行 `cmake -S . -B build` + `cmake --build build -j$(nproc)`
+- 然后自动执行 `cmake -S . -B build` + `cmake --build build -j<jobs>`
+
+`build` / `all` 的默认并行度为 `min(8, max(1, floor(可用逻辑 CPU 数 / 2)))`。
+例如 4 / 8 / 32 个逻辑 CPU 分别使用 2 / 4 / 8 个任务。可通过 `-j N`、
+`-jN`、`--jobs N` 或 `--jobs=N` 覆盖，优先级为：命令行 > `OPENEMBER_JOBS` >
+默认值。显式设置可以超过默认的 8；零、负数及非整数会在配置/构建前报错。
+
+CLI 同时向子进程传递 `CMAKE_BUILD_PARALLEL_LEVEL` 和 `CARGO_BUILD_JOBS`，
+让嵌套 CMake 和 Zenoh/Cargo 构建也使用受限并行度；如果显式设置了
+`CARGO_BUILD_JOBS`，则尊重该 Cargo 专用值。执行时会打印最终任务数。
+这些是各构建工具的并行任务限制，不是进程树总线程数或 CPU 使用率的硬配额。
+并行度属于开发机器设置，不写入 Kconfig 或产品 defconfig。
 
 可选：
 
@@ -104,8 +115,15 @@ make all BUILD_DIR=build-dev JOBS=16
 # 指定构建目录
 ./scripts/ember build build-dev
 
+# 临时限制为 4 个任务（all 同样支持）
+./scripts/ember build -j 4
+./scripts/ember all --jobs=4
+
 # 环境变量控制
 OPENEMBER_BUILD_DIR=build-dev OPENEMBER_JOBS=16 ./scripts/ember build
+
+# 必要时单独降低 Rust/Cargo 并行度
+CARGO_BUILD_JOBS=2 ./scripts/ember build -j 4
 
 # 安装到当前用户（推荐，默认）
 ./scripts/ember install

@@ -24,7 +24,7 @@ target_include_directories(openember_core
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
-        ${CMAKE_BINARY_DIR}/include
+        ${OPENEMBER_BINARY_DIR}/include
 )
 
 target_compile_features(openember_core

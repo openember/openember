@@ -60,7 +60,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT CMAKE_CROSSCOMPILING)
                 hardware --hardware $<TARGET_FILE:openember_hardware_interface>
                 --listener $<TARGET_FILE:openember_hardware_mock_listener>
                 --sender $<TARGET_FILE:openember_joint_command_sender>
-                --source ${CMAKE_SOURCE_DIR})
+                --source ${OPENEMBER_SOURCE_DIR})
         set_tests_properties(regression_hardware PROPERTIES
             LABELS "regression;integration" TIMEOUT 60 RESOURCE_LOCK openember_local_router)
     endif()

@@ -1,6 +1,6 @@
 # Standalone Asio（header-only）
 
-include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_prepare_asio_source out_var)
     if(OPENEMBER_ASIO_LOCAL_SOURCE)

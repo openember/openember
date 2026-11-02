@@ -1,6 +1,6 @@
 # cppzmq（头文件为主）
 
-include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_prepare_cppzmq_source out_var)
     if(OPENEMBER_CPPZMQ_LOCAL_SOURCE)

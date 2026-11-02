@@ -1,7 +1,7 @@
 menu "Examples"
 
 config OPENEMBER_ENABLE_EXAMPLES
-    bool
+    bool "Build framework examples"
     default y
 
 config OPENEMBER_EXAMPLE_HELLO_NODE
@@ -127,7 +127,8 @@ config OPENEMBER_MQTT_EMQX_SSL_VERIFY
 endif
 
 menu "references"
-source "../examples/references/Kconfig"
+# Paths are relative to the Kconfig srctree (OpenEmber origin root), not this file.
+source "$OPENEMBER_KCONFIG_FRAMEWORK/examples/references/Kconfig"
 endmenu
 
 endmenu

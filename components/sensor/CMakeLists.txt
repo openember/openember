@@ -10,7 +10,7 @@ OPENEMBER_ADD_STATIC_LIBRARY(TARGET ${PROJECT_NAME}
     SRCS     ${OPENEMBER_SENSOR_SRCS}
     LIBS     ${OPENEMBER_EXTERNAL_LIBRARIES} openember_hardware
     INCLUDES ${OPENEMBER_INCLUDE_DIRS}
-             ${CMAKE_SOURCE_DIR}/components/hardware/include
+             ${OPENEMBER_SOURCE_DIR}/components/hardware/include
              ${CMAKE_CURRENT_SOURCE_DIR}/include
     DESTINATION lib
 )

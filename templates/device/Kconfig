@@ -1,0 +1,2 @@
+mainmenu "__PRODUCT_NAME__ Configuration"
+source "kconfig/workspace.Kconfig"

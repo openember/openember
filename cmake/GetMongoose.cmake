@@ -1,6 +1,6 @@
 # Mongoose（cesanta/mongoose）：单文件 mongoose.c 静态库
 
-include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_prepare_mongoose_source out_var)
     if(OPENEMBER_MONGOOSE_LOCAL_SOURCE)

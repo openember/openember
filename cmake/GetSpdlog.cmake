@@ -1,6 +1,6 @@
 # spdlog
 
-include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_prepare_spdlog_source out_var)
     if(OPENEMBER_SPDLOG_LOCAL_SOURCE)

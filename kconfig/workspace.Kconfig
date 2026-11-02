@@ -1,0 +1,40 @@
+# Source this shared menu from a product's Kconfig. Paths are bound by
+# scripts/kconfig/menuconfig.sh, including optional kconfig/<group>.Kconfig.
+comment "Use ember <command> --product <model> to select another model"
+    depends on PRODUCT_MODEL != ""
+
+source "$OPENEMBER_KCONFIG_FRAMEWORK/kconfig/build.Kconfig"
+
+menu "Applications"
+source "$OPENEMBER_KCONFIG_APPLICATIONS"
+source "$OPENEMBER_KCONFIG_FRAMEWORK/apps/Kconfig"
+endmenu
+
+source "$OPENEMBER_KCONFIG_FRAMEWORK/communication/Kconfig"
+
+menu "Hardware"
+source "$OPENEMBER_KCONFIG_FRAMEWORK/kconfig/hardware.Kconfig"
+source "$OPENEMBER_KCONFIG_FRAMEWORK/platform/Kconfig"
+source "$OPENEMBER_KCONFIG_FRAMEWORK/services/hardware_interface/Kconfig"
+source "$OPENEMBER_KCONFIG_HARDWARE"
+endmenu
+
+menu "System Services"
+source "$OPENEMBER_KCONFIG_FRAMEWORK/system/Kconfig"
+source "$OPENEMBER_KCONFIG_FRAMEWORK/services/Kconfig"
+endmenu
+
+menu "Libraries / Components"
+source "$OPENEMBER_KCONFIG_FRAMEWORK/core/Kconfig"
+source "$OPENEMBER_KCONFIG_FRAMEWORK/components/Kconfig"
+endmenu
+
+menu "Examples / Tests"
+source "$OPENEMBER_KCONFIG_FRAMEWORK/examples/Kconfig"
+source "$OPENEMBER_KCONFIG_FRAMEWORK/test/Kconfig"
+endmenu
+
+menu "Advanced"
+source "$OPENEMBER_KCONFIG_FRAMEWORK/tools/Kconfig"
+source "$OPENEMBER_KCONFIG_FRAMEWORK/third_party/Kconfig"
+endmenu

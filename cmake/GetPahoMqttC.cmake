@@ -2,7 +2,7 @@
 #
 # 不再使用 FetchContent 工程名（避免出现 openember_* 与上游不一致的 -src 目录名）。
 
-include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_prepare_paho_mqtt_c_source out_var)
     if(PAHO_MQTT_C_LOCAL_SOURCE)

@@ -1,6 +1,6 @@
 # yaml-cpp
 
-include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_prepare_yaml_cpp_source out_var)
     if(OPENEMBER_YAMLCPP_LOCAL_SOURCE)

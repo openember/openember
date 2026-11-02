@@ -16,7 +16,7 @@ OPENEMBER_ADD_STATIC_LIBRARY(TARGET ${PROJECT_NAME}
              ${OPENEMBER_INTERNAL_INCLUDE_DIRS}
              ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_SOURCE_DIR}/include
-             ${CMAKE_SOURCE_DIR}/components/transport/include
+             ${OPENEMBER_SOURCE_DIR}/components/transport/include
     DESTINATION lib
 )
 

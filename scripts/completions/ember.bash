@@ -9,11 +9,24 @@ _ember_complete() {
   words=("${COMP_WORDS[@]}")
   cword="${COMP_CWORD}"
 
-  local commands="add del list use current menuconfig genconfig update configure build all clean completion install uninstall help -h --help"
+  local commands="new add del list use current menuconfig genconfig defconfig update configure build all clean run completion install uninstall help -h --help"
 
   # First positional arg: subcommand.
   if [[ "${cword}" -eq 1 ]]; then
     COMPREPLY=( $(compgen -W "${commands}" -- "${cur}") )
+    return 0
+  fi
+
+  # new <name> [--path|--model|--openember ...]
+  if [[ "${words[1]}" == "new" ]]; then
+    if [[ "${prev}" == "--path" || "${prev}" == "--openember" ]]; then
+      COMPREPLY=( $(compgen -d -- "${cur}") )
+      return 0
+    fi
+    if [[ "${cur}" == --* ]]; then
+      COMPREPLY=( $(compgen -W "--path --model --openember --no-symlink --force --help" -- "${cur}") )
+      return 0
+    fi
     return 0
   fi
 
@@ -67,10 +80,36 @@ _ember_complete() {
     fi
   fi
 
-  # For commands that accept build_dir, complete as directory paths.
+  # Product model names belong to the current workspace, not the CLI checkout.
+  if [[ "${words[1]}" == build || "${words[1]}" == all ]]; then
+    if [[ "${prev}" == -j || "${prev}" == --jobs ]]; then
+      COMPREPLY=( $(compgen -W "1 2 4 8 16 32" -- "${cur}") )
+      return 0
+    fi
+  fi
   case "${words[1]}" in
-    menuconfig|genconfig|update|configure|build|all|clean)
-      COMPREPLY=( $(compgen -d -- "${cur}") )
+    menuconfig|genconfig|defconfig|update|configure|build|all|clean|run)
+      if [[ "${prev}" == --product ]]; then
+        local root="${OPENEMBER_ROOT:-${PWD}}" model models=""
+        while [[ "${root}" != / && ! -d "${root}/products" ]]; do
+          root="$(dirname "${root}")"
+        done
+        for model in "${root}"/products/*/product.defconfig; do
+          [[ -f "${model}" ]] || continue
+          model="${model%/product.defconfig}"
+          models+=" ${model##*/}"
+        done
+        COMPREPLY=( $(compgen -W "${models}" -- "${cur}") )
+      elif [[ "${cur}" == -* ]]; then
+        local options="--product --build-dir"
+        [[ "${words[1]}" != run ]] || options+=" --dry-run"
+        if [[ "${words[1]}" == build || "${words[1]}" == all ]]; then
+          options+=" -j --jobs"
+        fi
+        COMPREPLY=( $(compgen -W "${options}" -- "${cur}") )
+      else
+        COMPREPLY=( $(compgen -d -- "${cur}") )
+      fi
       ;;
   esac
 }

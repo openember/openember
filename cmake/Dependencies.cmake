@@ -12,7 +12,7 @@ set_property(CACHE OPENEMBER_THIRD_PARTY_MODE PROPERTY STRINGS FETCH VENDOR SYST
 # -----------------------------
 # Version pins (可按需升级)
 # -----------------------------
-include(${CMAKE_SOURCE_DIR}/cmake/GetPahoMqttC.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetPahoMqttC.cmake)
 
 # SQLite amalgamation（单文件 sqlite3.c 发布包）
 # 官方合并包在 sqlite.org；GitHub sqlite/sqlite 的 tag 归档是完整源码树，不含根目录 amalgamation。
@@ -23,7 +23,7 @@ set(OPENEMBER_SQLITE_AMALGAMATION_NUM "3510300")
 set(OPENEMBER_SQLITE_URL
     "https://www.sqlite.org/2026/sqlite-amalgamation-${OPENEMBER_SQLITE_AMALGAMATION_NUM}.zip")
 
-include(${CMAKE_SOURCE_DIR}/cmake/GetSqlite.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetSqlite.cmake)
 
 # nlohmann/json、yaml-cpp、spdlog、Asio（版本唯一来源）
 set(OPENEMBER_NLOHMANN_JSON_VERSION "3.11.3" CACHE STRING "nlohmann/json version")
@@ -78,13 +78,13 @@ set(OPENEMBER_ZENOHCXX_URL
 set(OPENEMBER_ZENOHC_CARGO_CHANNEL "" CACHE STRING
     "Override zenoh-c Cargo channel (e.g. +stable, +1.97.1). Empty = auto from rust-toolchain.toml")
 
-include(${CMAKE_SOURCE_DIR}/cmake/GetLibzmq.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetNng.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetLcm.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetCppZmq.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetZenohC.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetZenohCpp.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetOpenEmberMsgs.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetLibzmq.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetNng.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetLcm.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetCppZmq.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetZenohC.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetZenohCpp.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetOpenEmberMsgs.cmake)
 
 # Eclipse Paho MQTT C（components/mqtt/mqtt_client.cpp 直接使用 MQTTClient.h）。
 set(OPENEMBER_PAHO_MQTT_C_VERSION "1.3.16")
@@ -162,12 +162,12 @@ set(OPENEMBER_ZENOHCXX_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted zenoh
 set(OPENEMBER_RUCKIG_LOCAL_SOURCE "" CACHE PATH "Optional: pre-extracted ruckig tree")
 set(OPENEMBER_MSGS_LOCAL_SOURCE "" CACHE PATH "Absolute path to local openember-msgs checkout")
 
-include(${CMAKE_SOURCE_DIR}/cmake/GetNlohmannJson.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetYamlCpp.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetAsio.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetSpdlog.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetMongoose.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/GetRuckig.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetNlohmannJson.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetYamlCpp.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetAsio.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetSpdlog.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetMongoose.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/GetRuckig.cmake)
 
 function(openember_third_party_resolve_nlohmann_json)
     if(OPENEMBER_THIRD_PARTY_MODE STREQUAL "SYSTEM")

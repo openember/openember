@@ -1,0 +1,6 @@
+comment "Application requires Communication: Link and Messages"
+    depends on !OPENEMBER_ENABLE_LINK || !OPENEMBER_ENABLE_MSGS
+config PRODUCT_BUILD_APP
+    bool "Build __PRODUCT_NAME__ application"
+    default y
+    depends on OPENEMBER_ENABLE_LINK && OPENEMBER_ENABLE_MSGS

@@ -4,7 +4,7 @@
 # （例如 GitHub paho.mqtt.c 的 v1.3.16 归档解压为 paho.mqtt.c-1.3.16/）。
 
 if(NOT DEFINED OPENEMBER_THIRD_PARTY_CACHE_DIR)
-    set(OPENEMBER_THIRD_PARTY_CACHE_DIR "${CMAKE_SOURCE_DIR}/third_party" CACHE PATH
+    set(OPENEMBER_THIRD_PARTY_CACHE_DIR "${OPENEMBER_SOURCE_DIR}/third_party" CACHE PATH
         "Offline archive directory: place <package>-<version>.tar.gz|.zip here; FETCH downloads into this directory first.")
 endif()
 

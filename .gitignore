@@ -1,4 +1,6 @@
 build*
+!kconfig/build.Kconfig
+!templates/device/scripts/build.sh
 debug
 release
 

@@ -14,7 +14,7 @@ OPENEMBER_ADD_EXECUTABLE(TARGET ${PROJECT_NAME}
     SRCS     ${LAUNCH_MANAGER_SRCS}
     LIBS     ${OPENEMBER_LIBRARIES} openember_core yaml-cpp::yaml-cpp
     INCLUDES ${OPENEMBER_INCLUDE_DIRS}
-             ${CMAKE_SOURCE_DIR}/core/include
+             ${OPENEMBER_SOURCE_DIR}/core/include
     DESTINATION bin
 )
 

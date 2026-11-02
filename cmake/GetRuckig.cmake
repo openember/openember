@@ -2,7 +2,7 @@
 # https://github.com/pantor/ruckig
 # 上游要求 CMake ≥3.15、库目标使用 C++20。
 
-include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_prepare_ruckig_source out_var)
     if(OPENEMBER_RUCKIG_LOCAL_SOURCE)

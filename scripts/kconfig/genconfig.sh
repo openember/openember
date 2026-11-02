@@ -62,7 +62,10 @@ onoff() {
 
 has_symbol() {
   local sym="$1"
-  grep -Eq "^${sym}=|^# ${sym} is not set$" "${CONFIG_FILE}"
+  # A resolved Kconfig can omit disabled/invisible booleans entirely. Only
+  # legacy, unparsed fragments should receive the old missing-symbol defaults.
+  grep -q '^CONFIG_OPENEMBER_KCONFIG_RESOLVED=y$' "${CONFIG_FILE}" ||
+    grep -Eq "^${sym}=|^# ${sym} is not set$" "${CONFIG_FILE}"
 }
 
 tests_enabled="$(onoff CONFIG_OPENEMBER_ENABLE_TESTS)"
@@ -72,15 +75,15 @@ debug_enabled="$(onoff CONFIG_OPENEMBER_DEBUG_ENABLED)"
 opt_disabled="$(onoff CONFIG_OPENEMBER_OPTIMIZATION_DISABLED)"
 crosscompile_enabled="$(onoff CONFIG_OPENEMBER_CROSSCOMPILE_ENABLED)"
 use_yamlcpp="$(onoff CONFIG_OPENEMBER_USE_YAMLCPP)"
-if ! grep -q "^CONFIG_OPENEMBER_USE_YAMLCPP=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_USE_YAMLCPP; then
   use_yamlcpp=ON
 fi
 enable_link="$(onoff CONFIG_OPENEMBER_ENABLE_LINK)"
-if ! grep -q "^CONFIG_OPENEMBER_ENABLE_LINK=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_ENABLE_LINK; then
   enable_link=ON
 fi
 enable_msgs="$(onoff CONFIG_OPENEMBER_ENABLE_MSGS)"
-if ! grep -q "^CONFIG_OPENEMBER_ENABLE_MSGS=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_ENABLE_MSGS; then
   enable_msgs=ON
 fi
 msgs_ref="$(awk '
@@ -105,27 +108,27 @@ msgs_local_source="$(awk '
 ' "${CONFIG_FILE}")"
 use_asio="$(onoff CONFIG_OPENEMBER_USE_ASIO)"
 use_ruckig="$(onoff CONFIG_OPENEMBER_USE_RUCKIG)"
-if ! grep -q "^CONFIG_OPENEMBER_USE_RUCKIG=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_USE_RUCKIG; then
   use_ruckig=OFF
 fi
 component_network="$(onoff CONFIG_OPENEMBER_COMPONENT_NETWORK)"
 component_transport="$(onoff CONFIG_OPENEMBER_COMPONENT_TRANSPORT)"
-if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_TRANSPORT=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_COMPONENT_TRANSPORT; then
   component_transport=ON
 fi
 if [[ "${component_transport}" == "OFF" ]]; then
   enable_link=OFF
 fi
 component_mqtt="$(onoff CONFIG_OPENEMBER_COMPONENT_MQTT)"
-if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_MQTT=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_COMPONENT_MQTT; then
   component_mqtt=ON
 fi
 mqtt_paho_tls="$(onoff CONFIG_OPENEMBER_MQTT_PAHO_TLS)"
-if ! grep -q "^CONFIG_OPENEMBER_MQTT_PAHO_TLS=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_MQTT_PAHO_TLS; then
   mqtt_paho_tls=ON
 fi
 mqtt_paho_async="$(onoff CONFIG_OPENEMBER_MQTT_PAHO_ASYNC)"
-if ! grep -q "^CONFIG_OPENEMBER_MQTT_PAHO_ASYNC=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_MQTT_PAHO_ASYNC; then
   mqtt_paho_async=OFF
 fi
 system_launch_manager="$(onoff CONFIG_OPENEMBER_SYSTEM_LAUNCH_MANAGER)"
@@ -138,21 +141,6 @@ app_smart_device_demo="$(onoff CONFIG_OPENEMBER_APP_SMART_DEVICE_DEMO)"
 app_turtle_demo="$(onoff CONFIG_OPENEMBER_APP_TURTLE_DEMO)"
 if ! has_symbol CONFIG_OPENEMBER_APP_TURTLE_DEMO; then
   app_turtle_demo=ON
-fi
-app_rover_demo="$(onoff CONFIG_OPENEMBER_APP_ROVER_DEMO)"
-if ! has_symbol CONFIG_OPENEMBER_APP_ROVER_DEMO; then
-  app_rover_demo=ON
-fi
-app_agri_station_demo="$(onoff CONFIG_OPENEMBER_APP_AGRI_STATION_DEMO)"
-if ! has_symbol CONFIG_OPENEMBER_APP_AGRI_STATION_DEMO; then
-  app_agri_station_demo=ON
-fi
-app_agri_station_gui="$(onoff CONFIG_OPENEMBER_AGRI_STATION_GUI)"
-if ! has_symbol CONFIG_OPENEMBER_AGRI_STATION_GUI; then
-  app_agri_station_gui=ON
-fi
-if [ "${app_agri_station_demo}" != "ON" ]; then
-  app_agri_station_gui=OFF
 fi
 service_ota_update="$(onoff CONFIG_OPENEMBER_SERVICE_OTA_AGENT)"
 reference_sensor_data="$(onoff CONFIG_OPENEMBER_REFERENCE_SENSOR_DATA)"
@@ -167,7 +155,7 @@ if ! has_symbol CONFIG_OPENEMBER_SERVICE_HARDWARE_INTERFACE; then
   service_hardware_interface=ON
 fi
 component_algorithm="$(onoff CONFIG_OPENEMBER_COMPONENT_ALGORITHM)"
-if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_ALGORITHM=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_COMPONENT_ALGORITHM; then
   component_algorithm=ON
 fi
 component_hardware="$(onoff CONFIG_OPENEMBER_COMPONENT_HARDWARE)"
@@ -199,12 +187,12 @@ if ! has_symbol CONFIG_OPENEMBER_HARDWARE_ENDPOINT_JOINT_CONTROLLER; then
   hardware_endpoint_joint_controller=OFF
 fi
 component_thread_pool="$(onoff CONFIG_OPENEMBER_COMPONENT_THREAD_POOL)"
-if ! grep -q "^CONFIG_OPENEMBER_COMPONENT_THREAD_POOL=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_COMPONENT_THREAD_POOL; then
   component_thread_pool=ON
 fi
 example_network_sockets="$(onoff CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS)"
 example_transport="$(onoff CONFIG_OPENEMBER_EXAMPLE_TRANSPORT)"
-if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_TRANSPORT=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_EXAMPLE_TRANSPORT; then
   example_transport=ON
 fi
 # Core 与 Link 绑定：Link 开启时构建 openember::core
@@ -214,7 +202,7 @@ else
   enable_core=OFF
 fi
 example_core="$(onoff CONFIG_OPENEMBER_EXAMPLE_CORE)"
-if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_CORE=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_EXAMPLE_CORE; then
   example_core=ON
 fi
 if [[ "${enable_link}" == "OFF" ]] || [[ "${examples_enabled}" == "OFF" ]]; then
@@ -247,7 +235,7 @@ fi
 if [[ "${component_actuator}" == "OFF" ]] || [[ "${service_hardware_interface}" == "OFF" ]]; then
   hardware_endpoint_joint_controller=OFF
 fi
-if ! grep -q "^CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_EXAMPLE_NETWORK_SOCKETS; then
   example_network_sockets=ON
 fi
 
@@ -257,32 +245,32 @@ if [[ "${component_mqtt}" == "OFF" ]]; then
 fi
 
 enable_osal="$(onoff CONFIG_OPENEMBER_ENABLE_OSAL)"
-if ! grep -q "^CONFIG_OPENEMBER_ENABLE_OSAL=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_ENABLE_OSAL; then
   enable_osal=ON
 fi
 
 enable_lpio="$(onoff CONFIG_OPENEMBER_ENABLE_LPIO)"
-if ! grep -q "^CONFIG_OPENEMBER_ENABLE_LPIO=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_ENABLE_LPIO; then
   enable_lpio=ON
 fi
 
 enable_lpio_examples="$(onoff CONFIG_OPENEMBER_ENABLE_LPIO_EXAMPLES)"
-if ! grep -q "^CONFIG_OPENEMBER_ENABLE_LPIO_EXAMPLES=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_ENABLE_LPIO_EXAMPLES; then
   enable_lpio_examples=OFF
 fi
 
 enable_tools="$(onoff CONFIG_OPENEMBER_ENABLE_TOOLS)"
-if ! grep -q "^CONFIG_OPENEMBER_ENABLE_TOOLS=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_ENABLE_TOOLS; then
   enable_tools=ON
 fi
 
 enable_tools_emcom="$(onoff CONFIG_OPENEMBER_ENABLE_TOOLS_EMCOM)"
-if ! grep -q "^CONFIG_OPENEMBER_ENABLE_TOOLS_EMCOM=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_ENABLE_TOOLS_EMCOM; then
   enable_tools_emcom=ON
 fi
 
 enable_tools_sbus_receiver="$(onoff CONFIG_OPENEMBER_ENABLE_TOOLS_SBUS_RECEIVER)"
-if ! grep -q "^CONFIG_OPENEMBER_ENABLE_TOOLS_SBUS_RECEIVER=" "${CONFIG_FILE}"; then
+if ! has_symbol CONFIG_OPENEMBER_ENABLE_TOOLS_SBUS_RECEIVER; then
   enable_tools_sbus_receiver=ON
 fi
 
@@ -702,9 +690,6 @@ set(OPENEMBER_SYSTEM_CONFIG_SERVICE ${system_config_service} CACHE BOOL "Build s
 set(OPENEMBER_SYSTEM_HEALTH_MONITOR ${system_health_monitor} CACHE BOOL "Build system/health_monitor" FORCE)
 set(OPENEMBER_APP_SMART_DEVICE_DEMO ${app_smart_device_demo} CACHE BOOL "Build apps/smart_device_demo" FORCE)
 set(OPENEMBER_APP_TURTLE_DEMO ${app_turtle_demo} CACHE BOOL "Build apps/turtle_demo" FORCE)
-set(OPENEMBER_APP_ROVER_DEMO ${app_rover_demo} CACHE BOOL "Build apps/rover_demo" FORCE)
-set(OPENEMBER_APP_AGRI_STATION_DEMO ${app_agri_station_demo} CACHE BOOL "Build apps/agri_station_demo" FORCE)
-set(OPENEMBER_AGRI_STATION_GUI ${app_agri_station_gui} CACHE BOOL "Build agri_station_app Qt field console" FORCE)
 set(OPENEMBER_SERVICE_OTA_AGENT ${service_ota_update} CACHE BOOL "Build services/ota_agent" FORCE)
 set(OPENEMBER_REFERENCE_SENSOR_DATA ${reference_sensor_data} CACHE BOOL "Build examples/references/sensor_data_reference" FORCE)
 set(OPENEMBER_SERVICE_WEB_CONSOLE ${service_web_console} CACHE BOOL "Build services/web_console" FORCE)
@@ -756,5 +741,50 @@ set(OPENEMBER_THIRD_PARTY_BUNDLE_ZENOHCXX ${bundle_zenohcxx} CACHE BOOL "Third-p
 set(OPENEMBER_THIRD_PARTY_BUNDLE_RUCKIG ${bundle_ruckig} CACHE BOOL "Third-party bundle: ruckig" FORCE)
 set(OPENEMBER_THIRD_PARTY_BUNDLE_OPENEMBER_MSGS ${bundle_openember_msgs} CACHE BOOL "Third-party bundle: openember-msgs" FORCE)
 EOF
+
+# Product workspaces may add arbitrary CONFIG_PRODUCT_* symbols. Export them
+# generically so product CMake can consume its own Kconfig without teaching the
+# framework generator every product-specific option.
+cat >> "${out_cmake}" <<'EOF'
+# PRODUCT_* is owned by Kconfig. Clear stale cache entries first, since
+# dependency-disabled symbols may be absent from the resolved .config.
+get_cmake_property(_openember_cached_variables CACHE_VARIABLES)
+foreach(_openember_variable IN LISTS _openember_cached_variables)
+    if(_openember_variable MATCHES "^PRODUCT_")
+        unset(${_openember_variable} CACHE)
+    endif()
+endforeach()
+unset(_openember_cached_variables)
+unset(_openember_variable)
+EOF
+awk '
+  /^CONFIG_PRODUCT_[A-Za-z0-9_]+=y$/ {
+    split($0, p, "=")
+    sub(/^CONFIG_/, "", p[1])
+    printf "set(%s ON CACHE BOOL \"Product Kconfig option\" FORCE)\n", p[1]
+    next
+  }
+  /^CONFIG_PRODUCT_[A-Za-z0-9_]+=n$/ {
+    split($0, p, "=")
+    sub(/^CONFIG_/, "", p[1])
+    printf "set(%s OFF CACHE BOOL \"Product Kconfig option\" FORCE)\n", p[1]
+    next
+  }
+  /^# CONFIG_PRODUCT_[A-Za-z0-9_]+ is not set$/ {
+    name=$0
+    sub(/^# CONFIG_/, "", name)
+    sub(/ is not set$/, "", name)
+    printf "set(%s OFF CACHE BOOL \"Product Kconfig option\" FORCE)\n", name
+    next
+  }
+  /^CONFIG_PRODUCT_[A-Za-z0-9_]+=/ {
+    name=$0
+    sub(/=.*/, "", name)
+    sub(/^CONFIG_/, "", name)
+    value=$0
+    sub(/^[^=]*=/, "", value)
+    printf "set(%s %s CACHE STRING \"Product Kconfig value\" FORCE)\n", name, value
+  }
+' "${CONFIG_FILE}" >> "${out_cmake}"
 
 echo "Generated: ${out_cmake}" >&2

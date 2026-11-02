@@ -36,6 +36,50 @@ ember_current_file() {
   echo "$(ember_env_dir)/current"
 }
 
+# Framework checkout, or product repo with ./openember/{scripts/kconfig/menuconfig.sh,CMakeLists}.
+is_project_root() {
+  local root="$1"
+  [[ -f "${root}/CMakeLists.txt" ]] || return 1
+  [[ -f "${root}/scripts/kconfig/menuconfig.sh" ]] && return 0
+  [[ -f "${root}/openember/scripts/kconfig/menuconfig.sh" ]] && return 0
+  [[ -f "${root}/Kconfig" && -d "${root}/products" &&
+     -n "${OPENEMBER_DIR:-}" && -f "${OPENEMBER_DIR}/scripts/kconfig/menuconfig.sh" ]] && return 0
+  return 1
+}
+
+# Kconfig tooling lives in the framework tree. CMake always configures the
+# selected project root, so a product remains the real top-level project.
+framework_root_of() {
+  local root="$1"
+  if [[ -f "${root}/scripts/kconfig/menuconfig.sh" ]]; then
+    echo "${root}"
+  elif [[ -n "${OPENEMBER_DIR:-}" ]]; then
+    echo "${OPENEMBER_DIR}"
+  elif [[ -f "${root}/openember/scripts/kconfig/menuconfig.sh" ]]; then
+    echo "${root}/openember"
+  else
+    echo "${root}"
+  fi
+}
+
+kconfig_dir_of() {
+  echo "$(framework_root_of "$1")/scripts/kconfig"
+}
+
+# Publish origin/custom for kconfig + cmake helpers.
+# origin = OpenEmber framework tree; custom = product root when distinct.
+export_project_roots() {
+  local root="$1"
+  local fw
+  fw="$(framework_root_of "${root}")"
+  export OPENEMBER_ORIGIN="$(resolve_realpath "${fw}")"
+  if [[ "$(resolve_realpath "${root}")" != "${OPENEMBER_ORIGIN}" ]]; then
+    export OPENEMBER_CUSTOM="$(resolve_realpath "${root}")"
+  else
+    unset OPENEMBER_CUSTOM || true
+  fi
+}
+
 ember_env_add() {
   local name="${1:-}"
   local root="${2:-}"
@@ -44,9 +88,11 @@ ember_env_add() {
     return 1
   fi
   root="$(resolve_realpath "${root}")"
-  if [[ ! -f "${root}/CMakeLists.txt" || ! -f "${root}/scripts/kconfig/menuconfig.sh" ]]; then
+  if ! is_project_root "${root}"; then
     echo "Not a valid project root: ${root}" >&2
-    echo "Expected: ${root}/CMakeLists.txt and ${root}/scripts/kconfig/menuconfig.sh" >&2
+    echo "Expected: ${root}/CMakeLists.txt and either" >&2
+    echo "  ${root}/scripts/kconfig/menuconfig.sh  (framework)" >&2
+    echo "  or ${root}/openember/scripts/kconfig/menuconfig.sh  (product)" >&2
     return 1
   fi
   mkdir -p "$(ember_envs_dir)"
@@ -137,33 +183,38 @@ find_project_root() {
     return 0
   fi
 
-  # 2) run from project root (works for symlinked ember in repo root or /usr/local/bin)
-  if [[ -f "./CMakeLists.txt" && -f "./scripts/kconfig/menuconfig.sh" ]]; then
-    pwd
-    return 0
-  fi
+  # 2) cwd is framework or product root
+  local cursor="$(pwd)"
+  while [[ "${cursor}" != / ]]; do
+    if is_project_root "${cursor}"; then
+      echo "${cursor}"
+      return 0
+    fi
+    cursor="$(dirname "${cursor}")"
+  done
 
-  # 3) derive from script real path
+  # 3) derive from script real path (framework checkout that vendors scripts/ember)
   local self_real script_dir candidate
   self_real="$(resolve_realpath "${BASH_SOURCE[0]}")"
   script_dir="$(cd "$(dirname "${self_real}")" && pwd)"
   candidate="$(cd "${script_dir}/.." && pwd)"
-  if [[ -f "${candidate}/CMakeLists.txt" && -f "${candidate}/scripts/kconfig/menuconfig.sh" ]]; then
+  if is_project_root "${candidate}"; then
     echo "${candidate}"
     return 0
   fi
 
   # 4) use current env (nvm-like)
   if root_from_env="$(ember_env_current_root 2>/dev/null)"; then
-    if [[ -f "${root_from_env}/CMakeLists.txt" && -f "${root_from_env}/scripts/kconfig/menuconfig.sh" ]]; then
+    if is_project_root "${root_from_env}"; then
       echo "${root_from_env}"
       return 0
     fi
   fi
 
   echo "Cannot locate OpenEmber project root." >&2
-  echo "Please run from project root, set OPENEMBER_ROOT=/path/to/project," >&2
-  echo "or register an env and select it: ember add <name> <root>; ember use <name>." >&2
+  echo "Please run from project root (framework, or product with ./openember)," >&2
+  echo "set OPENEMBER_ROOT=/path/to/project," >&2
+  echo "or register an env: ember add <name> <root>; ember use <name>." >&2
   return 1
 }
 
@@ -177,34 +228,40 @@ usage() {
 OpenEmber CLI — Kconfig + CMake helpers
 
 Usage:
+  ember new <name> [--path DIR] [--model NAME] [--openember PATH] [--no-symlink] [--force]
   ember list
   ember use <name>
   ember del <name>
   ember current
   ember add <name> <project_root>
-  ember menuconfig [build_dir]
-  ember genconfig [build_dir]
-  ember update [build_dir]
-  ember build [build_dir]
-  ember all [build_dir]
-  ember clean [build_dir]
+  ember menuconfig [build_dir] [--product MODEL] [--build-dir DIR]
+  ember genconfig [build_dir] [--product MODEL] [--build-dir DIR]
+  ember update [build_dir] [--product MODEL] [--build-dir DIR]
+  ember build [build_dir] [--product MODEL] [--build-dir DIR] [-j N|--jobs N]
+  ember all [build_dir] [--product MODEL] [--build-dir DIR] [-j N|--jobs N]
+  ember clean [build_dir] [--product MODEL] [--build-dir DIR]
+  ember defconfig [--product MODEL]  # reset with .config.pre-defconfig backup
+  ember run [--product MODEL] [--dry-run] [-- launch-manager arguments]
   ember completion bash
   ember install [--prefix <dir>]
   ember uninstall [--prefix <dir>]
   ember help
 
 Commands:
+  new         Scaffold a product project from templates/device (see product-scaffold-and-variants.md)
   add         Register an environment name -> project root (nvm-like)
   list        List registered environments
   use         Select default environment (used when not running inside project root)
   del         Delete a registered environment (also clears current if matched)
   current     Print current environment name
-  menuconfig   Interactive Kconfig UI; writes build/.config, then runs genconfig to refresh build/config.cmake
-  genconfig    Map build/.config → build/config.cmake (CMake cache variables); use alone if .config was edited elsewhere
+  menuconfig   Edit the selected model configuration; subsequent build/run reuse it
+  genconfig    Resolve Kconfig dependencies and refresh the selected config.cmake
   update       Run CMake configure (cmake -S -B): applies config.cmake, may fetch/extract third-party sources
-  build        Ensure .config and config.cmake exist, then update + compile (parallel jobs: OPENEMBER_JOBS)
+  build        Ensure .config and config.cmake exist, then update + compile (-j > OPENEMBER_JOBS > default)
   all          menuconfig + update + build (full interactive flow)
-  clean        Remove the build directory (default: build/)
+  defconfig    Reset selected model to checked-in defaults (backs up .config)
+  run          Launch selected model with its built launch_manager and launch.yaml
+  clean        Remove only the selected, workspace-owned build directory
   completion   Print shell completion script (e.g. "completion bash")
   install      Symlink this script into PATH and optionally register bash completion (~/.bashrc)
   uninstall    Remove ember symlink(s) and completion/PATH blocks from ~/.bashrc
@@ -212,27 +269,20 @@ Commands:
 Legacy alias: "ember configure" is the same as "ember update".
 
 Environment:
-  OPENEMBER_BUILD_DIR   default build dir (default: build)
-  OPENEMBER_JOBS        parallel jobs for build (default: nproc)
-  OPENEMBER_KCONFIG_NONINTERACTIVE=1  generate default .config without TUI (menuconfig)
+  OPENEMBER_ROOT        explicit project root (framework or product)
+  OPENEMBER_ORIGIN      framework tree (set by ember; Kconfig tooling/source)
+  OPENEMBER_CUSTOM      product tree when distinct from origin (set by ember)
+  PRODUCT              model override (same as --product; command-line wins)
+  OPENEMBER_DIR        optional framework checkout for product workspaces
+  OPENEMBER_BUILD_DIR   explicit build dir (default: build/<model>, native: build)
+  OPENEMBER_JOBS        parallel jobs (default: half the logical CPUs, rounded down, min 1 / max 8)
+  CARGO_BUILD_JOBS      optional Cargo override (default: selected build jobs)
+  OPENEMBER_KCONFIG_NONINTERACTIVE=1  resolve .config without TUI (existing edits are preserved) (menuconfig)
 EOF
 }
 
-resolve_build_dir() {
-  local arg="${1:-}"
-  if [[ -n "${arg}" ]]; then
-    echo "${arg}"
-  else
-    echo "${BUILD_DIR}"
-  fi
-}
-
-# After menuconfig exits, refresh build/config.cmake (same as standalone ember genconfig).
-run_menuconfig_and_genconfig() {
-  local bd="$1"
-  bash "${ROOT_DIR}/scripts/kconfig/menuconfig.sh" "${bd}"
-  bash "${ROOT_DIR}/scripts/kconfig/genconfig.sh" "${bd}"
-}
+source "$(cli_root_dir)/scripts/parallel.sh"
+source "$(cli_root_dir)/scripts/project.sh"
 
 upsert_block_in_file() {
   local file="$1"
@@ -385,10 +435,13 @@ parse_prefix_arg() {
 }
 
 cmd="${1:-help}"
-arg_build_dir="${2:-}"
 bd=""
 
 case "${cmd}" in
+  new)
+    # Does not require an existing project root; uses this OpenEmber checkout as template/framework.
+    bash "$(cli_root_dir)/scripts/scaffold/ember-new.sh" "${@:2}"
+    ;;
   list)
     ember_env_list
     ;;
@@ -404,60 +457,38 @@ case "${cmd}" in
   add)
     ember_env_add "${2:-}" "${3:-}"
     ;;
-  menuconfig)
-    ROOT_DIR="$(find_project_root)"
-    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
-    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
-    bd="$(resolve_build_dir "${arg_build_dir}")"
-    run_menuconfig_and_genconfig "${bd}"
-    ;;
-  genconfig)
-    ROOT_DIR="$(find_project_root)"
-    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
-    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
-    bd="$(resolve_build_dir "${arg_build_dir}")"
-    bash "${ROOT_DIR}/scripts/kconfig/genconfig.sh" "${bd}"
-    ;;
-  update|configure)
-    ROOT_DIR="$(find_project_root)"
-    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
-    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
-    bd="$(resolve_build_dir "${arg_build_dir}")"
-    cmake -S "${ROOT_DIR}" -B "${bd}"
-    ;;
-  build)
-    ROOT_DIR="$(find_project_root)"
-    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
-    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
-    bd="$(resolve_build_dir "${arg_build_dir}")"
-    # Auto bootstrap config pipeline if needed.
-    if [[ ! -f "${bd}/.config" ]]; then
-      echo "[ember] ${bd}/.config not found, generating default config..." >&2
-      OPENEMBER_KCONFIG_NONINTERACTIVE=1 bash "${ROOT_DIR}/scripts/kconfig/menuconfig.sh" "${bd}"
-      bash "${ROOT_DIR}/scripts/kconfig/genconfig.sh" "${bd}"
-    fi
-    if [[ ! -f "${bd}/config.cmake" ]]; then
-      echo "[ember] ${bd}/config.cmake not found, generating..." >&2
-      bash "${ROOT_DIR}/scripts/kconfig/genconfig.sh" "${bd}"
-    fi
-    cmake -S "${ROOT_DIR}" -B "${bd}"
-    cmake --build "${bd}" -j"${JOBS}"
-    ;;
-  all)
-    ROOT_DIR="$(find_project_root)"
-    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
-    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
-    bd="$(resolve_build_dir "${arg_build_dir}")"
-    run_menuconfig_and_genconfig "${bd}"
-    cmake -S "${ROOT_DIR}" -B "${bd}"
-    cmake --build "${bd}" -j"${JOBS}"
-    ;;
-  clean)
-    ROOT_DIR="$(find_project_root)"
-    BUILD_DIR="${OPENEMBER_BUILD_DIR:-build}"
-    JOBS="${OPENEMBER_JOBS:-$(nproc)}"
-    bd="$(resolve_build_dir "${arg_build_dir}")"
-    rm -rf "${bd}"
+  menuconfig|genconfig|defconfig|update|configure|build|all|clean|run)
+    select_workspace "${@:2}"
+    case "${cmd}" in
+      menuconfig|all)
+        bash "${OPENEMBER_ORIGIN}/scripts/kconfig/menuconfig.sh" "${bd}"
+        bash "${OPENEMBER_ORIGIN}/scripts/kconfig/genconfig.sh" "${bd}"
+        remember_workspace
+        if [[ "${cmd}" == all ]]; then
+          configure_workspace
+          build_workspace
+        fi
+        ;;
+      genconfig|defconfig|update|configure|build)
+        if [[ "${cmd}" == defconfig ]]; then
+          OPENEMBER_RESET_CONFIG=1 prepare_config
+        else
+          prepare_config
+        fi
+        if [[ "${cmd}" == update || "${cmd}" == configure || "${cmd}" == build ]]; then
+          configure_workspace
+        fi
+        remember_workspace
+        [[ "${cmd}" != build ]] || build_workspace
+        ;;
+      run) run_workspace ;;
+      clean)
+        [[ -f "${bd}/.project-root" ]] ||
+          project_error "Refusing to clean an unowned build directory: ${bd}"
+        rm -rf -- "${bd}"
+        echo "[ember] removed build artifacts: ${bd}"
+        ;;
+    esac
     ;;
   completion)
     shell_name="${2:-bash}"

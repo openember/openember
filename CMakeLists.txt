@@ -1,6 +1,13 @@
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.16)
 
 project(OpenEmber VERSION 1.0.0 LANGUAGES CXX C)
+
+# Stable paths for both a standalone OpenEmber build and an
+# add_subdirectory(openember) product build.  CMAKE_SOURCE_DIR belongs to the
+# consuming product in the latter case and must never be used as the framework
+# source root.
+set(OPENEMBER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(OPENEMBER_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
 set(CMAKE_THREAD_LIBS_INIT "-lpthread")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
@@ -13,21 +20,22 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 ################################################################################
 # Include CMake dependencies
 ################################################################################
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+list(PREPEND CMAKE_MODULE_PATH "${OPENEMBER_SOURCE_DIR}/cmake")
 
 # Include helper macros and commands, and allow the included file to override
 # the CMake policies in this file
-include(${CMAKE_SOURCE_DIR}/cmake/OpenEmberCMakeHelper.cmake NO_POLICY_SCOPE)
+include(${OPENEMBER_SOURCE_DIR}/cmake/OpenEmberCMakeHelper.cmake NO_POLICY_SCOPE)
+include(${OPENEMBER_SOURCE_DIR}/cmake/OpenEmberProduct.cmake)
 
 # Third-party dependency policy (FetchContent / Vendor / System)
-include(${CMAKE_SOURCE_DIR}/cmake/Dependencies.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/Dependencies.cmake)
 
 # Kconfig generated cache/config (optional)
 if(EXISTS "${CMAKE_BINARY_DIR}/config.cmake")
     include("${CMAKE_BINARY_DIR}/config.cmake")
 endif()
 
-include(${CMAKE_SOURCE_DIR}/cmake/OpenEmberThirdPartyBundleDefaults.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/OpenEmberThirdPartyBundleDefaults.cmake)
 
 # nlohmann/json 为唯一 JSON 实现（旧 config.cmake 可能仍关闭该 bundle）
 set(OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON ON CACHE BOOL "Third-party bundle: nlohmann/json" FORCE)
@@ -140,8 +148,8 @@ else()
 endif()
 
 configure_file(
-    ${CMAKE_SOURCE_DIR}/core/inc/ember_log_backend.h.in
-    ${CMAKE_BINARY_DIR}/include/ember_log_backend.h
+    ${OPENEMBER_SOURCE_DIR}/core/inc/ember_log_backend.h.in
+    ${OPENEMBER_BINARY_DIR}/include/ember_log_backend.h
     @ONLY)
 
 ################################################################################
@@ -151,8 +159,8 @@ set(OPENEMBER_JSON_USE_CJSON 0)
 set(OPENEMBER_JSON_USE_NLOHMANN_JSON 1)
 
 configure_file(
-    ${CMAKE_SOURCE_DIR}/core/inc/ember_json_config.h.in
-    ${CMAKE_BINARY_DIR}/include/ember_json_config.h
+    ${OPENEMBER_SOURCE_DIR}/core/inc/ember_json_config.h.in
+    ${OPENEMBER_BINARY_DIR}/include/ember_json_config.h
     @ONLY)
 
 ################################################################################
@@ -245,45 +253,45 @@ set( OPENEMBER_EXTERNAL_LIBRARIES
     ${SQLITE_LIBRARIES} dl
 )
 
-set( OPENEMBER_INTERNAL_INCLUDE_DIRS 
-    ${CMAKE_BINARY_DIR}/include
-    ${CMAKE_SOURCE_DIR}/core/inc
-    ${CMAKE_SOURCE_DIR}/components/logging
-    ${CMAKE_SOURCE_DIR}/components/logging/include
+set( OPENEMBER_INTERNAL_INCLUDE_DIRS
+    ${OPENEMBER_BINARY_DIR}/include
+    ${OPENEMBER_SOURCE_DIR}/core/inc
+    ${OPENEMBER_SOURCE_DIR}/components/logging
+    ${OPENEMBER_SOURCE_DIR}/components/logging/include
 )
 if(OPENEMBER_COMPONENT_MQTT)
-    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/mqtt)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${OPENEMBER_SOURCE_DIR}/components/mqtt)
 endif()
 
-set( OPENEMBER_INTERNAL_LIBRARIES 
+set( OPENEMBER_INTERNAL_LIBRARIES
     logging
 )
 if(NOT DEFINED OPENEMBER_COMPONENT_NETDEV OR OPENEMBER_COMPONENT_NETDEV)
-    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/netdev/include)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${OPENEMBER_SOURCE_DIR}/components/netdev/include)
     list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_netdev)
 endif()
 if(NOT DEFINED OPENEMBER_COMPONENT_THREAD_POOL OR OPENEMBER_COMPONENT_THREAD_POOL)
-    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/thread_pool/include)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${OPENEMBER_SOURCE_DIR}/components/thread_pool/include)
     list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_thread_pool)
 endif()
 if(NOT DEFINED OPENEMBER_COMPONENT_ALGORITHM OR OPENEMBER_COMPONENT_ALGORITHM)
-    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/algorithm/include)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${OPENEMBER_SOURCE_DIR}/components/algorithm/include)
     list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_algorithm)
 endif()
 if(NOT DEFINED OPENEMBER_COMPONENT_HARDWARE OR OPENEMBER_COMPONENT_HARDWARE)
-    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/hardware/include)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${OPENEMBER_SOURCE_DIR}/components/hardware/include)
     list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_hardware)
 endif()
 if(NOT DEFINED OPENEMBER_COMPONENT_SENSOR OR OPENEMBER_COMPONENT_SENSOR)
-    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/sensor/include)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${OPENEMBER_SOURCE_DIR}/components/sensor/include)
     list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_sensor)
 endif()
 if(NOT DEFINED OPENEMBER_COMPONENT_ACTUATOR OR OPENEMBER_COMPONENT_ACTUATOR)
-    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/actuator/include)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${OPENEMBER_SOURCE_DIR}/components/actuator/include)
     list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_actuator)
 endif()
 if(NOT DEFINED OPENEMBER_COMPONENT_TRANSPORT OR OPENEMBER_COMPONENT_TRANSPORT)
-    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/transport/include)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${OPENEMBER_SOURCE_DIR}/components/transport/include)
     list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_transport)
 endif()
 if(OPENEMBER_COMPONENT_MQTT)
@@ -291,7 +299,7 @@ if(OPENEMBER_COMPONENT_MQTT)
 endif()
 
 if(NOT DEFINED OPENEMBER_COMPONENT_NETWORK OR OPENEMBER_COMPONENT_NETWORK)
-    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/components/network)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${OPENEMBER_SOURCE_DIR}/components/network)
     list(APPEND OPENEMBER_INTERNAL_LIBRARIES network)
 endif()
 
@@ -302,15 +310,15 @@ if(OPENEMBER_ENABLE_TOOLS)
 endif()
 
 if(OPENEMBER_ENABLE_OSAL)
-    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/platform/osal/include)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${OPENEMBER_SOURCE_DIR}/platform/osal/include)
     list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_osal)
 endif()
 if(OPENEMBER_ENABLE_LPIO)
-    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/platform/lpio/include)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${OPENEMBER_SOURCE_DIR}/platform/lpio/include)
     list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_lpio)
 endif()
 
-set( OPENEMBER_INCLUDE_DIRS 
+set( OPENEMBER_INCLUDE_DIRS
     ${OPENEMBER_EXTERNAL_INCLUDE_DIRS}
     ${OPENEMBER_INTERNAL_INCLUDE_DIRS}
 )
@@ -324,9 +332,9 @@ add_subdirectory(components)
 add_subdirectory(modules)
 add_subdirectory(core)
 if(OPENEMBER_ENABLE_CORE)
-    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/core/include)
+    list(APPEND OPENEMBER_INTERNAL_INCLUDE_DIRS ${OPENEMBER_SOURCE_DIR}/core/include)
     list(APPEND OPENEMBER_INTERNAL_LIBRARIES openember_core)
-    list(APPEND OPENEMBER_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/core/include)
+    list(APPEND OPENEMBER_INCLUDE_DIRS ${OPENEMBER_SOURCE_DIR}/core/include)
     list(APPEND OPENEMBER_LIBRARIES openember_core)
 endif()
 add_subdirectory(system)
@@ -335,6 +343,22 @@ if(EXAMPLES_ENABLED)
     add_subdirectory(examples)
 endif()
 add_subdirectory(apps)
+
+# Downstream product repos (openember-demo-*, customer apps). Point at the
+# product repository root; that root's CMakeLists.txt should add_subdirectory
+# its own apps/. See docs/design/external-product-repos.md.
+set(OPENEMBER_EXTERNAL_APPS_ROOT "" CACHE PATH
+    "External product repo root to build alongside OpenEmber apps")
+if(OPENEMBER_EXTERNAL_APPS_ROOT)
+    get_filename_component(_oe_ext_apps "${OPENEMBER_EXTERNAL_APPS_ROOT}" ABSOLUTE)
+    if(NOT EXISTS "${_oe_ext_apps}/CMakeLists.txt")
+        message(FATAL_ERROR
+            "OPENEMBER_EXTERNAL_APPS_ROOT=${OPENEMBER_EXTERNAL_APPS_ROOT} "
+            "does not contain CMakeLists.txt")
+    endif()
+    message(STATUS "External product apps: ${_oe_ext_apps}")
+    add_subdirectory("${_oe_ext_apps}" "${CMAKE_BINARY_DIR}/external_apps")
+endif()
 
 #========================================================
 # Tests are opt-in through Kconfig or -DTESTS_ENABLED=ON.

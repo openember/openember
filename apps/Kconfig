@@ -1,4 +1,4 @@
-menu "Product Applications"
+menu "Built-in Applications"
 
 config OPENEMBER_APP_SMART_DEVICE_DEMO
     bool "Build product app: smart_device_demo"
@@ -22,36 +22,10 @@ config OPENEMBER_APP_TURTLE_DEMO
       (install libsdl2-dev; use --no-gui for headless). teleop publishes
       keyboard or --demo motion. See configs/turtle.launch.yaml.
 
-config OPENEMBER_APP_ROVER_DEMO
-    bool "Build product app: rover_demo (diff-drive host sim)"
-    default y
-    depends on OPENEMBER_ENABLE_LINK
-    depends on OPENEMBER_ENABLE_MSGS
-    help
-      Build openember_rover_sim / openember_rover_teleop: differential-drive
-      kinematics with cmd timeout and /rover/estop safety. See
-      configs/rover.launch.yaml and docs/design/rover-demo.md.
-
-config OPENEMBER_APP_AGRI_STATION_DEMO
-    bool "Build product app: agri_station_demo (smart agri mock)"
-    default y
-    depends on OPENEMBER_ENABLE_LINK
-    depends on OPENEMBER_ENABLE_MSGS
-    help
-      Build openember_agri_mock_sensors / openember_agri_station_app: mock
-      climate and soil publishers plus a product app with thresholds and
-      degrade. See configs/agri_station.launch.yaml and
-      docs/design/agri-station-demo.md.
-
-config OPENEMBER_AGRI_STATION_GUI
-    bool "Agri station app: Qt field console UI"
-    default y
-    depends on OPENEMBER_APP_AGRI_STATION_DEMO
-    help
-      Link agri_station_app against system Qt6/Qt5 Widgets+Charts for an
-      on-device field console with nav bar and chart cards (not web). Install
-      qt6-base-dev and qt6-charts-dev (or Qt5 equivalents). Use --no-gui /
-      --headless when no display is available. Qt is NOT fetched into
-      third_party/.
+# Rover / Agri Station product demos live in external repositories:
+#   https://github.com/openember/openember-demo-rover
+#   https://github.com/openember/openember-demo-agri-station
+# Build them from their product workspace with ember build.
+# (see docs/design/external-product-repos.md).
 
 endmenu

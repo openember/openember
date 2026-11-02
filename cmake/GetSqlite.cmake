@@ -1,6 +1,6 @@
 # SQLite amalgamation：third_party/ sqlite-amalgamation-<num>.zip → build/_deps/sqlite-amalgamation-<num>/
 
-include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_prepare_sqlite_source out_var)
     if(OPENEMBER_SQLITE_LOCAL_SOURCE)

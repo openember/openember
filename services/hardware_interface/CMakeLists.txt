@@ -19,9 +19,9 @@ set(HARDWARE_INTERFACE_LIBS
 )
 set(HARDWARE_INTERFACE_INCLUDES
     ${OPENEMBER_INCLUDE_DIRS}
-    ${CMAKE_SOURCE_DIR}/core/include
-    ${CMAKE_SOURCE_DIR}/components/hardware/include
-    ${CMAKE_SOURCE_DIR}/components/sensor/include
+    ${OPENEMBER_SOURCE_DIR}/core/include
+    ${OPENEMBER_SOURCE_DIR}/components/hardware/include
+    ${OPENEMBER_SOURCE_DIR}/components/sensor/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -30,7 +30,7 @@ if(NOT DEFINED OPENEMBER_COMPONENT_ACTUATOR OR OPENEMBER_COMPONENT_ACTUATOR)
     list(APPEND HARDWARE_INTERFACE_SRCS adapters/actuator_message_adapter.cpp)
     list(APPEND HARDWARE_INTERFACE_LIBS openember_actuator)
     list(APPEND HARDWARE_INTERFACE_INCLUDES
-        ${CMAKE_SOURCE_DIR}/components/actuator/include)
+        ${OPENEMBER_SOURCE_DIR}/components/actuator/include)
 endif()
 
 if(NOT DEFINED OPENEMBER_HARDWARE_ENDPOINT_IMU OR OPENEMBER_HARDWARE_ENDPOINT_IMU)

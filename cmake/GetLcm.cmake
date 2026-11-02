@@ -1,6 +1,6 @@
 # lcm
 
-include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_prepare_lcm_source out_var)
     if(OPENEMBER_LCM_LOCAL_SOURCE)

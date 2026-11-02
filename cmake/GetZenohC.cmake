@@ -1,6 +1,6 @@
 # zenoh-c (https://github.com/eclipse-zenoh/zenoh-c) — Rust/Cargo 构建 C 库
 
-include(${CMAKE_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
+include(${OPENEMBER_SOURCE_DIR}/cmake/ThirdPartyArchive.cmake)
 
 function(openember_prepare_zenoh_c_source out_var)
     if(OPENEMBER_ZENOHC_LOCAL_SOURCE)
