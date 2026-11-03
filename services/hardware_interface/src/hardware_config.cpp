@@ -1,6 +1,7 @@
 #include "openember/services/hardware_interface/hardware_config.hpp"
 
 #include <cstdint>
+#include <cmath>
 #include <stdexcept>
 #include <unordered_set>
 #include <utility>
@@ -206,7 +207,7 @@ EndpointConfig ParseEndpoint(const YAML::Node& node, std::size_t index) {
         }
         config.topic = config.state_topic;
     }
-    if (config.publish_rate_hz <= 0.0) {
+    if (!std::isfinite(config.publish_rate_hz) || config.publish_rate_hz <= 0.0) {
         throw std::runtime_error(prefix + ".publish_rate_hz must be > 0");
     }
 

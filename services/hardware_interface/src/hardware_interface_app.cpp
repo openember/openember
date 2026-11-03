@@ -1,16 +1,13 @@
 #include "openember/services/hardware_interface/hardware_interface_app.hpp"
 
 #include <iostream>
+#include <cmath>
+#include <set>
+#include <stdexcept>
 #include <thread>
 #include <utility>
 #include <unistd.h>
 
-#include "endpoints/gnss_endpoint.hpp"
-#include "endpoints/imu_endpoint.hpp"
-#if OPENEMBER_HARDWARE_ENDPOINT_JOINT_CONTROLLER
-#include "endpoints/joint_controller_endpoint.hpp"
-#endif
-#include "endpoints/temperature_endpoint.hpp"
 #include "openember/hardware/timestamp.hpp"
 #include "openember/init.hpp"
 #include "openember/msgs/common/v1/common.pb.h"
@@ -21,9 +18,6 @@ namespace openember::services::hardware_interface {
 
 namespace {
 
-constexpr const char* kNodeInfoTopic = "/nodes/hardware_interface/info";
-constexpr const char* kHeartbeatTopic = "/nodes/hardware_interface/heartbeat";
-constexpr const char* kDiagnosticsTopic = "/diagnostics/hardware_interface";
 constexpr auto kHeartbeatPeriod = std::chrono::seconds(1);
 constexpr std::uint64_t kNodeInfoPublishInterval = 10;
 
@@ -93,40 +87,6 @@ std::string DeviceStateTopic(const std::string& endpoint_id) {
     return "/devices/" + endpoint_id + "/state";
 }
 
-std::string MessageTypeNameForEndpoint(const std::string& endpoint_type) {
-    if (endpoint_type == "imu") {
-        return "openember.msgs.sensor.v1.ImuSample";
-    }
-    if (endpoint_type == "temperature") {
-        return "openember.msgs.sensor.v1.TemperatureSample";
-    }
-    if (endpoint_type == "gnss") {
-        return "openember.msgs.sensor.v1.GnssFix";
-    }
-    if (endpoint_type == "joint_controller") {
-        return "openember.msgs.actuator.v1.JointState";
-    }
-    return "openember.msgs.sensor.v1.SensorStatus";
-}
-
-std::string CommandTypeNameForEndpoint(const std::string& endpoint_type) {
-    if (endpoint_type == "joint_controller") {
-        return "openember.msgs.actuator.v1.JointCommand";
-    }
-    return "";
-}
-
-openember::msgs::device::v1::DeviceCategory ToDeviceCategory(
-    const EndpointConfig& config) {
-    if (config.type == "imu" || config.type == "temperature" || config.type == "gnss") {
-        return openember::msgs::device::v1::DEVICE_CATEGORY_SENSOR;
-    }
-    if (config.type == "joint_controller") {
-        return openember::msgs::device::v1::DEVICE_CATEGORY_ACTUATOR;
-    }
-    return openember::msgs::device::v1::DEVICE_CATEGORY_UNSPECIFIED;
-}
-
 openember::msgs::device::v1::DeviceAvailability ToDeviceAvailability(
     EndpointState state) {
     using Availability = openember::msgs::device::v1::DeviceAvailability;
@@ -149,7 +109,7 @@ openember::msgs::common::v1::HealthState ToHealthState(const EndpointStatus& sta
     if (status.state == EndpointState::kError) {
         return openember::msgs::common::v1::HEALTH_STATE_ERROR;
     }
-    if (status.error_count > 0) {
+    if (status.error_count > 0 || status.timeout_count > 0) {
         return openember::msgs::common::v1::HEALTH_STATE_WARNING;
     }
     if (status.state == EndpointState::kRunning) {
@@ -163,9 +123,17 @@ openember::msgs::common::v1::HealthState ToHealthState(const EndpointStatus& sta
 HardwareInterfaceApp::HardwareInterfaceApp(std::shared_ptr<openember::Node> node,
                                            HardwareInterfaceConfig config,
                                            HardwareInterfaceAppOptions options)
+    : HardwareInterfaceApp(std::move(node), std::move(config), std::move(options),
+                           BuiltinEndpointRegistry()) {}
+
+HardwareInterfaceApp::HardwareInterfaceApp(std::shared_ptr<openember::Node> node,
+                                           HardwareInterfaceConfig config,
+                                           HardwareInterfaceAppOptions options,
+                                           EndpointRegistry registry)
     : node_(std::move(node)),
       config_(std::move(config)),
       options_(std::move(options)),
+      registry_(std::move(registry)),
       start_time_(std::chrono::steady_clock::now()),
       start_time_unix_ns_(openember::hardware::UnixTimeNs()) {}
 
@@ -174,15 +142,30 @@ HardwareInterfaceApp::~HardwareInterfaceApp() {
 }
 
 bool HardwareInterfaceApp::Start() {
+    // Node owns endpoint callbacks. Reuse requires a new app AND node, not Start twice.
+    if (start_attempted_) return false;
+    start_attempted_ = true;
+    try {
+        return StartEndpoints();
+    } catch (const std::exception& e) {
+        std::cerr << "hardware_interface: start failed: " << e.what() << std::endl;
+        Stop();
+        return false;
+    }
+}
+
+bool HardwareInterfaceApp::StartEndpoints() {
+    if (!node_) throw std::invalid_argument("hardware interface node is required");
     node_info_pub_ =
-        node_->Advertise<openember::msgs::node::v1::NodeInfo>(kNodeInfoTopic);
+        node_->Advertise<openember::msgs::node::v1::NodeInfo>("/nodes/" + options_.node_name + "/info");
     heartbeat_pub_ =
-        node_->Advertise<openember::msgs::node::v1::NodeHeartbeat>(kHeartbeatTopic);
+        node_->Advertise<openember::msgs::node::v1::NodeHeartbeat>("/nodes/" + options_.node_name + "/heartbeat");
     diagnostics_pub_ =
         node_->Advertise<openember::msgs::diagnostics::v1::DiagnosticArray>(
-            kDiagnosticsTopic);
+            "/diagnostics/" + options_.node_name);
 
     if (!BuildEndpoints()) {
+        Stop();
         return false;
     }
     for (const auto& endpoint : endpoints_) {
@@ -191,7 +174,9 @@ bool HardwareInterfaceApp::Start() {
         if (!endpoint->Configure()) {
             std::cerr << "hardware_interface: configure failed for "
                       << endpoint->Id() << std::endl;
+            endpoint->Stop();
             if (critical) {
+                Stop();
                 return false;
             }
             continue;
@@ -199,7 +184,9 @@ bool HardwareInterfaceApp::Start() {
         if (!endpoint->Start()) {
             std::cerr << "hardware_interface: start failed for "
                       << endpoint->Id() << std::endl;
+            endpoint->Stop();
             if (critical) {
+                Stop();
                 return false;
             }
             continue;
@@ -221,20 +208,29 @@ bool HardwareInterfaceApp::Start() {
                 DeviceStateTopic(endpoint->Id()));
     }
 
+    started_ = true;
     return true;
 }
 
 void HardwareInterfaceApp::Stop() noexcept {
+    started_ = false;
     for (auto it = endpoints_.rbegin(); it != endpoints_.rend(); ++it) {
         (*it)->Stop();
     }
 }
 
 void HardwareInterfaceApp::Spin(const std::function<bool()>& should_stop) {
+    if (!started_) throw std::logic_error("hardware interface must be started before Spin");
     std::uint64_t sequence = 0;
     std::uint64_t info_sequence = 0;
 
     while (openember::Ok() && !(should_stop && should_stop())) {
+        for (const auto& endpoint : endpoints_) {
+            if (FindEndpointConfig(endpoint->Id())->critical && endpoint->Status().state == EndpointState::kError) {
+                Stop();
+                throw std::runtime_error("critical endpoint failed: " + endpoint->Id());
+            }
+        }
         if (sequence % kNodeInfoPublishInterval == 0) {
             (void)node_info_pub_.Publish(BuildNodeInfo(info_sequence));
             ++info_sequence;
@@ -274,42 +270,25 @@ bool HardwareInterfaceApp::BuildEndpoints() {
     context.robot_id = options_.robot_id;
 
     std::size_t enabled_count = 0;
+    std::set<std::string> ids;
+    // Validate programmatically composed configs too, before invoking any factory.
+    for (const auto& config : config_.endpoints) {
+        if (config.endpoint_id.empty() || !ids.insert(config.endpoint_id).second ||
+            config.type.empty() || config.driver.empty() || config.mode.empty() || config.topic.empty() ||
+            !std::isfinite(config.publish_rate_hz) || config.publish_rate_hz <= 0)
+            throw std::invalid_argument("invalid/duplicate hardware endpoint configuration");
+    }
     for (const auto& endpoint_config : config_.endpoints) {
         if (!endpoint_config.enabled) {
             continue;
         }
         ++enabled_count;
 
-        const auto previous_size = endpoints_.size();
-        if (endpoint_config.type == "imu") {
-#if OPENEMBER_HARDWARE_ENDPOINT_IMU
-            endpoints_.push_back(std::make_unique<ImuEndpoint>(endpoint_config, context));
-#endif
-        } else if (endpoint_config.type == "temperature") {
-#if OPENEMBER_HARDWARE_ENDPOINT_TEMPERATURE
-            endpoints_.push_back(
-                std::make_unique<TemperatureEndpoint>(endpoint_config, context));
-#endif
-        } else if (endpoint_config.type == "gnss") {
-#if OPENEMBER_HARDWARE_ENDPOINT_GNSS
-            endpoints_.push_back(std::make_unique<GnssEndpoint>(endpoint_config, context));
-#endif
-        } else if (endpoint_config.type == "joint_controller") {
-#if OPENEMBER_HARDWARE_ENDPOINT_JOINT_CONTROLLER
-            endpoints_.push_back(
-                std::make_unique<JointControllerEndpoint>(endpoint_config, context));
-#endif
-        } else {
-            std::cerr << "hardware_interface: unknown endpoint type "
-                      << endpoint_config.type << std::endl;
-        }
-
-        if (endpoints_.size() == previous_size) {
-            std::cerr << "hardware_interface: endpoint " << endpoint_config.endpoint_id
-                      << " is unavailable in this build" << std::endl;
-            if (endpoint_config.critical) {
-                return false;
-            }
+        try {
+            endpoints_.push_back(registry_.Create(endpoint_config, context));
+        } catch (const std::exception& e) {
+            std::cerr << "hardware_interface: endpoint " << endpoint_config.endpoint_id << ": " << e.what() << std::endl;
+            if (endpoint_config.critical) return false;
         }
     }
 
@@ -337,39 +316,38 @@ openember::msgs::node::v1::NodeInfo HardwareInterfaceApp::BuildNodeInfo(
     FillHeader(info.mutable_header(), options_, sequence);
     info.set_node_name(options_.node_name);
     info.set_instance_id(options_.instance_id);
-    info.set_process_name("openember_hardware_interface");
+    info.set_process_name(options_.process_name);
     info.set_process_id(static_cast<std::uint32_t>(getpid()));
     info.set_kind(openember::msgs::node::v1::NODE_KIND_SERVICE);
     info.set_version("0.1.0");
     info.set_start_time_unix_ns(start_time_unix_ns_);
 
     AddTopic(&info,
-             kNodeInfoTopic,
+             "/nodes/" + options_.node_name + "/info",
              "openember.msgs.node.v1.NodeInfo",
              openember::msgs::node::v1::ENDPOINT_DIRECTION_PUBLISHER);
     AddTopic(&info,
-             kHeartbeatTopic,
+             "/nodes/" + options_.node_name + "/heartbeat",
              "openember.msgs.node.v1.NodeHeartbeat",
              openember::msgs::node::v1::ENDPOINT_DIRECTION_PUBLISHER);
     AddTopic(&info,
-             kDiagnosticsTopic,
+             "/diagnostics/" + options_.node_name,
              "openember.msgs.diagnostics.v1.DiagnosticArray",
              openember::msgs::node::v1::ENDPOINT_DIRECTION_PUBLISHER);
 
     for (const auto& endpoint : endpoints_) {
-        const auto status = endpoint->Status();
-        const auto* config = FindEndpointConfig(status.endpoint_id);
+        const auto* config = FindEndpointConfig(endpoint->Id());
         if (!config) {
             continue;
         }
         AddTopic(&info,
                  config->topic,
-                 MessageTypeNameForEndpoint(config->type),
+                 registry_.Describe(*config)->sample_type,
                  openember::msgs::node::v1::ENDPOINT_DIRECTION_PUBLISHER);
         if (!config->command_topic.empty()) {
             AddTopic(&info,
                      config->command_topic,
-                     CommandTypeNameForEndpoint(config->type),
+                     registry_.Describe(*config)->command_type,
                      openember::msgs::node::v1::ENDPOINT_DIRECTION_SUBSCRIBER);
         }
         AddTopic(&info,
@@ -384,7 +362,10 @@ openember::msgs::node::v1::NodeInfo HardwareInterfaceApp::BuildNodeInfo(
 
     AddLabel(&info, "role", "service");
     info.add_capabilities("hardware_interface");
-    info.add_capabilities("mock_hardware_endpoints");
+    bool all_mock = !endpoints_.empty();
+    for (const auto& endpoint : endpoints_)
+        all_mock = all_mock && FindEndpointConfig(endpoint->Id())->mode == "mock";
+    if (all_mock) info.add_capabilities("mock_hardware_endpoints");
     return info;
 }
 
@@ -404,7 +385,8 @@ openember::msgs::node::v1::NodeHeartbeat HardwareInterfaceApp::BuildHeartbeat(
         const auto status = endpoint->Status();
         error_count += status.error_count;
         any_error = any_error || status.state == EndpointState::kError;
-        any_warning = any_warning || status.error_count > 0 || status.timeout_count > 0;
+        any_warning = any_warning || status.error_count > 0 || status.timeout_count > 0 ||
+            status.state != EndpointState::kRunning;
     }
 
     heartbeat.set_health(
@@ -488,7 +470,7 @@ openember::msgs::device::v1::DeviceInfo HardwareInterfaceApp::BuildDeviceInfo(
     FillHeader(info.mutable_header(), options_, sequence);
     info.set_device_id(config.endpoint_id);
     info.set_name(config.endpoint_id);
-    info.set_category(ToDeviceCategory(config));
+    info.set_category(registry_.Describe(config)->category);
     info.set_driver(config.driver);
     info.set_path(config.mode + "://" + config.endpoint_id);
     info.set_bus(config.mode);

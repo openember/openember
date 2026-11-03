@@ -14,6 +14,7 @@
 #include "openember/node.hpp"
 #include "openember/publisher.hpp"
 #include "openember/services/hardware_interface/endpoint.hpp"
+#include "openember/services/hardware_interface/endpoint_registry.hpp"
 
 namespace openember::services::hardware_interface {
 
@@ -21,6 +22,7 @@ struct HardwareInterfaceAppOptions {
     std::string robot_id = "openember";
     std::string node_name = "hardware_interface";
     std::string instance_id = "hardware_interface";
+    std::string process_name = "openember_hardware_interface";
 };
 
 class HardwareInterfaceApp {
@@ -28,6 +30,10 @@ public:
     HardwareInterfaceApp(std::shared_ptr<openember::Node> node,
                          HardwareInterfaceConfig config,
                          HardwareInterfaceAppOptions options = {});
+    HardwareInterfaceApp(std::shared_ptr<openember::Node> node,
+                         HardwareInterfaceConfig config,
+                         HardwareInterfaceAppOptions options,
+                         EndpointRegistry registry);
     ~HardwareInterfaceApp();
 
     bool Start();
@@ -35,6 +41,7 @@ public:
     void Spin(const std::function<bool()>& should_stop = {});
 
 private:
+    bool StartEndpoints();
     bool BuildEndpoints();
     const EndpointConfig* FindEndpointConfig(const std::string& endpoint_id) const;
     openember::msgs::node::v1::NodeInfo BuildNodeInfo(std::uint64_t sequence) const;
@@ -53,6 +60,9 @@ private:
     std::shared_ptr<openember::Node> node_;
     HardwareInterfaceConfig config_;
     HardwareInterfaceAppOptions options_;
+    EndpointRegistry registry_;
+    bool start_attempted_ = false;
+    bool started_ = false;
     std::vector<std::unique_ptr<HardwareEndpoint>> endpoints_;
     openember::Publisher<openember::msgs::node::v1::NodeInfo> node_info_pub_;
     openember::Publisher<openember::msgs::node::v1::NodeHeartbeat> heartbeat_pub_;

@@ -5,8 +5,9 @@ if(NOT OPENEMBER_WITH_YAMLCPP)
 endif()
 
 set(HARDWARE_INTERFACE_SRCS
-    main.cpp
     src/endpoint.cpp
+    src/endpoint_registry.cpp
+    src/builtin_endpoints.cpp
     src/hardware_config.cpp
     src/hardware_interface_app.cpp
     adapters/sensor_message_adapter.cpp
@@ -57,20 +58,27 @@ else()
     message(FATAL_ERROR "yaml-cpp target was not found")
 endif()
 
-OPENEMBER_ADD_EXECUTABLE(TARGET ${PROJECT_NAME}
-    SRCS     ${HARDWARE_INTERFACE_SRCS}
-    LIBS     ${HARDWARE_INTERFACE_LIBS}
-             ${HARDWARE_INTERFACE_YAMLCPP_LIB}
-    INCLUDES ${HARDWARE_INTERFACE_INCLUDES}
-    DESTINATION bin
-)
+add_library(openember_hardware_interface_runtime STATIC ${HARDWARE_INTERFACE_SRCS})
+add_library(openember::hardware_interface ALIAS openember_hardware_interface_runtime)
+target_compile_features(openember_hardware_interface_runtime PUBLIC cxx_std_17)
+target_include_directories(openember_hardware_interface_runtime
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PRIVATE ${HARDWARE_INTERFACE_INCLUDES})
+target_link_libraries(openember_hardware_interface_runtime
+    PUBLIC openember::core openember_hardware
+    PRIVATE ${HARDWARE_INTERFACE_LIBS} ${HARDWARE_INTERFACE_YAMLCPP_LIB})
 
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
-
-target_compile_definitions(${PROJECT_NAME} PRIVATE
+target_compile_definitions(openember_hardware_interface_runtime PRIVATE
     OPENEMBER_HARDWARE_ENDPOINT_IMU=$<IF:$<BOOL:${OPENEMBER_HARDWARE_ENDPOINT_IMU}>,1,0>
     OPENEMBER_HARDWARE_ENDPOINT_TEMPERATURE=$<IF:$<BOOL:${OPENEMBER_HARDWARE_ENDPOINT_TEMPERATURE}>,1,0>
     OPENEMBER_HARDWARE_ENDPOINT_GNSS=$<IF:$<BOOL:${OPENEMBER_HARDWARE_ENDPOINT_GNSS}>,1,0>
     OPENEMBER_HARDWARE_ENDPOINT_JOINT_CONTROLLER=$<IF:$<BOOL:${OPENEMBER_HARDWARE_ENDPOINT_JOINT_CONTROLLER}>,1,0>
 )
+
+OPENEMBER_ADD_EXECUTABLE(TARGET ${PROJECT_NAME}
+    SRCS main.cpp
+    LIBS openember::hardware_interface ${HARDWARE_INTERFACE_LIBS}
+    INCLUDES ${HARDWARE_INTERFACE_INCLUDES}
+    DESTINATION bin)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)

@@ -48,6 +48,7 @@ ctest --test-dir build-regression -L integration --repeat until-fail:3 --output-
 | `regression_hardware` | 非法配置拒绝；三类传感器消息；关节命令改变状态；停止发送后安全输出；硬件服务停止及再次启动 |
 | `regression_supervision` | 失败重启及次数上限；正常退出不重启；启动心跳超时；运行中进程被终止后重启；监督器退出清理子进程 |
 | `test_transport` | 临时回环端口上的空 topic、空请求/响应；服务超时后迟到处理与后续正常调用 |
+| `endpoint_*`（9 项） | 外部工厂注册、元数据、只读限制、配置拒绝、启动失败/异常回收与运行错误 |
 
 单元测试具有 `unit;regression` 标签；进程测试具有 `integration;regression` 标签。普通构建按已启用的目标和 Endpoint 条件注册测试；回归配置额外检查关键目标和 Endpoint，避免缺失测试却误认为完整基线通过。交叉编译不注册宿主机进程测试。
 
@@ -61,6 +62,10 @@ ctest --test-dir build-regression -L integration --repeat until-fail:3 --output-
 - 这组测试未验证 systemd / OS 重启、router 故障恢复、真机 watchdog、真实断电或硬实时行为；这些属于后续阶段。
 
 ### 验证记录
+
+2026-11-03（HI 扩展）：提取 `openember::hardware_interface`，新增显式端点注册表，
+框架完整构建与 17/17 CTest 通过。产品侧改为注入自有端点，遥测/查询及公共发现、心跳、
+设备状态和诊断通过跨进程测试。API 与生命周期约束见 [产品端点扩展](design/hardware-endpoint-extension.md)。
 
 2026-11-03：基于 `d0bd836` 加本轮传输修复，既有 `build-regression` 重新配置并完整构建，
 CTest 8/8 通过，新增 `test_transport` 连续三次通过。关联产品 openember-quadruped 的 43 项测试通过，
