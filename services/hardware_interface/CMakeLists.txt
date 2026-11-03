@@ -65,7 +65,7 @@ target_include_directories(openember_hardware_interface_runtime
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE ${HARDWARE_INTERFACE_INCLUDES})
 target_link_libraries(openember_hardware_interface_runtime
-    PUBLIC openember::core openember_hardware
+    PUBLIC openember::core openember_hardware openember_sensor
     PRIVATE ${HARDWARE_INTERFACE_LIBS} ${HARDWARE_INTERFACE_YAMLCPP_LIB})
 
 target_compile_definitions(openember_hardware_interface_runtime PRIVATE

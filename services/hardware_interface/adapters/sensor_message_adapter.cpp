@@ -53,7 +53,40 @@ openember::msgs::sensor::v1::ImuSample ToProto(
     FillVector(msg.mutable_angular_velocity_radps(), sample.angular_velocity_radps);
     FillVector(msg.mutable_magnetic_field_tesla(), sample.magnetic_field_tesla);
     msg.set_temperature_celsius(sample.temperature_celsius);
+    auto* orientation = msg.mutable_orientation();
+    orientation->set_w(sample.orientation.w); orientation->set_x(sample.orientation.x);
+    orientation->set_y(sample.orientation.y); orientation->set_z(sample.orientation.z);
+    msg.set_orientation_valid(sample.orientation_valid);
+    msg.set_reference_frame_id(sample.reference_frame_id);
+    msg.set_clock_domain(sample.clock_domain);
+    msg.set_mounting_revision(sample.mounting_revision);
+    msg.set_receive_time_monotonic_ns(sample.receive_time_monotonic_ns);
+    msg.set_acceleration_valid(sample.acceleration_valid);
+    msg.set_angular_velocity_valid(sample.angular_velocity_valid);
+    msg.set_magnetic_field_valid(sample.magnetic_field_valid);
+    msg.set_temperature_valid(sample.temperature_valid);
     return msg;
+}
+
+openember::sensor::ImuSample FromProto(const openember::msgs::sensor::v1::ImuSample& msg) {
+    openember::sensor::ImuSample sample;
+    sample.sensor_id = msg.sensor_id(); sample.frame_id = msg.frame_id();
+    sample.sample_time_monotonic_ns = msg.sample_time_monotonic_ns(); sample.sequence = msg.sequence();
+    sample.acceleration_mps2 = {msg.acceleration_mps2().x(), msg.acceleration_mps2().y(), msg.acceleration_mps2().z()};
+    sample.angular_velocity_radps = {msg.angular_velocity_radps().x(), msg.angular_velocity_radps().y(), msg.angular_velocity_radps().z()};
+    sample.magnetic_field_tesla = {msg.magnetic_field_tesla().x(), msg.magnetic_field_tesla().y(), msg.magnetic_field_tesla().z()};
+    sample.temperature_celsius = msg.temperature_celsius();
+    sample.orientation = {msg.orientation().w(), msg.orientation().x(), msg.orientation().y(), msg.orientation().z()};
+    sample.orientation_valid = msg.orientation_valid() && msg.has_orientation(); sample.reference_frame_id = msg.reference_frame_id();
+    sample.clock_domain = msg.clock_domain(); sample.mounting_revision = msg.mounting_revision();
+    sample.receive_time_monotonic_ns = msg.receive_time_monotonic_ns();
+    sample.acceleration_valid = msg.acceleration_valid() && msg.has_acceleration_mps2();
+    sample.angular_velocity_valid = msg.angular_velocity_valid() && msg.has_angular_velocity_radps();
+    sample.magnetic_field_valid = msg.magnetic_field_valid() && msg.has_magnetic_field_tesla();
+    sample.temperature_valid = msg.temperature_valid();
+    // Preserve values/times, but an absent vector message is not a valid channel.
+    // Validation is explicit; never normalize quaternion or refresh receive time.
+    return sample;
 }
 
 openember::msgs::sensor::v1::TemperatureSample ToProto(

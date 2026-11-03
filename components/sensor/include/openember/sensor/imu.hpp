@@ -19,6 +19,17 @@ struct ImuSample {
     Vector3 angular_velocity_radps;
     Vector3 magnetic_field_tesla;
     double temperature_celsius = 0.0;
+    // R_reference_sensor rotates vectors in frame_id into reference_frame_id.
+    Quaternion orientation;
+    bool orientation_valid = false;
+    std::string reference_frame_id;
+    std::string clock_domain; // Unique producer/acquisition session, not a wall clock.
+    std::string mounting_revision;
+    std::uint64_t receive_time_monotonic_ns = 0;
+    bool acceleration_valid = false;
+    bool angular_velocity_valid = false;
+    bool magnetic_field_valid = false;
+    bool temperature_valid = false;
 };
 
 class IImu : public ISensor {

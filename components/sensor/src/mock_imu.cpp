@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <utility>
+#include <random>
 
 #include "openember/hardware/timestamp.hpp"
 
@@ -43,6 +44,9 @@ hardware::DeviceStatus MockImu::Status() const {
 
 hardware::Result<void> MockImu::Start() {
     std::lock_guard<std::mutex> lock(mutex_);
+    if (running_) return hardware::Result<void>::Success();
+    clock_domain_ = "mock-imu-" + std::to_string(hardware::SteadyTimeNs()) + "-" + std::to_string(std::random_device{}());
+    sequence_ = 0;
     running_ = true;
     next_sample_ = std::chrono::steady_clock::now();
     cv_.notify_all();
@@ -83,10 +87,17 @@ hardware::Result<ImuSample> MockImu::ReadSample(std::chrono::milliseconds timeou
     sample.frame_id = options_.frame_id;
     sample.sample_time_monotonic_ns = hardware::SteadyTimeNs();
     sample.sequence = sequence_++;
+    sample.receive_time_monotonic_ns = sample.sample_time_monotonic_ns;
+    sample.clock_domain = clock_domain_;
     sample.acceleration_mps2 = {0.0, 0.0, 9.80665};
     sample.angular_velocity_radps = {0.0, 0.0, 0.0};
     sample.magnetic_field_tesla = {0.0, 0.0, 0.0};
     sample.temperature_celsius = options_.temperature_celsius;
+    sample.acceleration_valid = true;
+    sample.angular_velocity_valid = true;
+    sample.temperature_valid = true;
+    // This legacy fixture has no attitude estimator or magnetic measurement.
+    // Keep orientation_valid and magnetic_field_valid false, never fake identity.
     next_sample_ = std::chrono::steady_clock::now() + Period();
     return hardware::Result<ImuSample>::Success(sample);
 }

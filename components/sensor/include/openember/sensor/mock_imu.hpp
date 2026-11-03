@@ -34,6 +34,7 @@ private:
     std::condition_variable cv_;
     bool running_ = false;
     std::uint64_t sequence_ = 0;
+    std::string clock_domain_;
     std::chrono::steady_clock::time_point next_sample_;
 };
 
