@@ -47,6 +47,7 @@ ctest --test-dir build-regression -L integration --repeat until-fail:3 --output-
 | `minunit_example`、`test_algorithm`、`test_log`、`test_osal`、`test_actuator` | 现有单元基线，含 Mock 命令失联安全输出 |
 | `regression_hardware` | 非法配置拒绝；三类传感器消息；关节命令改变状态；停止发送后安全输出；硬件服务停止及再次启动 |
 | `regression_supervision` | 失败重启及次数上限；正常退出不重启；启动心跳超时；运行中进程被终止后重启；监督器退出清理子进程 |
+| `test_transport` | 临时回环端口上的空 topic、空请求/响应；服务超时后迟到处理与后续正常调用 |
 
 单元测试具有 `unit;regression` 标签；进程测试具有 `integration;regression` 标签。普通构建按已启用的目标和 Endpoint 条件注册测试；回归配置额外检查关键目标和 Endpoint，避免缺失测试却误认为完整基线通过。交叉编译不注册宿主机进程测试。
 
@@ -54,11 +55,20 @@ ctest --test-dir build-regression -L integration --repeat until-fail:3 --output-
 
 - 硬件示例当前固定使用 `127.0.0.1:7447`。运行前必须空闲；端口占用会失败，测试不会终止占用端口的其他进程。CTest resource lock 仅协调同一次 CTest 中使用相同锁的测试，不提供系统级端口预留，勿同时运行多个回归实例。
 - 监督测试使用临时端口、临时 launch 配置和 PID 文件，启动的只是测试工作进程，不加载产品 launch 配置。
+- 传输测试在单个测试进程中建立独立 Router/Client 会话，使用临时回环端口，不访问硬件；绑定竞争会显式失败。启用 transport 且为 Linux 原生测试构建时注册。
 - 进程通过私有进程组管理；正常结束和测试异常都会清理自有进程。测试不访问实际执行器，不要求 root。
 - 测试等待有期限，失败时输出子进程日志；CTest 将输出保存在 `build-regression/Testing/Temporary/LastTest.log`。临时配置与原始日志随后清理。
 - 这组测试未验证 systemd / OS 重启、router 故障恢复、真机 watchdog、真实断电或硬实时行为；这些属于后续阶段。
 
 ### 验证记录
+
+2026-11-03：基于 `d0bd836` 加本轮传输修复，既有 `build-regression` 重新配置并完整构建，
+CTest 8/8 通过，新增 `test_transport` 连续三次通过。关联产品 openember-quadruped 的 43 项测试通过，
+正常/故障遥测跨进程测试各连续三次通过。使用本机 LOCAL openember-msgs `9ec949f`。
+需包含本记录所在提交的传输修复；旧 `d0bd836` 本身不足以复现这组结果。
+
+旧监督夹具将 `heartbeat_timeout_ms=0` 与启动心跳超时混用，已改为对超时目标显式开启心跳监督，
+同时断言关闭监督的目标在启动期限之后继续存活。本轮未修改 launch_manager 的生产行为。
 
 2026-09-16：使用上述独立构建命令，全量构建通过；CTest 7/7 通过；两个 integration 测试各连续运行三次通过。硬件测试覆盖 SIGTERM 和 SIGINT 正常退出。
 

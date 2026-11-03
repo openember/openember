@@ -42,9 +42,9 @@ Result<Subscriber> Session::CreateSubscriber(const TopicOptions& options,
                 msg.key = std::string(sample.get_keyexpr().as_string_view());
 
                 const auto& payload = sample.get_payload();
-                const auto bytes = payload.as_vector();
-
-                msg.payload.assign(bytes.begin(), bytes.end());
+                // zenoh-cpp 1.10 calls a Rust reader with vector::data() even
+                // for zero bytes; that pointer may be null. Empty is legal.
+                if (payload.size() != 0) msg.payload = payload.as_vector();
                 msg.receive_time = std::chrono::steady_clock::now();
 
                 callback(msg);

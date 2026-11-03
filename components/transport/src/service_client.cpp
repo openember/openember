@@ -2,6 +2,7 @@
 #include "openember/transport/session.hpp"
 
 #include <chrono>
+#include <atomic>
 #include <future>
 #include <memory>
 #include <string>
@@ -23,12 +24,20 @@ public:
         }
 
         try {
-            std::promise<Result<ByteBuffer>> promise;
-            auto future = promise.get_future();
+            // A query callback may outlive Call() on timeout, and more than one
+            // queryable may reply. Own the state until Zenoh releases it and
+            // complete the promise at most once.
+            struct PendingCall {
+                std::promise<Result<ByteBuffer>> promise;
+                std::atomic<bool> completed{false};
+            };
+            auto pending = std::make_shared<PendingCall>();
+            auto future = pending->promise.get_future();
 
-            auto on_reply = [&promise](const zenoh::Reply& reply) mutable {
+            auto on_reply = [pending](const zenoh::Reply& reply) {
+                if (pending->completed.exchange(true)) return;
                 if (!reply.is_ok()) {
-                    promise.set_value(Error{
+                    pending->promise.set_value(Error{
                         ErrorCode::kZenohError,
                         "zenoh reply error"
                     });
@@ -37,12 +46,10 @@ public:
 
                 const auto& sample = reply.get_ok();
                 const auto& payload = sample.get_payload();
-                const auto bytes = payload.as_vector();
-
                 ByteBuffer buffer;
-                buffer.assign(bytes.begin(), bytes.end());
-
-                promise.set_value(std::move(buffer));
+                // Empty replies are valid (e.g. an empty protobuf message).
+                if (payload.size() != 0) buffer = payload.as_vector();
+                pending->promise.set_value(std::move(buffer));
             };
 
             auto on_done = []() {};
@@ -62,6 +69,7 @@ public:
             );
 
             if (future.wait_for(timeout) != std::future_status::ready) {
+                pending->completed.store(true);
                 return Error{ErrorCode::kTimeout, "service call timeout"};
             }
 

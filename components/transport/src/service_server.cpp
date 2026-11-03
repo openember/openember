@@ -47,8 +47,8 @@ Result<ServiceServer> Session::CreateServiceServer(
                 request.receive_time = std::chrono::steady_clock::now();
 
                 if (const auto payload = query.get_payload()) {
-                    const auto bytes = payload->get().as_vector();
-                    request.payload.assign(bytes.begin(), bytes.end());
+                    // Avoid zenoh-cpp's null-buffer read on an empty request.
+                    if (payload->get().size() != 0) request.payload = payload->get().as_vector();
                 }
 
                 auto response = callback(request);

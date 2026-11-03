@@ -138,16 +138,17 @@ def supervision(args, work):
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
     nodes = []
-    for name, mode, restart, startup in (
-            ("failure", "fail", "on-failure", 0),
-            ("success", "success", "on-failure", 0),
-            ("resident", "wait", "always", 0),
-            ("no_heartbeat", "wait", "never", 300)):
+    for name, mode, restart, startup, heartbeat in (
+            ("failure", "fail", "on-failure", 0, 0),
+            ("success", "success", "on-failure", 0, 0),
+            ("resident", "wait", "always", 0, 0),
+            ("no_heartbeat", "wait", "never", 300, 1000),
+            ("unsupervised", "wait", "never", 300, 0)):
         nodes.append({"name": name, "command": sys.executable,
                       "args": [str(Path(__file__).resolve()), "worker", mode, str(work / name)],
                       "restart": restart, "restart_limit": 1,
                       "startup_timeout_ms": startup, "shutdown_timeout_ms": 500,
-                      "heartbeat_timeout_ms": 0})
+                      "heartbeat_timeout_ms": heartbeat})
     config = work / "launch.yaml"
     config.write_text(json.dumps({"runtime": {"link": {"listen": f"tcp/127.0.0.1:{port}"}},
                                   "nodes": nodes}))
@@ -162,6 +163,8 @@ def supervision(args, work):
         wait_for(lambda: "Startup heartbeat timeout: name=no_heartbeat" in read(log)
                  and not alive(pids(work / "no_heartbeat")[0]),
                  "startup timeout cleanup", [launch])
+        require(alive(pids(work / "unsupervised")[0]),
+                "heartbeat-disabled child must not require a startup heartbeat")
         require(len(pids(work / "success")) == 1, "successful child restarted")
         first_pid = pids(work / "resident")[0]
         os.kill(first_pid, signal.SIGKILL)
