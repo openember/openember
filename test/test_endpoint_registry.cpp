@@ -22,6 +22,11 @@ public:
     Endpoint(hi::EndpointConfig config, std::shared_ptr<Trace> trace)
         : config_(std::move(config)), trace_(std::move(trace)) { status_.endpoint_id = config_.endpoint_id; }
     const std::string& Id() const override { return config_.endpoint_id; }
+    std::vector<hi::EndpointSampleTopic> AdditionalSampleTopics() const override {
+        if (Id() == "bad_topic") return {{config_.topic, "test.Extra"}};
+        if (Id() == "empty_type") return {{config_.topic+"/extra", ""}};
+        return {{config_.topic+"/extra", "test.Extra"}};
+    }
     bool Configure() override { return config_.endpoint_id != "bad_config"; }
     bool Start() override {
         trace_->starts.push_back(Id());
@@ -77,6 +82,9 @@ int main(int argc, char** argv) {
             auto config = Config();
             Check(registry.Create(config, {})->Id() == "ok", "product factory not used");
             Check(registry.Describe(config)->sample_type == "test.Sample", "metadata mismatch");
+            Check(registry.Create(config, {})->AdditionalSampleTopics().size() == 1, "extra topic metadata missing");
+            Reject([&] { registry.Create(Config("bad_topic"), {}); });
+            Reject([&] { registry.Create(Config("empty_type"), {}); });
             Reject([&] { registry.Register("custom", "product", {"test.Other", ""},
                 [](const hi::EndpointConfig&, const hi::EndpointContext&) { return nullptr; }); });
             Check(registry.Describe(config)->sample_type == "test.Sample", "duplicate replaced registration");
@@ -102,6 +110,8 @@ int main(int argc, char** argv) {
             auto node = openember::CreateNode("registry_test");
             hi::HardwareInterfaceConfig config; config.endpoints.push_back(Config());
             if (which == "duplicate") config.endpoints.push_back(Config());
+            else if (which == "topic_collision") { config.endpoints.push_back(Config("other")); config.endpoints.back().topic="/test/ok/extra"; }
+            else if (which == "noncritical_failure") { config.endpoints[0] = Config("bad_start"); config.endpoints[0].critical = false; }
             else if (which == "nan") config.endpoints[0].publish_rate_hz = std::numeric_limits<double>::quiet_NaN();
             else if (which == "bad_config" || which == "bad_start" || which == "throw")
                 config.endpoints.push_back(Config(which));
@@ -117,8 +127,9 @@ int main(int argc, char** argv) {
                 Check(!app.Start(), "restart accepted with stale callback ownership");
             } else {
                 Check(!ok, "invalid lifecycle succeeded");
-                if (which == "duplicate" || which == "nan" || which == "missing")
+                if (which == "duplicate" || which == "nan" || which == "missing" || which == "topic_collision")
                     Check(trace->starts.empty(), "invalid topology partially started");
+                else if (which == "noncritical_failure") Check(trace->starts.size() == 1, "noncritical start not attempted");
                 else Check(std::find(trace->stops.begin(), trace->stops.end(), "ok") != trace->stops.end(),
                            "earlier endpoint not rolled back");
             }

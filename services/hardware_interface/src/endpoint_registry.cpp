@@ -1,5 +1,6 @@
 #include "openember/services/hardware_interface/endpoint_registry.hpp"
 #include <stdexcept>
+#include <set>
 
 namespace openember::services::hardware_interface {
 void EndpointRegistry::Register(std::string type, std::string driver,
@@ -25,6 +26,15 @@ std::unique_ptr<HardwareEndpoint> EndpointRegistry::Create(
         if (endpoint) endpoint->Stop();
         throw std::invalid_argument("endpoint factory returned null or a mismatched id");
     }
+    try {
+        std::set<std::string> topics{config.topic};
+        if (!config.command_topic.empty()) topics.insert(config.command_topic);
+        for (const auto& topic : endpoint->AdditionalSampleTopics()) {
+            if (topic.topic.empty() || topic.topic.front() != '/' || topic.type.empty() ||
+                !topics.insert(topic.topic).second)
+                throw std::invalid_argument("invalid or duplicate additional sample topic");
+        }
+    } catch (...) { endpoint->Stop(); throw; }
     return endpoint;
 }
 } // namespace openember::services::hardware_interface

@@ -168,6 +168,7 @@ bool HardwareInterfaceApp::StartEndpoints() {
         Stop();
         return false;
     }
+    std::size_t started_count = 0;
     for (const auto& endpoint : endpoints_) {
         const auto* config = FindEndpointConfig(endpoint->Id());
         const bool critical = config && config->critical;
@@ -193,6 +194,12 @@ bool HardwareInterfaceApp::StartEndpoints() {
         }
         std::cout << "hardware_interface started endpoint "
                   << endpoint->Id() << std::endl;
+        ++started_count;
+    }
+
+    if (!endpoints_.empty() && started_count == 0) {
+        Stop();
+        return false;
     }
 
     for (const auto& endpoint : endpoints_) {
@@ -297,6 +304,18 @@ bool HardwareInterfaceApp::BuildEndpoints() {
                   << std::endl;
         return false;
     }
+    // Composite endpoints must not silently publish onto another endpoint's
+    // primary/additional sample stream. Validate before any endpoint is started.
+    std::set<std::string> sample_topics;
+    for (const auto& endpoint : endpoints_) {
+        const auto* config = FindEndpointConfig(endpoint->Id());
+        if (!sample_topics.insert(config->topic).second)
+            throw std::invalid_argument("duplicate hardware sample topic");
+        for (const auto& topic : endpoint->AdditionalSampleTopics()) {
+            if (!sample_topics.insert(topic.topic).second)
+                throw std::invalid_argument("duplicate additional hardware sample topic");
+        }
+    }
     return true;
 }
 
@@ -344,6 +363,10 @@ openember::msgs::node::v1::NodeInfo HardwareInterfaceApp::BuildNodeInfo(
                  config->topic,
                  registry_.Describe(*config)->sample_type,
                  openember::msgs::node::v1::ENDPOINT_DIRECTION_PUBLISHER);
+        for (const auto& topic : endpoint->AdditionalSampleTopics()) {
+            AddTopic(&info, topic.topic, topic.type,
+                     openember::msgs::node::v1::ENDPOINT_DIRECTION_PUBLISHER);
+        }
         if (!config->command_topic.empty()) {
             AddTopic(&info,
                      config->command_topic,
