@@ -7,7 +7,8 @@
 
 #include "openember/msgs/sensor/v1/sensor.pb.h"
 #include "openember/publisher.hpp"
-#include "openember/sensor/mock_imu.hpp"
+#include <memory>
+#include "openember/sensor/imu.hpp"
 #include "openember/services/hardware_interface/endpoint.hpp"
 
 namespace openember::services::hardware_interface {
@@ -15,6 +16,8 @@ namespace openember::services::hardware_interface {
 class ImuEndpoint final : public HardwareEndpoint {
 public:
     ImuEndpoint(EndpointConfig config, EndpointContext context);
+    ImuEndpoint(EndpointConfig config, EndpointContext context,
+                std::unique_ptr<openember::sensor::IImu> driver);
     ~ImuEndpoint() override;
 
     const std::string& Id() const override;
@@ -25,12 +28,12 @@ public:
 
 private:
     void Run();
-    void RecordError(const std::string& message);
+    void RecordError(const std::string& message, bool timeout = false);
     void SetError(const std::string& message);
 
     EndpointConfig config_;
     EndpointContext context_;
-    openember::sensor::MockImu imu_;
+    std::unique_ptr<openember::sensor::IImu> imu_;
     openember::Publisher<openember::msgs::sensor::v1::ImuSample> publisher_;
     std::atomic_bool running_{false};
     std::thread thread_;

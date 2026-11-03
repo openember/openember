@@ -64,6 +64,9 @@ ctest --test-dir build-regression -L integration --repeat until-fail:3 --output-
 
 ### 验证记录
 
+2026-11-03（通用 IImu 端点）：新增 6 项注入/生命周期测试，完整构建及 27/27 CTest 通过。
+覆盖空驱动与只读配置校验、警告/接收时间传播、超时不发布、启动回收、worker 异常与停止取消。
+
 2026-11-03（IMU 公共契约）：消息源升级为 `3cf1a0e`，框架完整构建和 21/21 CTest 通过。
 原采样时间与新接收时钟严格分离，旧 Mock 不自动伪造有效姿态。
 迁移和本地依赖配置见 [IMU 契约接入](design/imu-contract-integration.md)。

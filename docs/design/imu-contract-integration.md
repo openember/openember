@@ -58,3 +58,26 @@ ctest --test-dir build-regression --output-on-failure -j 4
 四项 `imu_*` 测试覆盖：非对称 quaternion 和原时间转换、旧消息/缺失子消息；无效标志/NaN/Inf/
 过期与元数据；重复帧/倒退/新会话；旧 Mock 的有效性和重启行为。
 2026-11-03：框架完整构建及 21/21 CTest 通过；消息仓 C++ 兼容与 Nanopb C 往返 2/2 通过。
+
+## 产品 IImu 注入到通用 HI 发布端点
+
+公开头文件 `openember/services/hardware_interface/imu_endpoint_factory.hpp` 提供
+`MakeImuEndpoint(config, context, std::unique_ptr<sensor::IImu>)`。
+产品在自己的 EndpointRegistry factory 中构造驱动，交给这个端点；无需在框架加入 SDK 或机型分支。
+内置 `mock_imu` 也使用同一个实现，现有可执行入口和注册方式保持兼容。
+
+- 端点拥有驱动；非空驱动、只读 topic、配置 sensor/frame ID 与驱动 Info 一致是配置前提。
+- 所有者串行调用 Configure/Start/Stop；驱动必须支持有界 ReadSample 和并发 Stop 取消。
+- 启动失败会 Stop 回收；读取超时不发布缓存并增加 timeout_count；其他读取失败或 worker 异常转 Error。
+  critical 端点由 HI 管理循环发现并退出，约 1 秒粒度，不是实时安全停止。
+- 以成功读取为发布节奏，不把 publish_rate_hz 当真实设备输出率，也不自动降采样。
+  sequence、receive_time、有效性及坐标信息原样进入公共消息，不替驱动刷新接收时间、归一化或推测坐标系。
+- 管理状态的 last_sample_monotonic_ns 优先记录接收时间，兼容旧驱动无此字段时再用采样时间；
+  消息本身的两个字段不会被混填。
+- `EndpointStatus.degraded` 传播当前驱动警告，进入 NodeHeartbeat、DeviceState、DiagnosticArray；
+  历史错误/超时计数仍按原有规则保留告警。未知安装关系的驱动可以持续发诊断数据，但不能因有数据而显示健康 OK。
+- 此发布端点依赖产品驱动确保新样本和帧语义；它不是姿态跟踪器、安全网关或 ARM 授权服务。
+
+开启 HI IMU endpoint 后，库 target 提供 `OPENEMBER_IMU_ENDPOINT_FACTORY=1` 能力标记供产品配置检查。
+新增 6 项 `imu_endpoint_*` 测试：配置/空驱动拒绝、注入发布及 warning/接收时间、超时不发布、
+失败启动回收、worker 异常、并发停止取消。完整框架回归扩展为 27 项；均不连接真实设备。

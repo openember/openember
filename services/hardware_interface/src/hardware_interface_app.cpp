@@ -61,7 +61,7 @@ openember::msgs::diagnostics::v1::DiagnosticLevel ToDiagnosticLevel(
     if (status.state == EndpointState::kError) {
         return openember::msgs::diagnostics::v1::DIAGNOSTIC_LEVEL_ERROR;
     }
-    if (status.error_count > 0 || status.timeout_count > 0) {
+    if (status.degraded || status.error_count > 0 || status.timeout_count > 0) {
         return openember::msgs::diagnostics::v1::DIAGNOSTIC_LEVEL_WARNING;
     }
     if (status.state == EndpointState::kRunning) {
@@ -109,7 +109,7 @@ openember::msgs::common::v1::HealthState ToHealthState(const EndpointStatus& sta
     if (status.state == EndpointState::kError) {
         return openember::msgs::common::v1::HEALTH_STATE_ERROR;
     }
-    if (status.error_count > 0 || status.timeout_count > 0) {
+    if (status.degraded || status.error_count > 0 || status.timeout_count > 0) {
         return openember::msgs::common::v1::HEALTH_STATE_WARNING;
     }
     if (status.state == EndpointState::kRunning) {
@@ -385,7 +385,7 @@ openember::msgs::node::v1::NodeHeartbeat HardwareInterfaceApp::BuildHeartbeat(
         const auto status = endpoint->Status();
         error_count += status.error_count;
         any_error = any_error || status.state == EndpointState::kError;
-        any_warning = any_warning || status.error_count > 0 || status.timeout_count > 0 ||
+        any_warning = any_warning || status.degraded || status.error_count > 0 || status.timeout_count > 0 ||
             status.state != EndpointState::kRunning;
     }
 

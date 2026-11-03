@@ -31,6 +31,7 @@ struct EndpointStatus {
     std::uint64_t last_sample_monotonic_ns = 0;
     std::uint64_t last_publish_monotonic_ns = 0;
     std::uint64_t last_command_monotonic_ns = 0;
+    bool degraded = false; // Current driver warning, independent of historical counters.
 };
 
 const char* ToString(EndpointState state) noexcept;

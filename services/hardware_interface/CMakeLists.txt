@@ -60,6 +60,9 @@ endif()
 
 add_library(openember_hardware_interface_runtime STATIC ${HARDWARE_INTERFACE_SRCS})
 add_library(openember::hardware_interface ALIAS openember_hardware_interface_runtime)
+if(NOT DEFINED OPENEMBER_HARDWARE_ENDPOINT_IMU OR OPENEMBER_HARDWARE_ENDPOINT_IMU)
+    set_property(TARGET openember_hardware_interface_runtime PROPERTY OPENEMBER_IMU_ENDPOINT_FACTORY 1)
+endif()
 target_compile_features(openember_hardware_interface_runtime PUBLIC cxx_std_17)
 target_include_directories(openember_hardware_interface_runtime
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
