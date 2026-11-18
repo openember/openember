@@ -13,3 +13,12 @@ for component, yaml, expected in [(True, True, 'ON'), (False, True, 'OFF'),
         (root / '.config').write_text('\n'.join(lines) + '\n')
         subprocess.run(['bash', sys.argv[1], folder], check=True, capture_output=True, text=True)
         assert f'set(OPENEMBER_COMPONENT_CONFIG {expected} CACHE BOOL' in (root / 'config.cmake').read_text()
+
+for enabled in (True, False, None):
+    with tempfile.TemporaryDirectory(prefix='openember-ruckig-export-') as folder:
+        root = Path(folder)
+        text = '' if enabled is None else ('CONFIG_OPENEMBER_USE_RUCKIG=y' if enabled else '# CONFIG_OPENEMBER_USE_RUCKIG is not set')
+        (root / '.config').write_text(text + '\n')
+        subprocess.run(['bash', sys.argv[1], folder], check=True, capture_output=True, text=True)
+        expected = 'ON' if enabled else 'OFF'
+        assert f'set(OPENEMBER_WITH_RUCKIG {expected} CACHE BOOL' in (root / 'config.cmake').read_text()

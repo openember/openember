@@ -684,6 +684,7 @@ set(OPENEMBER_MSGS_REF "${msgs_ref}" CACHE STRING "openember-msgs git ref" FORCE
 set_property(CACHE OPENEMBER_MSGS_REF PROPERTY STRINGS main)
 set(OPENEMBER_MSGS_LOCAL_SOURCE "${msgs_local_source}" CACHE PATH "Absolute path to local openember-msgs checkout" FORCE)
 set(OPENEMBER_WITH_ASIO ${use_asio} CACHE BOOL "Fetch/use standalone Asio (optional)" FORCE)
+set(OPENEMBER_WITH_RUCKIG ${use_ruckig} CACHE BOOL "Fetch/use ruckig trajectory library (optional; C++20)" FORCE)
 set(OPENEMBER_COMPONENT_NETWORK ${component_network} CACHE BOOL "Build component: Network (high-level socket wrapper)" FORCE)
 set(OPENEMBER_COMPONENT_TRANSPORT ${component_transport} CACHE BOOL "Build component: Transport (Zenoh)" FORCE)
 set(OPENEMBER_ENABLE_CORE ${enable_core} CACHE BOOL "Build C++ core (Node/Topic/Service)" FORCE)
