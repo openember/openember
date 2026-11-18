@@ -15,7 +15,8 @@ namespace {
 constexpr std::array<unsigned, Index(Axis::Count)> kAxes{
     ABS_X, ABS_Y, ABS_RX, ABS_RY, ABS_Z, ABS_RZ, ABS_HAT0X, ABS_HAT0Y};
 constexpr std::array<unsigned, Index(Button::Count)> kButtons{
-    BTN_SOUTH, BTN_EAST, BTN_WEST, BTN_NORTH, BTN_TL, BTN_TR, BTN_SELECT,
+    // Linux XInput aliases: X=0x133 (BTN_NORTH), Y=0x134 (BTN_WEST).
+    BTN_A, BTN_B, BTN_X, BTN_Y, BTN_TL, BTN_TR, BTN_SELECT,
     BTN_START, BTN_MODE, BTN_THUMBL, BTN_THUMBR};
 using KeyBits = std::array<unsigned char, (KEY_MAX + 8) / 8>;
 bool Bit(const KeyBits& bits, unsigned code) { return (bits[code / 8] & (1 << (code % 8))) != 0; }

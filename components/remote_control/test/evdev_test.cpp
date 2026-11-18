@@ -14,6 +14,7 @@
 
 namespace {
 constexpr int kFd = 12345;
+int initial_button = -1;
 std::deque<input_event> events;
 bool wrong_identity = false, broken_read = false, hangup = false, closed = false;
 void Require(bool condition) { if (!condition) throw std::runtime_error("evdev expectation failed"); }
@@ -55,7 +56,9 @@ int __wrap_ioctl(int fd, unsigned long request, ...) {
         std::memset(out, 0xff, _IOC_SIZE(request)); return 0;
     }
     if (_IOC_NR(request) == _IOC_NR(EVIOCGKEY(1))) {
-        std::memset(out, 0, _IOC_SIZE(request)); return 0;
+        std::memset(out, 0, _IOC_SIZE(request));
+        if (initial_button >= 0) static_cast<unsigned char*>(out)[initial_button / 8] |= 1 << (initial_button % 8);
+        return 0;
     }
     const auto code = _IOC_NR(request) - 0x40;
     if (code <= ABS_MAX) {
@@ -72,12 +75,31 @@ int main(int argc, char** argv) {
     try {
         if (argc != 2) throw std::runtime_error("case required");
         const std::string name = argv[1];
+        namespace rc = openember::remote_control;
+        if (name == "initial_x") initial_button = 0x133;
+        if (name == "initial_y") initial_button = 0x134;
         openember::remote_control::F710Evdev device("/test/f710");
         if (name == "identity") {
             wrong_identity = true; Require(!device.Poll().connected && closed && !device.Error().empty());
         } else {
             auto state = device.Poll(); Require(state.connected && state.generation == 1);
-            if (name == "packets") {
+            if (name == "buttons" || name == "initial_x" || name == "initial_y") {
+                // Fixed Linux XInput wire codes, deliberately independent of backend constants.
+                const std::array<unsigned short, rc::Index(rc::Button::Count)> codes{
+                    0x130, 0x131, 0x133, 0x134, 0x136, 0x137, 0x13a, 0x13b, 0x13c, 0x13d, 0x13e};
+                if (name != "buttons") {
+                    const auto expected = rc::Index(name == "initial_x" ? rc::Button::X : rc::Button::Y);
+                    for (std::size_t j = 0; j < state.buttons.size(); ++j) Require(state.buttons[j] == (j == expected));
+                } else {
+                    for (std::size_t i = 0; i < codes.size(); ++i) {
+                        Event(EV_KEY, codes[i], 1); Event(EV_SYN, SYN_REPORT);
+                        state = device.Poll();
+                        for (std::size_t j = 0; j < state.buttons.size(); ++j) Require(state.buttons[j] == (j == i));
+                        Event(EV_KEY, codes[i], 0); Event(EV_SYN, SYN_REPORT);
+                        state = device.Poll(); for (bool button : state.buttons) Require(!button);
+                    }
+                }
+            } else if (name == "packets") {
                 Event(EV_ABS, ABS_Y, -32768); Event(EV_KEY, BTN_SOUTH, 1);
                 // Partial packets must not become a published snapshot.
                 Require(device.Poll().axes[1] == 0);

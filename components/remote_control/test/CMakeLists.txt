@@ -25,7 +25,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(test_remote_evdev PRIVATE ${_remote_target})
     target_link_options(test_remote_evdev PRIVATE
         -Wl,--wrap=open -Wl,--wrap=close -Wl,--wrap=read -Wl,--wrap=poll -Wl,--wrap=ioctl)
-    foreach(_case identity packets sync overflow read hangup)
+    foreach(_case identity packets buttons initial_x initial_y sync overflow read hangup)
         add_test(NAME remote_evdev_${_case} COMMAND test_remote_evdev ${_case})
         set_tests_properties(remote_evdev_${_case} PROPERTIES LABELS "regression;unit" TIMEOUT 10)
     endforeach()
