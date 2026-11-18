@@ -1,5 +1,12 @@
 menu "Components Layer"
 
+config OPENEMBER_COMPONENT_INFERENCE
+    bool "Build optional ONNX Runtime CPU inference"
+    default n
+    help
+      Requires an installed ONNX Runtime SDK, selected with OPENEMBER_ONNXRUNTIME_ROOT.
+      No automatic dependency download. Public API does not expose SDK types.
+
 config OPENEMBER_COMPONENT_REMOTE_CONTROL
     bool "Build component: Remote control input and mapping"
     default y

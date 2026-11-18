@@ -7,6 +7,9 @@ set(_openember_tests
 if(TARGET openember::remote_control)
     add_subdirectory(${OPENEMBER_SOURCE_DIR}/components/remote_control/test remote_control)
 endif()
+if(TARGET openember::inference)
+    add_subdirectory(${OPENEMBER_SOURCE_DIR}/components/inference/test inference)
+endif()
 
 if(OPENEMBER_ENABLE_OSAL)
     list(APPEND _openember_tests test_osal.cpp)

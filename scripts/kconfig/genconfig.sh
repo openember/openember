@@ -170,6 +170,11 @@ component_actuator="$(onoff CONFIG_OPENEMBER_COMPONENT_ACTUATOR)"
 if ! has_symbol CONFIG_OPENEMBER_COMPONENT_ACTUATOR; then
   component_actuator=ON
 fi
+component_remote_control="$(onoff CONFIG_OPENEMBER_COMPONENT_REMOTE_CONTROL)"
+if ! has_symbol CONFIG_OPENEMBER_COMPONENT_REMOTE_CONTROL; then
+  component_remote_control=ON
+fi
+component_inference="$(onoff CONFIG_OPENEMBER_COMPONENT_INFERENCE)"
 hardware_endpoint_imu="$(onoff CONFIG_OPENEMBER_HARDWARE_ENDPOINT_IMU)"
 if ! has_symbol CONFIG_OPENEMBER_HARDWARE_ENDPOINT_IMU; then
   hardware_endpoint_imu=ON
@@ -272,6 +277,10 @@ fi
 enable_tools_sbus_receiver="$(onoff CONFIG_OPENEMBER_ENABLE_TOOLS_SBUS_RECEIVER)"
 if ! has_symbol CONFIG_OPENEMBER_ENABLE_TOOLS_SBUS_RECEIVER; then
   enable_tools_sbus_receiver=ON
+fi
+enable_tools_gamepad_monitor="$(onoff CONFIG_OPENEMBER_ENABLE_TOOLS_GAMEPAD_MONITOR)"
+if ! has_symbol CONFIG_OPENEMBER_ENABLE_TOOLS_GAMEPAD_MONITOR; then
+  enable_tools_gamepad_monitor=ON
 fi
 
 spdlog_pattern="[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v"
@@ -700,6 +709,8 @@ set(OPENEMBER_COMPONENT_ALGORITHM ${component_algorithm} CACHE BOOL "Build Algor
 set(OPENEMBER_COMPONENT_HARDWARE ${component_hardware} CACHE BOOL "Build Hardware common component" FORCE)
 set(OPENEMBER_COMPONENT_SENSOR ${component_sensor} CACHE BOOL "Build Sensor Framework component" FORCE)
 set(OPENEMBER_COMPONENT_ACTUATOR ${component_actuator} CACHE BOOL "Build Actuator Framework component" FORCE)
+set(OPENEMBER_COMPONENT_REMOTE_CONTROL ${component_remote_control} CACHE BOOL "Build remote input component" FORCE)
+set(OPENEMBER_COMPONENT_INFERENCE ${component_inference} CACHE BOOL "Build optional ONNX inference component" FORCE)
 set(OPENEMBER_HARDWARE_ENDPOINT_IMU ${hardware_endpoint_imu} CACHE BOOL "Build Hardware Interface IMU endpoint" FORCE)
 set(OPENEMBER_HARDWARE_ENDPOINT_TEMPERATURE ${hardware_endpoint_temperature} CACHE BOOL "Build Hardware Interface Temperature endpoint" FORCE)
 set(OPENEMBER_HARDWARE_ENDPOINT_GNSS ${hardware_endpoint_gnss} CACHE BOOL "Build Hardware Interface GNSS endpoint" FORCE)
@@ -724,6 +735,7 @@ set(OPENEMBER_ENABLE_LPIO_EXAMPLES ${enable_lpio_examples} CACHE BOOL "Build pla
 set(OPENEMBER_ENABLE_TOOLS ${enable_tools} CACHE BOOL "Build OpenEmber utilities (tools/)" FORCE)
 set(OPENEMBER_ENABLE_TOOLS_EMCOM ${enable_tools_emcom} CACHE BOOL "Build emcom serial console tool" FORCE)
 set(OPENEMBER_ENABLE_TOOLS_SBUS_RECEIVER ${enable_tools_sbus_receiver} CACHE BOOL "Build sbus-receiver SBUS monitor tool" FORCE)
+set(OPENEMBER_ENABLE_TOOLS_GAMEPAD_MONITOR ${enable_tools_gamepad_monitor} CACHE BOOL "Build F710 monitor tool" FORCE)
 
 set(OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG ${bundle_spdlog} CACHE BOOL "Third-party bundle: spdlog" FORCE)
 set(OPENEMBER_THIRD_PARTY_BUNDLE_NLOHMANN_JSON ${bundle_nlohmann} CACHE BOOL "Third-party bundle: nlohmann/json" FORCE)

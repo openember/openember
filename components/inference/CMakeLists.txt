@@ -1,0 +1,22 @@
+set(OPENEMBER_ONNXRUNTIME_ROOT "" CACHE PATH "Installed ONNX Runtime CPU SDK root")
+if(OPENEMBER_ONNXRUNTIME_ROOT)
+    find_path(OPENEMBER_ONNXRUNTIME_INCLUDE onnxruntime_cxx_api.h
+        PATHS "${OPENEMBER_ONNXRUNTIME_ROOT}/include" "${OPENEMBER_ONNXRUNTIME_ROOT}/include/onnxruntime" NO_DEFAULT_PATH)
+    find_library(OPENEMBER_ONNXRUNTIME_LIBRARY onnxruntime
+        PATHS "${OPENEMBER_ONNXRUNTIME_ROOT}/lib" "${OPENEMBER_ONNXRUNTIME_ROOT}/lib64" NO_DEFAULT_PATH)
+else()
+    find_path(OPENEMBER_ONNXRUNTIME_INCLUDE onnxruntime_cxx_api.h PATH_SUFFIXES onnxruntime)
+    find_library(OPENEMBER_ONNXRUNTIME_LIBRARY onnxruntime)
+endif()
+if(NOT OPENEMBER_ONNXRUNTIME_INCLUDE OR NOT OPENEMBER_ONNXRUNTIME_LIBRARY)
+    message(FATAL_ERROR "Inference requires an installed ONNX Runtime SDK; set OPENEMBER_ONNXRUNTIME_ROOT. No automatic downloads.")
+endif()
+add_library(openember_onnxruntime UNKNOWN IMPORTED)
+set_target_properties(openember_onnxruntime PROPERTIES IMPORTED_LOCATION "${OPENEMBER_ONNXRUNTIME_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${OPENEMBER_ONNXRUNTIME_INCLUDE}")
+add_library(openember_inference STATIC src/onnx_model.cpp)
+target_compile_features(openember_inference PUBLIC cxx_std_17)
+target_include_directories(openember_inference PUBLIC include)
+target_link_libraries(openember_inference PRIVATE openember_onnxruntime)
+add_library(openember::inference ALIAS openember_inference)
+install(TARGETS openember_inference ARCHIVE DESTINATION lib)

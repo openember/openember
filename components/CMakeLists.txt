@@ -1,4 +1,7 @@
 set(FOLDER_NAME "components")
+if(OPENEMBER_COMPONENT_INFERENCE)
+    add_subdirectory(inference)
+endif()
 if(OPENEMBER_COMPONENT_REMOTE_CONTROL)
     add_subdirectory(remote_control)
 endif()
