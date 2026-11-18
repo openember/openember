@@ -1,4 +1,7 @@
 # Host / target utilities (see tools/Kconfig)
+if(OPENEMBER_ENABLE_TOOLS_GAMEPAD_MONITOR AND TARGET openember::remote_control AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_subdirectory(gamepad-monitor)
+endif()
 if(OPENEMBER_ENABLE_TOOLS_EMCOM)
     if(NOT OPENEMBER_ENABLE_LPIO)
         message(FATAL_ERROR "OPENEMBER_ENABLE_TOOLS_EMCOM requires OPENEMBER_ENABLE_LPIO")

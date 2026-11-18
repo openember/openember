@@ -1,5 +1,11 @@
 menu "Components Layer"
 
+config OPENEMBER_COMPONENT_REMOTE_CONTROL
+    bool "Build component: Remote control input and mapping"
+    default y
+    help
+      Generic input mapping and Linux evdev F710 XInput backend.
+
 menu "Logging"
 
 choice OPENEMBER_LOG_BACKEND

@@ -1,4 +1,7 @@
 set(FOLDER_NAME "components")
+if(OPENEMBER_COMPONENT_REMOTE_CONTROL)
+    add_subdirectory(remote_control)
+endif()
 
 if(NOT DEFINED OPENEMBER_COMPONENT_HARDWARE OR OPENEMBER_COMPONENT_HARDWARE)
     add_subdirectory(hardware)

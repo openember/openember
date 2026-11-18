@@ -1,5 +1,12 @@
 menu "Tools"
 
+config OPENEMBER_ENABLE_TOOLS_GAMEPAD_MONITOR
+    bool "Build F710 XInput monitor"
+    depends on OPENEMBER_ENABLE_TOOLS && OPENEMBER_COMPONENT_REMOTE_CONTROL
+    default y
+    help
+      Read-only Linux evdev monitor. No actuator or transport dependency.
+
 config OPENEMBER_ENABLE_TOOLS
     bool "Build OpenEmber utilities (tools/)"
     default y

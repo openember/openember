@@ -1,0 +1,4 @@
+add_executable(openember_gamepad_monitor main.cpp)
+target_link_libraries(openember_gamepad_monitor PRIVATE openember::remote_control)
+set_target_properties(openember_gamepad_monitor PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+install(TARGETS openember_gamepad_monitor RUNTIME DESTINATION bin)
