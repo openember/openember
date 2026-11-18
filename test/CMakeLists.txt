@@ -4,6 +4,10 @@ set(_openember_tests
     test_log.cpp
 )
 
+if(TARGET openember::config)
+    add_subdirectory(${OPENEMBER_SOURCE_DIR}/components/config/test config)
+endif()
+
 if(TARGET openember::remote_control)
     add_subdirectory(${OPENEMBER_SOURCE_DIR}/components/remote_control/test remote_control)
 endif()

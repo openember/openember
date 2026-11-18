@@ -1,5 +1,13 @@
 menu "Components Layer"
 
+config OPENEMBER_COMPONENT_CONFIG
+    bool "Build component: YAML runtime configuration"
+    depends on OPENEMBER_USE_YAMLCPP
+    default y
+    help
+      Immutable YAML snapshots with typed reads, validation and source diagnostics.
+      Startup loading only; modules own their schema and application lifecycle.
+
 config OPENEMBER_COMPONENT_INFERENCE
     bool "Build optional ONNX Runtime CPU inference"
     default n

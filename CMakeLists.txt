@@ -135,6 +135,7 @@ endif()
 set_property(CACHE OPENEMBER_LOG_BACKEND PROPERTY STRINGS BUILTIN SPDLOG)
 
 option(OPENEMBER_WITH_YAMLCPP "Fetch/use yaml-cpp (optional C++ dependency)" ON)
+option(OPENEMBER_COMPONENT_CONFIG "Build YAML runtime configuration component" ${OPENEMBER_WITH_YAMLCPP})
 option(OPENEMBER_WITH_ASIO "Fetch/use standalone Asio (optional)" ON)
 option(OPENEMBER_WITH_RUCKIG "Fetch/use ruckig trajectory library (optional; C++20)" OFF)
 option(OPENEMBER_ENABLE_LINK "Build OpenEmber Link communication layer" ON)
