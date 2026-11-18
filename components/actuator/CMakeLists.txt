@@ -2,6 +2,7 @@ project(openember_actuator VERSION 0.1.0 LANGUAGES CXX)
 
 set(OPENEMBER_ACTUATOR_SRCS
     src/mock_joint_controller.cpp
+    src/control_guard.cpp
 )
 
 OPENEMBER_ADD_STATIC_LIBRARY(TARGET ${PROJECT_NAME}

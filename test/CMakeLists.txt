@@ -10,6 +10,7 @@ endif()
 
 if(OPENEMBER_COMPONENT_ACTUATOR)
     list(APPEND _openember_tests test_actuator.cpp)
+    add_subdirectory(${OPENEMBER_SOURCE_DIR}/components/actuator/test actuator_control)
 endif()
 
 foreach(_t ${_openember_tests})
@@ -42,6 +43,10 @@ endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT CMAKE_CROSSCOMPILING)
     if(TARGET openember::hardware_interface)
+        get_target_property(_actuator_v2_adapter openember::hardware_interface OPENEMBER_ACTUATOR_V2_MESSAGE_ADAPTER)
+        if(_actuator_v2_adapter)
+            add_subdirectory(${OPENEMBER_SOURCE_DIR}/services/hardware_interface/test/actuator_control actuator_control_adapter)
+        endif()
         if(OPENEMBER_HARDWARE_ENDPOINT_IMU)
             add_executable(test_imu_endpoint test_imu_endpoint.cpp)
             target_link_libraries(test_imu_endpoint PRIVATE openember::hardware_interface)
