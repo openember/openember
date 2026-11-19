@@ -61,6 +61,7 @@ option( OPENEMBER_COMPONENT_HARDWARE "Build component: Hardware common interface
 option( OPENEMBER_COMPONENT_SENSOR "Build component: Sensor Framework" ON)
 option( OPENEMBER_COMPONENT_ACTUATOR "Build component: Actuator Framework" ON)
 option( OPENEMBER_COMPONENT_REMOTE_CONTROL "Build component: Remote control input and mapping" ON)
+option( OPENEMBER_COMPONENT_ALERTS "Build component: Alert state, events and logging" ON)
 option( OPENEMBER_COMPONENT_INFERENCE "Build optional ONNX Runtime CPU inference" OFF)
 option( OPENEMBER_MQTT_PAHO_TLS "Build Paho with OpenSSL (TLS / ssl://)" ON)
 option( OPENEMBER_MQTT_PAHO_ASYNC "Link Paho MQTTAsync in addition to MQTTClient" OFF)

@@ -30,6 +30,8 @@ struct LoggerConfig {
     std::string flush_level      = "info";
     std::string pattern          = "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v";
 
+    bool make_default           = true;
+
     bool enable_stdout           = true;
     bool enable_file             = true;
     bool enable_syslog           = false;
@@ -73,6 +75,9 @@ public:
 
     void write(Level level, std::string_view tag, std::string_view msg);
     void writef(Level level, std::string_view tag, const char *fmt, ...);
+
+    /** Whether the backend was initialized successfully. */
+    bool available() const noexcept;
 
     const std::string& name() const noexcept { return config_.name; }
     const LoggerConfig& config() const noexcept { return config_; }

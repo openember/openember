@@ -21,6 +21,13 @@ config OPENEMBER_COMPONENT_REMOTE_CONTROL
     help
       Generic input mapping and Linux evdev F710 XInput backend.
 
+config OPENEMBER_COMPONENT_ALERTS
+    bool "Build component: Alert state, events and logging"
+    default y
+    help
+      Bounded alert state and asynchronous warning/error logging.
+      Detection and control response remain module responsibilities.
+
 menu "Logging"
 
 choice OPENEMBER_LOG_BACKEND

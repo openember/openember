@@ -1,3 +1,7 @@
+if(TARGET openember::alerts)
+    add_subdirectory(${OPENEMBER_SOURCE_DIR}/components/alerts/test alerts)
+endif()
+
 set(_openember_tests
     minunit_example.c
     test_algorithm.cpp

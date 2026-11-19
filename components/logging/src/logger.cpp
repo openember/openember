@@ -306,7 +306,7 @@ Logger::Logger(LoggerConfig config) : config_(std::move(config)), impl_(std::mak
 
         impl_->spd = std::make_shared<spdlog::logger>(config_.name, sinks.begin(), sinks.end());
         spdlog::register_logger(impl_->spd);
-        spdlog::set_default_logger(impl_->spd);
+        if (config_.make_default) spdlog::set_default_logger(impl_->spd);
         impl_->spd->set_level(parse_level(config_.log_level, spdlog::level::info));
         impl_->spd->flush_on(parse_level(config_.flush_level, spdlog::level::info));
         impl_->spd->set_pattern(config_.pattern);
@@ -315,6 +315,14 @@ Logger::Logger(LoggerConfig config) : config_(std::move(config)), impl_(std::mak
     }
 #else
     impl_->name = config_.name;
+#endif
+}
+
+bool Logger::available() const noexcept {
+#if defined(EMBER_LIBS_USING_SPDLOG)
+    return impl_ && static_cast<bool>(impl_->spd);
+#else
+    return static_cast<bool>(impl_);
 #endif
 }
 

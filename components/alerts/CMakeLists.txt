@@ -1,0 +1,8 @@
+add_library(openember_alerts STATIC src/manager.cpp)
+target_compile_features(openember_alerts PUBLIC cxx_std_17)
+target_include_directories(openember_alerts PUBLIC include)
+find_package(Threads REQUIRED)
+target_link_libraries(openember_alerts PUBLIC logging PRIVATE Threads::Threads)
+add_library(openember::alerts ALIAS openember_alerts)
+install(TARGETS openember_alerts ARCHIVE DESTINATION lib)
+install(DIRECTORY include/openember DESTINATION include)
