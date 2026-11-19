@@ -59,7 +59,7 @@ MappedInput InputMapper::Update(const GamepadState& state, Time now) {
         previous_[i] = held;
     }
     for (const auto& binding : mapping_.axes) {
-        double value = out.deadman ? state.axes[Index(binding.axis)] : 0;
+        double value = out.ready && (!binding.require_deadman || out.deadman) ? state.axes[Index(binding.axis)] : 0;
         value = std::abs(value) <= mapping_.deadzone ? 0 :
             std::copysign((std::abs(value) - mapping_.deadzone) / (1 - mapping_.deadzone), value);
         out.axes.push_back({binding.action, value == 0 ? 0 : value * binding.scale});

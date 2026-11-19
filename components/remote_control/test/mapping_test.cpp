@@ -21,7 +21,9 @@ int main(int argc, char** argv) {
         auto time = rc::Time{} + 10s;
         rc::GamepadState state;
         state.connected = true; state.generation = 1; state.sampled_at = time;
-        rc::InputMapper mapper(Mapping());
+        auto mapping = Mapping();
+        if (name == "independent_axes") mapping.axes[0].require_deadman = false;
+        rc::InputMapper mapper(mapping);
         auto update = [&] { return mapper.Update(state, time); };
         auto button = [&](rc::Button b, bool held) { state.buttons[rc::Index(b)] = held; };
         if (name == "neutral") {
@@ -51,6 +53,19 @@ int main(int argc, char** argv) {
             state.axes[rc::Index(rc::Axis::LeftY)] = -0.56;
             Require(std::abs(update().axes[0].value - 0.15) < 1e-12);
             state.axes[rc::Index(rc::Axis::LeftY)] = 1; Require(update().axes[0].value == -0.3);
+        } else if (name == "independent_axes") {
+            state.axes[rc::Index(rc::Axis::LeftY)] = -1;
+            auto out = update(); Require(!out.ready && out.axes[0].value == 0);
+            state.axes.fill(0); Require(update().ready);
+            state.axes[rc::Index(rc::Axis::LeftY)] = -.56;
+            Require(std::abs(update().axes[0].value - .15) < 1e-12);
+            button(rc::Button::LB, true); Require(std::abs(update().axes[0].value - .15) < 1e-12);
+            button(rc::Button::LB, false); Require(std::abs(update().axes[0].value - .15) < 1e-12);
+            state.connected = false; out = update(); Require(out.reset && out.axes[0].value == 0);
+            state.connected = true; out = update(); Require(!out.ready && out.axes[0].value == 0);
+            state.axes.fill(0); Require(update().ready);
+            state.axes[rc::Index(rc::Axis::LeftY)] = -1; Require(update().axes[0].value == .3);
+            time += 201ms; out = update(); Require(!out.available && out.axes[0].value == 0);
         } else if (name == "stale") {
             update(); button(rc::Button::LB, true); update(); time += 201ms;
             auto out = update(); Require(out.reset && !out.available && !out.ready && out.axes[0].value == 0);

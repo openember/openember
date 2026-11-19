@@ -51,6 +51,7 @@ struct AxisBinding {
     std::string action;
     Axis axis;
     double scale = 1;
+    bool require_deadman = true;  // False permits ready axes without holding the modifier; product FSM gates execution.
 };
 struct Mapping {
     Button deadman = Button::LB;
