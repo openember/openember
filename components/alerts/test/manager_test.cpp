@@ -94,6 +94,17 @@ int main(int argc, char** argv) {
             Check(elapsed < 100ms, "producer blocked on observer");
             Check(m.Snapshot()[0].sequence == 2 && m.Stats().rejected == 1, "full event mutated state");
             Check(m.Stats().delivered == 2 && m.Stats().dispatch_errors == 2, "exception killed dispatcher");
+        } else if (name == "history") {
+            options.history_capacity = 2; Manager m(options);
+            for (int i=1; i<=3; ++i) Check(m.Publish(Make(i)) == PublishResult::Accepted, "history publish");
+            auto batch = m.ReadSince(0);
+            Check(batch.history_gap && batch.events.size() == 2 && batch.revision == 3 &&
+                batch.events.front().revision == 2 && batch.states.at(0).sequence == 3, "bounded history");
+            Check(!m.ReadSince(2).history_gap && m.ReadSince(2).events.size() == 1, "valid cursor");
+            m.ForgetSession("motion", "session-1"); batch = m.ReadSince(3);
+            Check(batch.revision == 4 && batch.states.empty() && batch.events.empty(), "session removal revision");
+            bool bad = false; try { m.ReadSince(5); } catch (const std::invalid_argument&) { bad = true; }
+            Check(bad, "future cursor accepted"); m.Stop();
         } else if (name == "logging") {
             const auto file = std::filesystem::path(dir) / "alerts-test-logging-1.log";
             std::filesystem::remove(file);

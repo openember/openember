@@ -174,6 +174,7 @@ component_remote_control="$(onoff CONFIG_OPENEMBER_COMPONENT_REMOTE_CONTROL)"
 if ! has_symbol CONFIG_OPENEMBER_COMPONENT_REMOTE_CONTROL; then
   component_remote_control=ON
 fi
+component_alerts_link="$(onoff CONFIG_OPENEMBER_COMPONENT_ALERTS_LINK)"
 component_alerts="$(onoff CONFIG_OPENEMBER_COMPONENT_ALERTS)"
 if ! has_symbol CONFIG_OPENEMBER_COMPONENT_ALERTS; then
   component_alerts=ON
@@ -722,6 +723,7 @@ set(OPENEMBER_COMPONENT_HARDWARE ${component_hardware} CACHE BOOL "Build Hardwar
 set(OPENEMBER_COMPONENT_SENSOR ${component_sensor} CACHE BOOL "Build Sensor Framework component" FORCE)
 set(OPENEMBER_COMPONENT_ACTUATOR ${component_actuator} CACHE BOOL "Build Actuator Framework component" FORCE)
 set(OPENEMBER_COMPONENT_REMOTE_CONTROL ${component_remote_control} CACHE BOOL "Build remote input component" FORCE)
+set(OPENEMBER_COMPONENT_ALERTS_LINK ${component_alerts_link} CACHE BOOL "Publish alerts through Link" FORCE)
 set(OPENEMBER_COMPONENT_ALERTS ${component_alerts} CACHE BOOL "Build alert state, events and logging" FORCE)
 set(OPENEMBER_COMPONENT_CONFIG ${component_config} CACHE BOOL "Build YAML runtime configuration component" FORCE)
 set(OPENEMBER_COMPONENT_INFERENCE ${component_inference} CACHE BOOL "Build optional ONNX inference component" FORCE)

@@ -28,6 +28,14 @@ config OPENEMBER_COMPONENT_ALERTS
       Bounded alert state and asynchronous warning/error logging.
       Detection and control response remain module responsibilities.
 
+config OPENEMBER_COMPONENT_ALERTS_LINK
+    bool "Publish alert events and state through Link"
+    depends on OPENEMBER_COMPONENT_ALERTS && OPENEMBER_ENABLE_LINK && OPENEMBER_ENABLE_MSGS
+    default n
+    help
+      Independent structured alerts/v1 topics, periodic full state and heartbeat.
+      Requires an openember-msgs checkout containing the alerts/v1 contract.
+
 menu "Logging"
 
 choice OPENEMBER_LOG_BACKEND

@@ -24,6 +24,7 @@ struct Event {
 };
 struct Options {
     std::size_t queue_capacity = 128, state_capacity = 128;
+    std::size_t history_capacity = 128;
     logging::LoggerConfig logging = logging::LoggerConfig::from_build_defaults("openember-alerts");
     // Called on the dispatch thread, after logging. Must return in bounded time;
     // must not call Stop() or destroy this manager. Exceptions are counted.
@@ -32,6 +33,14 @@ struct Options {
 enum class PublishResult { Accepted, Invalid, Stale, Full, Stopped };
 struct Statistics {
     std::uint64_t accepted = 0, rejected = 0, delivered = 0, dispatch_errors = 0;
+};
+struct Notification { std::uint64_t revision = 0; Event event; };
+struct UpdateBatch {
+    std::uint64_t revision = 0;
+    bool history_gap = false;
+    Statistics statistics;
+    std::vector<Notification> events;
+    std::vector<Event> states;
 };
 // Bounded in-process state/event system. Publish never performs sink I/O; it
 // takes a short mutex and copies bounded metadata. This is not a hard RT API.
@@ -44,6 +53,9 @@ public:
     PublishResult Publish(Event event);
     std::vector<Event> Snapshot() const;
     Statistics Stats() const;
+    // Atomic history + full snapshot, independent of log dispatch. Use the
+    // returned revision as the next cursor; after_revision must not be future.
+    UpdateBatch ReadSince(std::uint64_t after_revision) const;
     // Call after stopping a producer, before starting its next session. Pending
     // events still drain to logging; removal does not fabricate a clear event.
     void ForgetSession(const std::string& source, const std::string& session);

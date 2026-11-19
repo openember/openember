@@ -202,3 +202,5 @@ OpenEmber 适用于需要长期运行的智能设备，这些设备通常有这�
 另外，OpenEmber 可作为 ROS 的“硬件隔离层”，ROS 通过 OpenEmber 的通信模块拿数据、控制硬件。
 
 告警状态、事件队列与 warning/error 日志接入见[通用告警组件](docs/design/alerts.md)。
+
+结构化告警事件、完整状态快照与订阅工具见[告警事件与 Link](docs/design/alerts-link.md)。

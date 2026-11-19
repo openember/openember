@@ -67,13 +67,17 @@ struct Manager::Impl {
     std::mutex stop_mutex;
     std::condition_variable ready;
     std::deque<Event> queue;
+    std::deque<Notification> history;
+    std::uint64_t revision = 0;
+    std::uint64_t evicted_revision = 0;
     std::vector<Event> states;
     Statistics stats;
     bool stopping = false;
     std::thread worker;
     explicit Impl(Options value) : options(std::move(value)), logger(LogConfig(options.logging)) {
         if (!options.queue_capacity || options.queue_capacity > 65536 ||
-            !options.state_capacity || options.state_capacity > 65536)
+            !options.state_capacity || options.state_capacity > 65536 ||
+            !options.history_capacity || options.history_capacity > 65536)
             throw std::invalid_argument("alert capacities must be in [1, 65536]");
         if (!logger.available()) throw std::runtime_error("alert logger initialization failed");
         states.reserve(options.state_capacity);
@@ -129,6 +133,11 @@ PublishResult Manager::Publish(Event event) {
         (entry == impl_->states.end() && impl_->states.size() == impl_->options.state_capacity))
         return reject(PublishResult::Full);
     impl_->queue.push_back(event);
+    impl_->history.push_back({++impl_->revision, event});
+    if (impl_->history.size() > impl_->options.history_capacity) {
+        impl_->evicted_revision = impl_->history.front().revision;
+        impl_->history.pop_front();
+    }
     if (entry == impl_->states.end()) impl_->states.push_back(std::move(event));
     else *entry = std::move(event);
     ++impl_->stats.accepted;
@@ -141,12 +150,27 @@ std::vector<Event> Manager::Snapshot() const {
 Statistics Manager::Stats() const {
     std::lock_guard<std::mutex> lock(impl_->mutex); return impl_->stats;
 }
+UpdateBatch Manager::ReadSince(std::uint64_t after_revision) const {
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    if (after_revision > impl_->revision) throw std::invalid_argument("future alert history cursor");
+    UpdateBatch batch;
+    batch.revision = impl_->revision; batch.statistics = impl_->stats;
+    batch.states = impl_->states;
+    // A gap is detectable even after old events have left the bounded history.
+    if (after_revision < impl_->evicted_revision)
+        batch.history_gap = true;
+    for (const auto& event : impl_->history)
+        if (event.revision > after_revision) batch.events.push_back(event);
+    return batch;
+}
 void Manager::ForgetSession(const std::string& source, const std::string& session) {
     std::lock_guard<std::mutex> lock(impl_->mutex);
     auto& states = impl_->states;
+    const auto before = states.size();
     states.erase(std::remove_if(states.begin(), states.end(), [&](const Event& e) {
         return e.key.source == source && e.key.session == session;
     }), states.end());
+    if (states.size() != before) ++impl_->revision;
 }
 void Manager::Stop() {
     std::lock_guard<std::mutex> stop_lock(impl_->stop_mutex);
