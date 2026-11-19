@@ -37,11 +37,12 @@ Result<Subscriber> Session::CreateSubscriber(const TopicOptions& options,
 
         auto subscriber = transport_internal::RawZenohSession(*this).declare_subscriber(
             zenoh::KeyExpr(key),
-            [callback = std::move(callback)](const zenoh::Sample& sample) {
+            [callback = std::move(callback), maximum = options.max_payload_bytes](const zenoh::Sample& sample) {
                 Message msg;
                 msg.key = std::string(sample.get_keyexpr().as_string_view());
 
                 const auto& payload = sample.get_payload();
+                if (maximum && payload.size() > maximum) return;
                 // zenoh-cpp 1.10 calls a Rust reader with vector::data() even
                 // for zero bytes; that pointer may be null. Empty is legal.
                 if (payload.size() != 0) msg.payload = payload.as_vector();

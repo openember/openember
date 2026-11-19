@@ -13,9 +13,9 @@ namespace openember::transport {
 
 class ServiceClient::Impl {
 public:
-    Impl(zenoh::Session* session, std::string key)
+    Impl(zenoh::Session* session, std::string key, std::size_t maximum)
         : session_(session),
-          key_(std::move(key)) {}
+          key_(std::move(key)), maximum_(maximum) {}
 
     Result<ByteBuffer> Call(const ByteBuffer& request,
                             std::chrono::milliseconds timeout) {
@@ -34,7 +34,7 @@ public:
             auto pending = std::make_shared<PendingCall>();
             auto future = pending->promise.get_future();
 
-            auto on_reply = [pending](const zenoh::Reply& reply) {
+            auto on_reply = [pending, maximum = maximum_](const zenoh::Reply& reply) {
                 if (pending->completed.exchange(true)) return;
                 if (!reply.is_ok()) {
                     pending->promise.set_value(Error{
@@ -46,6 +46,10 @@ public:
 
                 const auto& sample = reply.get_ok();
                 const auto& payload = sample.get_payload();
+                if (maximum && payload.size() > maximum) {
+                    pending->promise.set_value(Error{ErrorCode::kInvalidArgument, "service reply exceeds payload limit"});
+                    return;
+                }
                 ByteBuffer buffer;
                 // Empty replies are valid (e.g. an empty protobuf message).
                 if (payload.size() != 0) buffer = payload.as_vector();
@@ -85,6 +89,7 @@ public:
 private:
     zenoh::Session* session_ = nullptr;
     std::string key_;
+    std::size_t maximum_ = 0;
 };
 
 ServiceClient::ServiceClient() = default;
@@ -114,7 +119,7 @@ Result<ServiceClient> Session::CreateServiceClient(const ServiceOptions& options
 
         return ServiceClient(std::make_unique<ServiceClient::Impl>(
             &transport_internal::RawZenohSession(*this),
-            key
+            key, options.max_payload_bytes
         ));
     } catch (const std::exception& e) {
         return Error{

@@ -32,11 +32,14 @@ struct SessionOptions {
 struct TopicOptions {
     std::string name;
     std::size_t queue_size = 16;
+    // Zero keeps legacy behavior; checked before copying middleware payload.
+    std::size_t max_payload_bytes = 0;
 };
 
 struct ServiceOptions {
     std::string name;
     std::chrono::milliseconds default_timeout{1000};
+    std::size_t max_payload_bytes = 0;
 };
 
 }  // namespace openember::transport

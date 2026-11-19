@@ -41,12 +41,16 @@ Result<ServiceServer> Session::CreateServiceServer(
 
         auto queryable = transport_internal::RawZenohSession(*this).declare_queryable(
             zenoh::KeyExpr(key),
-            [key, callback = std::move(callback)](const zenoh::Query& query) {
+            [key, callback = std::move(callback), maximum = options.max_payload_bytes](const zenoh::Query& query) {
                 Message request;
                 request.key = std::string(query.get_keyexpr().as_string_view());
                 request.receive_time = std::chrono::steady_clock::now();
 
                 if (const auto payload = query.get_payload()) {
+                    if (maximum && payload->get().size() > maximum) {
+                        query.reply(zenoh::KeyExpr(key), zenoh::Bytes("request payload exceeds limit"));
+                        return;
+                    }
                     // Avoid zenoh-cpp's null-buffer read on an empty request.
                     if (payload->get().size() != 0) request.payload = payload->get().as_vector();
                 }
