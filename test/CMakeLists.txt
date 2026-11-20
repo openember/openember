@@ -93,6 +93,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT CMAKE_CROSSCOMPILING)
         find_package(Python3 COMPONENTS Interpreter REQUIRED)
     endif()
     if(TARGET launch_manager)
+        add_test(NAME launch_dependencies COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/launch_dependencies.py $<TARGET_FILE:launch_manager>)
+        set_tests_properties(launch_dependencies PROPERTIES TIMEOUT 40 LABELS "regression;integration")
         add_test(NAME regression_supervision
             COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/runtime_regression.py
                 supervision --launch-manager $<TARGET_FILE:launch_manager>)

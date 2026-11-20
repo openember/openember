@@ -61,6 +61,7 @@ option( OPENEMBER_COMPONENT_HARDWARE "Build component: Hardware common interface
 option( OPENEMBER_COMPONENT_SENSOR "Build component: Sensor Framework" ON)
 option( OPENEMBER_COMPONENT_ACTUATOR "Build component: Actuator Framework" ON)
 option( OPENEMBER_COMPONENT_REMOTE_CONTROL "Build component: Remote control input and mapping" ON)
+option( OPENEMBER_COMPONENT_SYSTEM_STATE "Build generic whole-device state reducer" OFF)
 option( OPENEMBER_COMPONENT_ALERTS "Build component: Alert state, events and logging" ON)
 option( OPENEMBER_COMPONENT_ALERTS_LINK "Publish alerts and state through Link" OFF)
 option( OPENEMBER_COMPONENT_INFERENCE "Build optional ONNX Runtime CPU inference" OFF)

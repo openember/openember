@@ -37,6 +37,7 @@ public:
 
     explicit ProcessManager(std::vector<ProcessSpec> specs);
 
+    ~ProcessManager();
     void SetEventCallback(EventCallback callback);
     bool StartAll();
     ProcessEvent StartProcess(ProcessSpec spec);
@@ -53,15 +54,26 @@ private:
         pid_t pid = -1;
         ProcessState state = ProcessState::kStopped;
         std::uint32_t restart_count = 0;
-        std::chrono::steady_clock::time_point start_time;
+        std::chrono::steady_clock::time_point start_time{};
         std::uint64_t start_time_unix_ns = 0;
         std::uint64_t stop_time_unix_ns = 0;
+        int ready_fd = -1;
+        bool ready = false;
+        bool desired = false;
+        std::chrono::steady_clock::time_point retry_at{};
         bool has_heartbeat = false;
         bool intentional_stop = false;
-        std::chrono::steady_clock::time_point last_heartbeat_time;
-        std::chrono::steady_clock::time_point stop_deadline;
+        bool supervision_failure = false;
+        std::chrono::steady_clock::time_point last_heartbeat_time{};
+        std::chrono::steady_clock::time_point stop_deadline{};
     };
 
+    bool DependenciesReady(const ManagedProcess& process);
+    bool DependsOn(const ManagedProcess& process, const std::string& name);
+    void StopDependents(const std::string& name);
+    void CheckReadiness();
+    void Schedule();
+    void CheckStopDeadlines();
     bool StartOne(ManagedProcess& process);
     ManagedProcess* FindByName(const std::string& name);
     void HandleExit(pid_t pid, int status);

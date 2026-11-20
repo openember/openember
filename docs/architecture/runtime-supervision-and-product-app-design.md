@@ -6,6 +6,8 @@
 该设计面向智能设备、机器人、边缘网关和工业控制等场景。核心目标是让系统既能保持
 OpenEmber 的轻量、清晰和可裁剪，又能支撑未来更复杂的整机行为、节点管理和运行时监督。
 
+当前启动依赖和就绪行为以[实现契约](../design/launch-readiness-and-dependencies.md)为准；整机状态基础见[通用状态组件](../design/system-state-manager.md)。本文的演进章节含历史计划，不代表全部已经实现。
+
 ## 一、核心结论
 
 OpenEmber 的系统级职责应拆成五类：

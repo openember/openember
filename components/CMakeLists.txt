@@ -49,3 +49,7 @@ endif()
 if(NOT DEFINED OPENEMBER_COMPONENT_THREAD_POOL OR OPENEMBER_COMPONENT_THREAD_POOL)
     add_subdirectory(thread_pool)
 endif()
+
+if(OPENEMBER_COMPONENT_SYSTEM_STATE)
+    add_subdirectory(system_state)
+endif()

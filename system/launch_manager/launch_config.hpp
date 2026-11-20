@@ -26,6 +26,8 @@ struct ProcessSpec {
     std::vector<std::string> args;
     std::map<std::string, std::string> env;
     std::string working_directory;
+    std::vector<std::string> depends_on;
+    bool notify_ready = false;  // readiness: notify uses an inherited private socket.
     RestartPolicy restart = RestartPolicy::kNever;
     std::uint32_t restart_limit = 0;
     std::chrono::milliseconds startup_timeout{3000};
@@ -40,6 +42,8 @@ struct LaunchConfig {
 
 LaunchConfig LoadLaunchConfig(const std::string& path,
                               const std::string& openember_bin_dir);
+
+void ValidateLaunchGraph(const std::vector<ProcessSpec>& specs);
 
 const char* RestartPolicyName(RestartPolicy policy);
 

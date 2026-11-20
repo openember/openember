@@ -36,6 +36,13 @@ config OPENEMBER_COMPONENT_ALERTS_LINK
       Independent structured alerts/v1 topics, periodic full state and heartbeat.
       Requires an openember-msgs checkout containing the alerts/v1 contract.
 
+config OPENEMBER_COMPONENT_SYSTEM_STATE
+    bool "Build component: Whole-device state reducer"
+    default n
+    help
+      Bounded alert aggregation and independent lifecycle/health/actuation state.
+      Product adapters own policies and execution; no hardware commands.
+
 menu "Logging"
 
 choice OPENEMBER_LOG_BACKEND
