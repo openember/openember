@@ -526,14 +526,33 @@ ProcessManager::ProcessEvent ProcessManager::MakeEvent(
     event.start_time_unix_ns = process.start_time_unix_ns;
     event.stop_time_unix_ns = stop_time_unix_ns;
     event.message = message;
+    event.ready = process.ready && state == ProcessState::kRunning;
+    event.desired = process.desired;
+    event.restart_count = process.restart_count;
+    event.heartbeat_received = process.has_heartbeat;
+    if (process.has_heartbeat)
+        event.heartbeat_age_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - process.last_heartbeat_time).count();
     return event;
 }
 
-void ProcessManager::EmitEvent(const ManagedProcess& process,
+std::vector<ProcessManager::ProcessEvent> ProcessManager::Snapshot() const {
+    std::vector<ProcessEvent> result;
+    result.reserve(processes_.size());
+    for (const auto& process : processes_)
+        result.push_back(MakeEvent(process, process.state, process.last_exit_code,
+                                   process.stop_time_unix_ns, process.last_message));
+    return result;
+}
+
+void ProcessManager::EmitEvent(ManagedProcess& process,
                                ProcessState state,
                                int exit_code,
                                std::uint64_t stop_time_unix_ns,
                                const std::string& message) const {
+    process.last_exit_code = exit_code;
+    process.stop_time_unix_ns = stop_time_unix_ns;
+    process.last_message = message;
     if (!event_callback_) {
         return;
     }

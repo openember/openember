@@ -42,3 +42,13 @@ runtime/v1 的 StartProcess 暂无依赖/就绪字段；重新启动已有配置
 本版监督直接子进程，尚未建立 cgroup/进程组级隔离；被管理应用不应自行 daemonize。就绪通知不替代 health_monitor，也不保证持续的 RPC、设备和模型健康。只有显式配置为 notify 的节点具备应用级就绪门控，现有默认 launch 保持兼容。
 
 `test/launch_dependencies.py` 使用独立回环端口、PID 文件和 Python 子进程验证乱序依赖、延迟就绪、提供者崩溃与下游重建、就绪超时、反向关闭及非法依赖图；不访问设备。已有 runtime_regression.py 的 supervision 用例继续验证旧配置兼容。
+
+## 进程列表与运行状态快照
+
+launch_manager 每约 200 ms 经 Link 发布 `/runtime/process/state`，类型为 `openember.msgs.runtime.v1.ProcessStateSnapshot`。每条消息完整替换前一条列表，包括配置中等待依赖、启动失败、已经退出的进程，以及通过运行时接口添加的受管理进程；消费者无需读取 launch.yaml，也不依赖订阅初始事件。现有 `/runtime/process/events` 保留为变化事件，不能代替完整列表。
+
+快照包含 manager_session、管理器 PID、online、stale_after_ms（当前 2000 ms）以及完整进程列表。manager_session 在监督器每次启动时改变，header.source_instance 与之相同，sequence 在该会话内递增。正常关闭在停止子进程后尽力发布 online=false；断电或崩溃需由消费者根据本地到达时间和进展时间判定过期，过期后不能继续把旧的 running 显示为当前运行状态。
+
+ProcessInfo 增加 ready、desired_running、depends_on、restart_count、restart_policy、restart_limit、readiness_notify 与心跳监督信息。ready 需结合 readiness_notify 理解：notify 表示应用发送就绪通知，process 模式仅确认进程创建。restart_count 为该监督器会话内已安排的自动失败重试次数；restart_limit=0 表示不限次数，依赖回收和恢复不增加该计数。heartbeat_timeout_ms=0 表示未启用心跳监督；heartbeat_received=false 时 age 无意义。退出后的 process_id 为 0，退出码和说明保留至下一次启动。快照不发布命令参数、环境变量或凭据。
+
+管理器本身以快照的 manager_process_id 单列，不作为自己的受管理子进程。进程状态不等同于逻辑节点注册或业务健康，整机健康仍由对应状态与告警机制表达。快照构建和进程变更均在监督器所属线程执行。

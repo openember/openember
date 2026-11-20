@@ -31,6 +31,11 @@ public:
         std::uint64_t start_time_unix_ns = 0;
         std::uint64_t stop_time_unix_ns = 0;
         std::string message;
+        bool ready = false;
+        bool desired = false;
+        std::uint32_t restart_count = 0;
+        bool heartbeat_received = false;
+        std::uint64_t heartbeat_age_ms = 0;
     };
 
     using EventCallback = std::function<void(const ProcessEvent&)>;
@@ -45,6 +50,8 @@ public:
                              pid_t pid,
                              std::chrono::milliseconds timeout);
     void Poll();
+    // Called on the owner loop, like Poll and StartProcess.
+    std::vector<ProcessEvent> Snapshot() const;
     void StopAll();
     bool MarkHeartbeat(const std::string& process_name);
 
@@ -64,6 +71,8 @@ private:
         bool has_heartbeat = false;
         bool intentional_stop = false;
         bool supervision_failure = false;
+        int last_exit_code = 0;
+        std::string last_message = "not started";
         std::chrono::steady_clock::time_point last_heartbeat_time{};
         std::chrono::steady_clock::time_point stop_deadline{};
     };
@@ -89,7 +98,7 @@ private:
                            int exit_code,
                            std::uint64_t stop_time_unix_ns,
                            const std::string& message) const;
-    void EmitEvent(const ManagedProcess& process,
+    void EmitEvent(ManagedProcess& process,
                    ProcessState state,
                    int exit_code,
                    std::uint64_t stop_time_unix_ns,

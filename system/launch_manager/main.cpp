@@ -346,6 +346,16 @@ void FillProcessInfo(
     process->set_start_time_unix_ns(source.start_time_unix_ns);
     process->set_stop_time_unix_ns(source.stop_time_unix_ns);
     process->set_message(source.message);
+    process->set_ready(source.ready);
+    process->set_desired_running(source.desired);
+    for (const auto& name : source.spec.depends_on) process->add_depends_on(name);
+    process->set_restart_count(source.restart_count);
+    process->set_restart_policy(openember::launch::RestartPolicyName(source.spec.restart));
+    process->set_restart_limit(source.spec.restart_limit);
+    process->set_readiness_notify(source.spec.notify_ready);
+    process->set_heartbeat_timeout_ms(source.spec.heartbeat_timeout.count());
+    process->set_heartbeat_received(source.heartbeat_received);
+    process->set_heartbeat_age_ms(source.heartbeat_age_ms);
 }
 
 bool IsProcessCommandOk(const openember::launch::ProcessManager::ProcessEvent& event) {
@@ -528,6 +538,12 @@ int main(int argc, char* argv[]) {
         auto process_event_pub =
             node->Advertise<openember::msgs::runtime::v1::ProcessEvent>(
                 kRuntimeProcessEventsTopic);
+        auto process_state_pub =
+            node->Advertise<openember::msgs::runtime::v1::ProcessStateSnapshot>(
+                "/runtime/process/state");
+        const auto manager_session = "launch-" + std::to_string(UnixTimeNs()) +
+                                     "-" + std::to_string(getpid());
+        std::uint64_t snapshot_sequence = 0;
         RuntimeRegistry registry;
         std::mutex heartbeat_mutex;
         std::vector<std::string> pending_heartbeats;
@@ -625,6 +641,19 @@ int main(int argc, char* argv[]) {
             LOG_E("Some configured processes failed to start.");
         }
 
+        const auto publish_snapshot = [&](bool online) {
+            openember::msgs::runtime::v1::ProcessStateSnapshot snapshot;
+            FillHeader(snapshot.mutable_header(), config.runtime, nullptr, ++snapshot_sequence);
+            snapshot.mutable_header()->set_source_instance(manager_session);
+            snapshot.set_manager_session(manager_session);
+            snapshot.set_manager_process_id(getpid());
+            snapshot.set_online(online);
+            snapshot.set_stale_after_ms(2000);
+            for (const auto& event : process_manager.Snapshot())
+                FillProcessInfo(snapshot.add_processes(), event);
+            if (!process_state_pub.Publish(snapshot))
+                LOG_E("Publish process state snapshot failed");
+        };
         while (g_signal == 0) {
             std::vector<std::function<void()>> runtime_commands;
             {
@@ -644,11 +673,13 @@ int main(int argc, char* argv[]) {
                 (void)process_manager.MarkHeartbeat(node_name);
             }
             process_manager.Poll();
+            publish_snapshot(true);
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
 
         LOG_I("Stopping launch_manager on signal %d", static_cast<int>(g_signal));
         process_manager.StopAll();
+        publish_snapshot(false);
     } catch (const std::exception& e) {
         LOG_E("launch_manager failed: %s", e.what());
         exit_code = 1;
