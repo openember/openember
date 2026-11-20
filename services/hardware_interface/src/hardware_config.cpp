@@ -152,6 +152,19 @@ std::string DefaultCommandTopicFor(const std::string& type,
     return "";
 }
 
+void CheckKeys(const YAML::Node& node, std::initializer_list<const char*> keys,
+               const std::string& prefix) {
+    if (!node.IsMap()) throw std::runtime_error(prefix + " must be a map");
+    std::unordered_set<std::string> allowed;
+    for (const auto* key : keys) allowed.insert(key);
+    std::unordered_set<std::string> seen;
+    for (const auto& item : node) {
+        const auto key = item.first.as<std::string>();
+        if (!allowed.count(key)) throw std::runtime_error(prefix + "." + key + " is unknown");
+        if (!seen.insert(key).second) throw std::runtime_error(prefix + "." + key + " is duplicated");
+    }
+}
+
 EndpointConfig ParseEndpoint(const YAML::Node& node, std::size_t index) {
     const auto prefix = EndpointPrefix(index);
     if (!node || !node.IsMap()) {
@@ -211,6 +224,53 @@ EndpointConfig ParseEndpoint(const YAML::Node& node, std::size_t index) {
         throw std::runtime_error(prefix + ".publish_rate_hz must be > 0");
     }
 
+    return config;
+}
+
+HardwareInterfaceConfig ParseDevices(const YAML::Node& root) {
+    CheckKeys(root, {"schema_version", "robot_id", "devices"}, "device config");
+    if (!root["schema_version"] || root["schema_version"].as<int>() != 1)
+        throw std::runtime_error("device config.schema_version must be 1");
+    HardwareInterfaceConfig config;
+    config.robot_id = RequiredString(root, "robot_id", "device config");
+    const auto devices = root["devices"];
+    if (!devices || !devices.IsMap()) throw std::runtime_error("devices must be a map");
+    std::unordered_set<std::string> ids;
+    for (const auto& entry : devices) {
+        const auto id = entry.first.as<std::string>();
+        const auto node = entry.second;
+        const auto prefix = "devices." + id;
+        if (id.empty() || !ids.insert(id).second) throw std::runtime_error("empty or duplicate device id: " + id);
+        CheckKeys(node, {"type", "driver", "model", "enabled", "mode", "topic", "frame_id",
+                         "publish_rate_hz", "critical", "connection"}, prefix);
+        // Reuse the endpoint defaults and rate validation without exposing YAML in public APIs.
+        auto endpoint_node = YAML::Clone(node);
+        endpoint_node["id"] = id;
+        auto endpoint = ParseEndpoint(endpoint_node, config.endpoints.size());
+        endpoint.model = OptionalString(node, "model", "", prefix);
+        if (const auto connection = node["connection"]) {
+            CheckKeys(connection, {"device", "baud_rate", "rx_poll_wait_ms"}, prefix + ".connection");
+            endpoint.connection.device = RequiredString(connection, "device", prefix + ".connection");
+            const auto baud = OptionalUint64(connection, "baud_rate", 0, prefix);
+            const auto poll = OptionalUint64(connection, "rx_poll_wait_ms", 5, prefix);
+            if (baud > UINT32_MAX || poll < 1 || poll > 10)
+                throw std::runtime_error(prefix + ": invalid baud_rate or rx_poll_wait_ms (1..10)");
+            endpoint.connection.baud_rate = static_cast<std::uint32_t>(baud);
+            endpoint.connection.rx_poll_wait_ms = static_cast<std::uint32_t>(poll);
+        }
+        if (endpoint.driver == "yesense_readonly") {
+            if (endpoint.type != "imu" || endpoint.mode != "readonly" || endpoint.model != "YIS321")
+                throw std::runtime_error(prefix + ": yesense_readonly requires type imu, mode readonly and model YIS321");
+            if (endpoint.connection.device.empty() || endpoint.connection.device.front() != '/')
+                throw std::runtime_error(prefix + ": an absolute connection.device is required");
+            switch (endpoint.connection.baud_rate) {
+            case 9600: case 19200: case 38400: case 57600: case 115200:
+            case 230400: case 460800: case 921600: break;
+            default: throw std::runtime_error(prefix + ": explicit supported connection.baud_rate required");
+            }
+        }
+        config.endpoints.push_back(std::move(endpoint));
+    }
     return config;
 }
 
@@ -301,6 +361,9 @@ openember::hardware::Result<HardwareInterfaceConfig> LoadConfigFromFile(
         if (!root || !root.IsMap()) {
             return ConfigError("hardware_interface config root must be a map");
         }
+
+        if (root["devices"] || root["schema_version"])
+            return openember::hardware::Result<HardwareInterfaceConfig>::Success(ParseDevices(root));
 
         HardwareInterfaceConfig config;
         const auto app_node = root["hardware_interface"];

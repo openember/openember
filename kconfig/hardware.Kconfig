@@ -20,6 +20,14 @@ config OPENEMBER_COMPONENT_SENSOR
       Build typed C++ sensor interfaces such as IImu, ITemperatureSensor, IGnss,
       plus mock sensor implementations for CI and no-hardware development.
 
+config OPENEMBER_SENSOR_YESENSE
+    bool "YESENSE YIS321 read-only IMU driver (LPIO)"
+    default n
+    depends on OPENEMBER_COMPONENT_SENSOR
+    help
+      Requires Linux; uses OpenEmber LPIO and the built-in Yesense decoder.
+      Builds only; device selection and UART settings belong to device.yaml.
+
 endmenu
 
 menu "Actuator Framework"

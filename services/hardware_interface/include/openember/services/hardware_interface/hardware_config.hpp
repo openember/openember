@@ -8,6 +8,12 @@
 
 namespace openember::services::hardware_interface {
 
+struct SerialDeviceConfig {
+    std::string device;
+    std::uint32_t baud_rate = 0;
+    std::uint32_t rx_poll_wait_ms = 5;
+};
+
 struct EndpointConfig {
     std::string endpoint_id;
     std::string type;
@@ -22,6 +28,8 @@ struct EndpointConfig {
     std::uint64_t command_timeout_ms = 100;
     bool disabled_on_start = true;
     bool critical = false;
+    std::string model;
+    SerialDeviceConfig connection;
 };
 
 struct HardwareInterfaceConfig {

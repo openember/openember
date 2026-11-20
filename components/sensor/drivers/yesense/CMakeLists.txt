@@ -1,0 +1,12 @@
+# Native OpenEmber protocol decoder and LPIO serial transport.
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    message(FATAL_ERROR "OPENEMBER_SENSOR_YESENSE requires Linux")
+endif()
+if(NOT TARGET openember_lpio)
+    message(FATAL_ERROR "OPENEMBER_SENSOR_YESENSE requires OPENEMBER_ENABLE_LPIO")
+endif()
+add_library(openember_yesense_imu STATIC src/yesense_imu.cpp)
+add_library(openember::yesense_imu ALIAS openember_yesense_imu)
+target_include_directories(openember_yesense_imu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(openember_yesense_imu PUBLIC openember::sensor PRIVATE openember_lpio)
+target_compile_features(openember_yesense_imu PUBLIC cxx_std_17 PRIVATE cxx_std_20)

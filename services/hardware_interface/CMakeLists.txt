@@ -99,3 +99,9 @@ OPENEMBER_ADD_EXECUTABLE(TARGET ${PROJECT_NAME}
     DESTINATION bin)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
+
+if(TARGET openember::yesense_imu AND OPENEMBER_HARDWARE_ENDPOINT_IMU)
+    target_link_libraries(openember_hardware_interface_runtime PRIVATE openember::yesense_imu)
+    target_compile_definitions(openember_hardware_interface_runtime PRIVATE OPENEMBER_HI_YESENSE=1)
+    set_property(TARGET openember_hardware_interface_runtime PROPERTY OPENEMBER_YESENSE_ENDPOINT_FACTORY 1)
+endif()

@@ -20,3 +20,7 @@ add_library(openember::sensor ALIAS ${PROJECT_NAME})
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
+
+if(OPENEMBER_SENSOR_YESENSE)
+    add_subdirectory(drivers/yesense)
+endif()

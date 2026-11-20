@@ -725,6 +725,7 @@ set(OPENEMBER_SERVICE_HOST_MONITOR ${service_host_monitor} CACHE BOOL "Build ser
 set(OPENEMBER_SERVICE_HARDWARE_INTERFACE ${service_hardware_interface} CACHE BOOL "Build services/hardware_interface" FORCE)
 set(OPENEMBER_COMPONENT_ALGORITHM ${component_algorithm} CACHE BOOL "Build Algorithm component" FORCE)
 set(OPENEMBER_COMPONENT_HARDWARE ${component_hardware} CACHE BOOL "Build Hardware common component" FORCE)
+set(OPENEMBER_SENSOR_YESENSE $(onoff CONFIG_OPENEMBER_SENSOR_YESENSE) CACHE BOOL "Build optional YESENSE IMU driver" FORCE)
 set(OPENEMBER_COMPONENT_SENSOR ${component_sensor} CACHE BOOL "Build Sensor Framework component" FORCE)
 set(OPENEMBER_COMPONENT_ACTUATOR ${component_actuator} CACHE BOOL "Build Actuator Framework component" FORCE)
 set(OPENEMBER_COMPONENT_REMOTE_CONTROL ${component_remote_control} CACHE BOOL "Build remote input component" FORCE)

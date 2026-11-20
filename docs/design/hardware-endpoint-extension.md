@@ -31,8 +31,7 @@ app.Stop();
 - 精确匹配 `(type, driver)`；重复注册、空注册、未知驱动、空工厂结果、返回错误 id 均拒绝。
 - 空注册表就是产品白名单。需使用内置端点时显式从 `BuiltinEndpointRegistry()` 开始添加。
   旧的三参数 App 构造函数仍使用内置注册表。
-- 内置驱动仅注册已编译的 `mock_imu/mock_temperature/mock_gnss/mock_joint_controller`，只接受 `mode=mock`。
-  未知真实驱动不会回退成 Mock，内置端点编译开关仍有效。
+- 内置 Mock 驱动按编译选项注册 `mock_imu/mock_temperature/mock_gnss/mock_joint_controller`，只接受 `mode=mock`。启用核心可选 Yesense 驱动与 HI IMU 端点后，还注册 `imu/yesense_readonly`，支持通过 `device.yaml` 装配，见 [YIS321 配置说明](yesense-imu.md)。未知真实驱动不会回退成 Mock，内置端点编译开关仍有效。
 - 描述符提供 sample/command Protobuf 类型名和设备类别，用于 NodeInfo 与 DeviceInfo。
   无 command 类型的端点禁止配置 command_topic。描述符不是授权或 schema 验证器，产品负责注册正确消息类型。
 - 节点发现、心跳和诊断主题现在使用 `app_options.node_name`，默认名称不变；

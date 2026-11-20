@@ -1199,3 +1199,7 @@ system/device_manager
 ```
 
 这个设计避免把底层协议、运行时节点、消息发布和业务行为揉在一起。先把 Mock IMU 到 ImuPublisher 的最小链路做稳，再根据真实硬件和产品需求逐步扩展。
+
+## 可选真实驱动
+
+[YESENSE YIS321 与统一设备配置](yesense-imu.md)说明核心可选驱动、HI 工厂、`device.yaml` 以及原始姿态的有效性边界。
