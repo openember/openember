@@ -2,3 +2,5 @@
 /build-*/
 *.user
 .cache/
+
+.ember-local.cmake

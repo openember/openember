@@ -821,3 +821,9 @@ ROS 2 的工作区与硬件扩展边界
 ```
 
 这使 OpenEmber 既保持开源框架的独立可维护性，又能成为用户快速搭建、深度定制并长期演进产品的基础。
+
+## 型号默认配置保存与本机环境
+
+已增加 `ember savedefconfig --product <model>`：将当前完整工作配置与解析后的 openember.defconfig 基线比较，把差异保存到该型号 product.defconfig。已有 .config 不因默认片段变化自动覆盖，重置仍使用 ember defconfig。保存不是构建步骤，应在功能验证后显式执行；工具生成的 Kconfig 环境绑定不进入型号文件。
+
+`ember update/build` 自动加载工程根的 .ember-local.cmake，或由 OPENEMBER_CMAKE_LOCAL 指定的 CMake 初始缓存文件。用于已安装 SDK、工具链和依赖源码路径，不替代功能 Kconfig；模板已忽略该文件。消息选择为 LOCAL、菜单路径为空时可由本机初始缓存提供绝对路径，菜单非空路径仍优先。update 是重新配置构建，不是 Git pull 或框架升级。

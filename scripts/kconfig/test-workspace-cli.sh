@@ -76,6 +76,24 @@ OPENEMBER_JOBS=2 CMAKE_BUILD_PARALLEL_LEVEL=2 CARGO_BUILD_JOBS=2 bash "${cli}" u
 ! grep -q 'PRODUCT_BUILD_APP:BOOL=ON' 'build/custom path/CMakeCache.txt'
 grep -q 'set(OPENEMBER_SYSTEM_LAUNCH_MANAGER OFF' 'build/custom path/config.cmake'
 expect_failure bash "${cli}" new invalid --path "${scratch}" --model ../escape
+# Saving must preserve a model that undoes the shared baseline, even when
+# that model choice equals the Kconfig default (plain --savedefconfig loses it).
+printf '\nCONFIG_PRODUCT_BUILD_APP=n\n' >> openember.defconfig
+bash "${cli}" genconfig --product small
+bash "${cli}" savedefconfig
+cp build/small/.config "${scratch}/before-save.config"
+grep -q '^CONFIG_PRODUCT_BUILD_APP=y$' products/small/product.defconfig
+! grep -q '^CONFIG_OPENEMBER_KCONFIG_' products/small/product.defconfig
+bash "${cli}" defconfig
+cmp "${scratch}/before-save.config" build/small/.config
+# Initial-cache files describe local SDKs and must be reapplied on configure.
+printf 'set(TEST_LOCAL_SDK "first" CACHE STRING "fixture" FORCE)\n' > .ember-local.cmake
+OPENEMBER_JOBS=2 CMAKE_BUILD_PARALLEL_LEVEL=2 CARGO_BUILD_JOBS=2 bash "${cli}" update
+grep -q 'TEST_LOCAL_SDK:STRING=first' build/small/CMakeCache.txt
+printf 'set(TEST_LOCAL_SDK "second" CACHE STRING "fixture" FORCE)\n' > .ember-local.cmake
+OPENEMBER_JOBS=2 CMAKE_BUILD_PARALLEL_LEVEL=2 CARGO_BUILD_JOBS=2 bash "${cli}" update
+grep -q 'TEST_LOCAL_SDK:STRING=second' build/small/CMakeCache.txt
+expect_failure env OPENEMBER_CMAKE_LOCAL=missing.cmake bash "${cli}" update
 # Completion discovers model names from within a product subdirectory.
 source "${framework}/scripts/completions/ember.bash"
 cd apps

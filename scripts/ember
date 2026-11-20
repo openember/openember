@@ -240,6 +240,7 @@ Usage:
   ember build [build_dir] [--product MODEL] [--build-dir DIR] [-j N|--jobs N]
   ember all [build_dir] [--product MODEL] [--build-dir DIR] [-j N|--jobs N]
   ember clean [build_dir] [--product MODEL] [--build-dir DIR]
+  ember savedefconfig [--product MODEL]  # save current choices to product.defconfig
   ember defconfig [--product MODEL]  # reset with .config.pre-defconfig backup
   ember run [--product MODEL] [--dry-run] [-- launch-manager arguments]
   ember completion bash
@@ -259,6 +260,7 @@ Commands:
   update       Run CMake configure (cmake -S -B): applies config.cmake, may fetch/extract third-party sources
   build        Ensure .config and config.cmake exist, then update + compile (-j > OPENEMBER_JOBS > default)
   all          menuconfig + update + build (full interactive flow)
+  savedefconfig Save current model choices relative to the shared baseline
   defconfig    Reset selected model to checked-in defaults (backs up .config)
   run          Launch selected model with its built launch_manager and launch.yaml
   clean        Remove only the selected, workspace-owned build directory
@@ -275,6 +277,7 @@ Environment:
   PRODUCT              model override (same as --product; command-line wins)
   OPENEMBER_DIR        optional framework checkout for product workspaces
   OPENEMBER_BUILD_DIR   explicit build dir (default: build/<model>, native: build)
+  OPENEMBER_CMAKE_LOCAL local CMake initial cache (default: .ember-local.cmake)
   OPENEMBER_JOBS        parallel jobs (default: half the logical CPUs, rounded down, min 1 / max 8)
   CARGO_BUILD_JOBS      optional Cargo override (default: selected build jobs)
   OPENEMBER_KCONFIG_NONINTERACTIVE=1  resolve .config without TUI (existing edits are preserved) (menuconfig)
@@ -457,7 +460,7 @@ case "${cmd}" in
   add)
     ember_env_add "${2:-}" "${3:-}"
     ;;
-  menuconfig|genconfig|defconfig|update|configure|build|all|clean|run)
+  menuconfig|genconfig|defconfig|savedefconfig|update|configure|build|all|clean|run)
     select_workspace "${@:2}"
     case "${cmd}" in
       menuconfig|all)
@@ -468,6 +471,13 @@ case "${cmd}" in
           configure_workspace
           build_workspace
         fi
+        ;;
+      savedefconfig)
+        [[ -n "${MODEL}" ]] || project_error "savedefconfig requires a product model"
+        [[ -f "${bd}/.config" ]] || project_error "Run menuconfig or genconfig before savedefconfig"
+        OPENEMBER_SAVE_DEFCONFIG=1 OPENEMBER_KCONFIG_NONINTERACTIVE=1 \
+          bash "${OPENEMBER_ORIGIN}/scripts/kconfig/menuconfig.sh" "${bd}"
+        remember_workspace
         ;;
       genconfig|defconfig|update|configure|build)
         if [[ "${cmd}" == defconfig ]]; then

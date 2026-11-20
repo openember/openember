@@ -179,6 +179,7 @@ component_alerts="$(onoff CONFIG_OPENEMBER_COMPONENT_ALERTS)"
 if ! has_symbol CONFIG_OPENEMBER_COMPONENT_ALERTS; then
   component_alerts=ON
 fi
+component_system_state="$(onoff CONFIG_OPENEMBER_COMPONENT_SYSTEM_STATE)"
 component_inference="$(onoff CONFIG_OPENEMBER_COMPONENT_INFERENCE)"
 component_config="$(onoff CONFIG_OPENEMBER_COMPONENT_CONFIG)"
 if ! has_symbol CONFIG_OPENEMBER_COMPONENT_CONFIG; then
@@ -687,7 +688,11 @@ set(OPENEMBER_MSGS_SOURCE "${msgs_source}" CACHE STRING "openember-msgs source: 
 set_property(CACHE OPENEMBER_MSGS_SOURCE PROPERTY STRINGS FETCH LOCAL)
 set(OPENEMBER_MSGS_REF "${msgs_ref}" CACHE STRING "openember-msgs git ref" FORCE)
 set_property(CACHE OPENEMBER_MSGS_REF PROPERTY STRINGS main)
-set(OPENEMBER_MSGS_LOCAL_SOURCE "${msgs_local_source}" CACHE PATH "Absolute path to local openember-msgs checkout" FORCE)
+if(NOT "${msgs_local_source}" STREQUAL "")
+    set(OPENEMBER_MSGS_LOCAL_SOURCE "${msgs_local_source}" CACHE PATH "Absolute path to local openember-msgs checkout" FORCE)
+else()
+    set(OPENEMBER_MSGS_LOCAL_SOURCE "" CACHE PATH "Local messages from build environment")
+endif()
 set(OPENEMBER_WITH_ASIO ${use_asio} CACHE BOOL "Fetch/use standalone Asio (optional)" FORCE)
 set(OPENEMBER_WITH_RUCKIG ${use_ruckig} CACHE BOOL "Fetch/use ruckig trajectory library (optional; C++20)" FORCE)
 set(OPENEMBER_COMPONENT_NETWORK ${component_network} CACHE BOOL "Build component: Network (high-level socket wrapper)" FORCE)
@@ -726,6 +731,7 @@ set(OPENEMBER_COMPONENT_REMOTE_CONTROL ${component_remote_control} CACHE BOOL "B
 set(OPENEMBER_COMPONENT_ALERTS_LINK ${component_alerts_link} CACHE BOOL "Publish alerts through Link" FORCE)
 set(OPENEMBER_COMPONENT_ALERTS ${component_alerts} CACHE BOOL "Build alert state, events and logging" FORCE)
 set(OPENEMBER_COMPONENT_CONFIG ${component_config} CACHE BOOL "Build YAML runtime configuration component" FORCE)
+set(OPENEMBER_COMPONENT_SYSTEM_STATE ${component_system_state} CACHE BOOL "Build whole-device state reducer" FORCE)
 set(OPENEMBER_COMPONENT_INFERENCE ${component_inference} CACHE BOOL "Build optional ONNX inference component" FORCE)
 set(OPENEMBER_HARDWARE_ENDPOINT_IMU ${hardware_endpoint_imu} CACHE BOOL "Build Hardware Interface IMU endpoint" FORCE)
 set(OPENEMBER_HARDWARE_ENDPOINT_TEMPERATURE ${hardware_endpoint_temperature} CACHE BOOL "Build Hardware Interface Temperature endpoint" FORCE)

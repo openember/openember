@@ -127,6 +127,13 @@ configure_workspace() {
   if [[ -n "${MODEL}" ]]; then
     args+=("-DOPENEMBER_PRODUCT_MODEL=${MODEL}" "-DOPENEMBER_DIR=${OPENEMBER_ORIGIN}")
   fi
+  local local_config="${OPENEMBER_CMAKE_LOCAL:-${ROOT_DIR}/.ember-local.cmake}"
+  if [[ -n "${OPENEMBER_CMAKE_LOCAL:-}" || -f "${local_config}" ]]; then
+    [[ "${local_config}" == /* ]] || local_config="${ROOT_DIR}/${local_config}"
+    [[ -f "${local_config}" ]] || project_error "Local CMake configuration missing: ${local_config}"
+    echo "[ember] local build environment: ${local_config}" >&2
+    args=("-C" "${local_config}" "${args[@]}")
+  fi
   cmake -S "${ROOT_DIR}" -B "${bd}" "${args[@]}"
 }
 

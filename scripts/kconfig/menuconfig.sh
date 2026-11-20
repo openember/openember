@@ -96,6 +96,26 @@ else
   fi
 fi
 
+if [[ "${OPENEMBER_SAVE_DEFCONFIG:-0}" == 1 ]]; then
+  [[ -n "${OPENEMBER_PRODUCT_MODEL}" ]] || { echo "savedefconfig requires a product model" >&2; exit 1; }
+  # Compare resolved choices with the shared baseline, not just Kconfig defaults:
+  # a model may deliberately undo a value set in openember.defconfig.
+  cp "${KCONFIG_CONFIG}" "${scratch}/current.config"
+  export KCONFIG_CONFIG="${scratch}/baseline.config"
+  export KCONFIG_AUTOCONFIG="${scratch}/baseline.auto.conf"
+  export KCONFIG_AUTOHEADER="${scratch}/baseline.h"
+  if [[ -f "${KCONFIG_ROOT}/openember.defconfig" ]]; then
+    run_conf --defconfig="${KCONFIG_ROOT}/openember.defconfig" >/dev/null
+  else
+    run_conf --alldefconfig >/dev/null
+  fi
+  python3 "${ORIGIN}/scripts/kconfig/save-defconfig.py" "${scratch}/current.config" \
+    "${scratch}/baseline.config" "${OPENEMBER_PRODUCT_MODEL}" \
+    "${KCONFIG_ROOT}/products/${OPENEMBER_PRODUCT_MODEL}/product.defconfig"
+  sha256sum "${fragments[@]}" | sha256sum | cut -d' ' -f1 > "${BUILD_DIR}/.defconfig.sha256"
+  exit 0
+fi
+
 echo "[kconfig] product=${OPENEMBER_PRODUCT_MODEL:-framework} config=${BUILD_DIR}/.config" >&2
 if [[ "${OPENEMBER_KCONFIG_NONINTERACTIVE:-0}" != 1 ]]; then
   LD_LIBRARY_PATH="${LIBDIR}:${LD_LIBRARY_PATH:-}" \

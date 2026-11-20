@@ -9,7 +9,7 @@ _ember_complete() {
   words=("${COMP_WORDS[@]}")
   cword="${COMP_CWORD}"
 
-  local commands="new add del list use current menuconfig genconfig defconfig update configure build all clean run completion install uninstall help -h --help"
+  local commands="new add del list use current menuconfig genconfig defconfig savedefconfig update configure build all clean run completion install uninstall help -h --help"
 
   # First positional arg: subcommand.
   if [[ "${cword}" -eq 1 ]]; then
@@ -88,7 +88,7 @@ _ember_complete() {
     fi
   fi
   case "${words[1]}" in
-    menuconfig|genconfig|defconfig|update|configure|build|all|clean|run)
+    menuconfig|genconfig|defconfig|savedefconfig|update|configure|build|all|clean|run)
       if [[ "${prev}" == --product ]]; then
         local root="${OPENEMBER_ROOT:-${PWD}}" model models=""
         while [[ "${root}" != / && ! -d "${root}/products" ]]; do
