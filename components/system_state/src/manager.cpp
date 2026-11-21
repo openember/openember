@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <set>
 #include <stdexcept>
+#include <tuple>
 namespace openember::system_state {
 namespace {
 bool Id(const std::string &s) {
@@ -33,13 +34,14 @@ Manager::Manager(std::vector<std::string> publishers, std::vector<Rule> rules)
   for (const auto &name : publishers)
     if (!Id(name) || !publishers_.emplace(name, Publisher{}).second)
       throw std::invalid_argument("invalid/duplicate system publisher");
-  std::set<std::pair<std::string, std::string>> unique;
+  std::set<std::tuple<std::string, std::string, std::string>> unique;
   for (const auto &rule : rules_)
     if (!Id(rule.source) || !Id(rule.code) ||
+        (!rule.device.empty() && !Id(rule.device)) ||
         (rule.response != Response::Observe &&
          rule.response != Response::Degrade &&
          rule.response != Response::Fault) ||
-        !unique.emplace(rule.source, rule.code).second)
+        !unique.emplace(rule.source, rule.code, rule.device).second)
       throw std::invalid_argument("invalid/duplicate alert response rule");
 }
 bool Manager::State(const Observation &o, std::uint64_t now) {
@@ -132,18 +134,22 @@ Snapshot Manager::Read(std::uint64_t now) const {
     }
     for (const auto &entry : p.alerts) {
       const auto &alert = entry.second;
+      const Rule *selected = nullptr;
+      for (const auto &rule : rules_)
+        if (rule.source == alert.source && rule.code == alert.code &&
+            (rule.device.empty() || rule.device == alert.device) &&
+            (!selected || !rule.device.empty()))
+          selected = &rule;
       if (alert.condition == Condition::Unknown) {
         ++out.unknown;
-        if (out.health != Health::Fault)
+        if ((!selected || selected->unknown_blocks) &&
+            out.health != Health::Fault)
           out.health = Health::Unknown;
       } else if (alert.condition == Condition::Active) {
         ++out.active;
         Response response = alert.error ? Response::Degrade : Response::Observe;
-        for (const auto &rule : rules_)
-          if (rule.source == alert.source && rule.code == alert.code) {
-            response = rule.response;
-            break;
-          }
+        if (selected)
+          response = selected->response;
         const auto health = response == Response::Fault     ? Health::Fault
                             : response == Response::Degrade ? Health::Degraded
                                                             : Health::Warning;

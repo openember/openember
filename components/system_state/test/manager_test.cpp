@@ -8,6 +8,37 @@ void Check(bool b) {
 }
 int main() {
   try {
+    {
+      s::Manager optional(
+          {"power"},
+          {{"pmu", "battery_fault", s::Response::Fault},
+           {"pmu", "battery_fault", s::Response::Fault, "battery2", false}});
+      optional.Operation(s::Phase::Standby, s::Actuation::Disarmed, false,
+                         100000000, 1000000000);
+      s::Observation sample{"power",
+                            "pmu-instance",
+                            1,
+                            1,
+                            1000000000,
+                            true,
+                            {{"pmu", "battery2", "session", "battery_fault",
+                              s::Condition::Unknown, false}}};
+      Check(optional.State(sample, 100000000));
+      Check(optional.Read(100000000).health == s::Health::Normal &&
+            optional.Read(100000000).unknown == 1);
+      sample.revision = 2;
+      sample.heartbeat = 2;
+      sample.alerts[0].device = "battery1";
+      Check(optional.State(sample, 100000001));
+      Check(optional.Read(100000001).health == s::Health::Unknown);
+      sample.revision = 3;
+      sample.heartbeat = 3;
+      sample.alerts[0].device = "battery2";
+      sample.alerts[0].condition = s::Condition::Active;
+      Check(optional.State(sample, 100000002));
+      Check(optional.Read(100000002).health == s::Health::Fault);
+      Check(optional.Read(1200000000).health == s::Health::Unknown);
+    }
     constexpr std::uint64_t tick = 100000000;
     s::Manager m({"motion"}, {{"tilt", "angle", s::Response::Observe},
                               {"motor", "heat", s::Response::Fault}});

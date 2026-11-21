@@ -37,3 +37,7 @@ launch_manager 管理进程启动、就绪、存活和关闭，同时承载默�
 ## 验证记录
 
 本轮宿主机验证通过通用 reducer 测试、依赖编排测试和真实 MuJoCo 编排集成测试。集成测试使用独立端口和临时 observe/control 凭据，覆盖初始化先后、运行中告警、事件缺口与快照恢复、发布者离线和旧实例回放，以及运动服务崩溃后下游重建且新会话仍未使能。原有 supervision 回归和六项 Link 断连/权限/边界/重启/撤权/官方窗口回归通过。未验证真机、开机启动和自动安全处置。
+
+## 可选未知测量策略
+
+`Rule` 可指定 device（留空匹配所有设备）及 `unknown_blocks`（默认 true）。设备精确规则优先；设置 false 仅让该条件的 Unknown 不降低健康，仍增加 unknown 计数并保留观测。有效 Active 继续使用 response，必要来源离线、快照不完整或操作状态过期仍返回 Unknown。这样可单独配置未安装的第二块电池，不通过忽略整个告警来源放行。产品 YAML 对应 `device` 和 `unknown_response: observe|block`。

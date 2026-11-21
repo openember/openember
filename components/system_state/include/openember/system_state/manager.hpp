@@ -20,6 +20,8 @@ enum class Condition { Clear, Active, Unknown };
 struct Rule {
   std::string source, code;
   Response response = Response::Observe;
+  std::string device; // Empty matches any device; an exact rule takes precedence.
+  bool unknown_blocks = true; // Optional unknowns remain visible without blocking health.
 };
 struct Alert {
   std::string source, device, session, code;
