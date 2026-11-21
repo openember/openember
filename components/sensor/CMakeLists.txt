@@ -2,6 +2,7 @@ project(openember_sensor VERSION 0.1.0 LANGUAGES CXX)
 
 set(OPENEMBER_SENSOR_SRCS
     src/imu_validation.cpp
+    src/imu_installation.cpp
     src/mock_gnss.cpp
     src/mock_imu.cpp
     src/mock_temperature.cpp

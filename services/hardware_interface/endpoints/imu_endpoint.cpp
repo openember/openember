@@ -118,7 +118,9 @@ void ImuEndpoint::Run() {
             header.robot_id = context_.robot_id;
             header.timestamp_unix_ns = openember::hardware::UnixTimeNs();
 
-            auto msg = ToProto(result.Value(), header);
+            auto transformed=sensor::ApplyImuInstallation(result.Value(),config_.imu_installation);
+            if (!transformed.Ok()) { RecordError(transformed.Err().message); continue; }
+            auto msg = ToProto(transformed.Value(), header);
             if (!publisher_.Publish(msg)) {
                 RecordError("failed to publish IMU sample");
                 continue;

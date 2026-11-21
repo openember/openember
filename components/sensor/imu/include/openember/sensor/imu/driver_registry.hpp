@@ -6,6 +6,7 @@
 #include <vector>
 #include "openember/sensor/imu/imu.hpp"
 #include "openember/sensor/diagnostics.hpp"
+#include "openember/sensor/imu/installation.hpp"
 
 namespace openember::sensor {
 // Host acquisition configuration; never changes persistent device parameters.
@@ -15,6 +16,9 @@ struct ImuDriverConfig {
     std::uint32_t baud_rate = 921600, rx_poll_wait_ms = 5;
     double mock_rate_hz = 100;
     bool device_control = false;
+    // Raw driver creation does not apply this host-side transform. HI/motion
+    // assembly explicitly applies it to samples and preserves raw diagnostics.
+    ImuInstallation installation;
 };
 // Register factories at assembly time, before concurrent acquisition starts.
 class ImuDriverRegistry {

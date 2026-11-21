@@ -245,11 +245,25 @@ HardwareInterfaceConfig ParseDevices(const YAML::Node& root, const std::string& 
         // types may have their own schema, validated by their owning service.
         if (!type_filter.empty() && RequiredString(node, "type", prefix) != type_filter) continue;
         CheckKeys(node, {"type", "driver", "model", "enabled", "mode", "topic", "frame_id",
-                         "publish_rate_hz", "critical", "connection"}, prefix);
+                         "publish_rate_hz", "critical", "connection", "orientation", "mounting"}, prefix);
         // Reuse the endpoint defaults and rate validation without exposing YAML in public APIs.
         auto endpoint_node = YAML::Clone(node);
         endpoint_node["id"] = id;
         auto endpoint = ParseEndpoint(endpoint_node, config.endpoints.size());
+        if (node["orientation"] || node["mounting"]) {
+            if (endpoint.type!="imu" || endpoint.driver!="yesense_readonly") throw std::runtime_error(prefix+": installation requires YESENSE IMU");
+            const auto orientation=node["orientation"],mounting=node["mounting"];
+            CheckKeys(orientation,{"convention","reference_frame_id"},prefix+".orientation");
+            CheckKeys(mounting,{"body_frame_id","rotation_sensor_to_body_wxyz","revision"},prefix+".mounting");
+            if (RequiredString(orientation,"convention",prefix)!="sensor_to_reference_z_up") throw std::runtime_error(prefix+": unsupported IMU convention");
+            auto& c=endpoint.imu_installation; c.enabled=true; c.sensor_frame=endpoint.frame_id;
+            c.reference_frame=RequiredString(orientation,"reference_frame_id",prefix); c.body_frame=RequiredString(mounting,"body_frame_id",prefix);
+            c.revision=RequiredString(mounting,"revision",prefix);
+            const auto q=mounting["rotation_sensor_to_body_wxyz"];
+            if (!q || !q.IsSequence() || q.size()!=4) throw std::runtime_error(prefix+": installation quaternion requires four wxyz values");
+            for (unsigned i=0;i<4;++i) c.sensor_to_body[i]=q[i].as<double>();
+            sensor::ValidateImuInstallation(c);
+        }
         endpoint.model = OptionalString(node, "model", "", prefix);
         if (const auto connection = node["connection"]) {
             CheckKeys(connection, {"device", "baud_rate", "rx_poll_wait_ms"}, prefix + ".connection");

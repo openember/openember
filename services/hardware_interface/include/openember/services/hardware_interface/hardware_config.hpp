@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "openember/hardware/result.hpp"
+#include "openember/sensor/imu/installation.hpp"
 
 namespace openember::services::hardware_interface {
 
@@ -30,6 +31,7 @@ struct EndpointConfig {
     bool critical = false;
     std::string model;
     SerialDeviceConfig connection;
+    sensor::ImuInstallation imu_installation;
 };
 
 struct HardwareInterfaceConfig {
