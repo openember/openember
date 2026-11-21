@@ -188,6 +188,30 @@ Decision Guard::Reject(Reason reason) {
     return {reason};
 }
 
+Decision Guard::CheckLease(const std::string& producer, const Lease& lease, std::uint64_t now) const {
+    if (!now || now < last_now_ns_) return {Reason::kClockMismatch};
+    if (status_.state == State::kStopped || status_.state == State::kFault || status_.state == State::kEmergencyStop)
+        return {Reason::kInvalidState};
+    Context c; c.producer_session = producer;
+    if (!Owns(c, lease)) return {Reason::kNotOwner};
+    if (now >= status_.lease_expires_time_ns) return {Reason::kExpired};
+    return {};
+}
+
+Decision Guard::CheckArm(const Request& r, std::uint64_t now, Permission permission) {
+    Tick(now);
+    if (const auto checked = CheckContext(r.context, now); !checked.Ok()) return checked;
+    if (r.operation != Operation::kArm || !Id(r.request_id) || r.requested_lease_duration_ns)
+        return {Reason::kInvalidArgument};
+    if (!permission.control) return {Reason::kNotOwner};
+    if (const auto checked = CheckLease(r.context.producer_session, r.lease, now); !checked.Ok()) return checked;
+    if (r.context.sequence <= management_sequence_) return {Reason::kReplay};
+    if (cache_.count({r.context.producer_session, r.request_id})) return {Reason::kReplay};
+    if (cache_.size() >= kMaxRequests) return {Reason::kBusy};
+    if (status_.state != State::kDisarmed || status_.paused || !backend_.Ready()) return {Reason::kInvalidState};
+    return {};
+}
+
 Decision Guard::Accept(const Command& command, std::uint64_t now) {
     Tick(now);
     if (const auto checked = CheckContext(command.context, now); !checked.Ok()) return Reject(checked.reason);

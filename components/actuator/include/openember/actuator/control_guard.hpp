@@ -134,6 +134,13 @@ public:
     Status Snapshot() const { return status_; }
     ControlResult Control(const Request& request, std::uint64_t now_ns, Permission permission);
     Decision Accept(const Command& command, std::uint64_t now_ns);
+    // Trusted owner preflight for asynchronous physical enable. Does not ARM,
+    // consume a request/sequence or start the command watchdog. Tick may revoke
+    // expired authority. Caller must still commit Control(ARM) after evidence.
+    Decision CheckArm(const Request&, std::uint64_t now_ns, Permission);
+    // Current lease only: does not reuse an old request's execution deadline.
+    // Read-only and safe inside a device write gate; does not call the backend.
+    Decision CheckLease(const std::string& producer, const Lease&, std::uint64_t now_ns) const;
     // Adapter rejection: account for a malformed command without changing the
     // accepted cursor/target or refreshing its watchdog; Tick still runs.
     Decision RejectInput(Reason reason, std::uint64_t now_ns);

@@ -408,6 +408,29 @@ void TestClock() {
     Check(zero.guard.Snapshot().state == c::State::kFault, "zero clock accepted");
 }
 
+void TestArmPreflight() {
+    Fixture f; f.Acquire(); auto arm = f.Request(c::Operation::kArm, 1001, 1, "async-arm");
+    const auto writes = f.backend.writes, disables = f.backend.disables;
+    Is(f.guard.CheckArm(arm, 1001, {}), c::Reason::kNotOwner);
+    Check(f.guard.CheckArm(arm, 1001, kAll).Ok(), "valid arm preflight failed");
+    f.guard.Tick(1200); // Longer than command timeout, still not physically armed.
+    Check(f.guard.Snapshot().state == c::State::kDisarmed && f.backend.writes == writes &&
+          f.backend.disables == disables, "preflight started watchdog or wrote backend");
+    Check(f.guard.CheckLease("motion", f.lease, 1200).Ok(), "valid lease rejected");
+    Is(f.guard.CheckLease("other", f.lease, 1200), c::Reason::kNotOwner);
+    Check(f.guard.Control(arm, 1200, kAll).code == c::ResultCode::kCompleted, "preflight consumed ARM request");
+    Fixture bad; bad.Acquire(); auto r = bad.Request(c::Operation::kArm, 1001, 1, "bad");
+    r.lease.token = "wrong"; Is(bad.guard.CheckArm(r, 1001, kAll), c::Reason::kNotOwner);
+    r.lease = bad.lease; r.requested_lease_duration_ns = 1;
+    Is(bad.guard.CheckArm(r, 1001, kAll), c::Reason::kInvalidArgument);
+    Is(bad.guard.CheckLease("motion", bad.lease, 6000), c::Reason::kExpired);
+    Fixture full; full.Acquire();
+    for (std::uint64_t i = 1; i < 128; ++i)
+        Check(full.guard.Control(full.Request(c::Operation::kRenew, 1001, i, "renew-" + std::to_string(i)), 1001, kAll).code ==
+              c::ResultCode::kCompleted, "preflight resource fixture failed");
+    Is(full.guard.CheckArm(full.Request(c::Operation::kArm, 1002, 128, "arm-full"), 1002, kAll), c::Reason::kBusy);
+}
+
 int main(int argc, char** argv) {
     try {
         Check(argc == 2, "test case required");
@@ -424,6 +447,7 @@ int main(int argc, char** argv) {
         else if (name == "resources") TestResources();
         else if (name == "feedback") TestFeedback();
         else if (name == "clock") TestClock();
+        else if (name == "arm_preflight") TestArmPreflight();
         else throw std::runtime_error("unknown test case");
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

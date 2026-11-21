@@ -51,3 +51,11 @@ ctest --test-dir build/actuator-v2-hi --output-on-failure
 默认使用核心旁的 `../openember-msgs`。核心 TESTS_ENABLED 开启且适配器可用时也注册同样测试。8 组测试覆盖消息检查、能力、结果关联/令牌隔离、逐关节新鲜度、完整 wire/owner/backend 闭环、无效消息不刷新 watchdog、过期队列、授权、暂停/reset 与析构顺序。
 
 已提供 [单 worker、有界输入和优先停止](actuator-control-loop.md)，并接入产品 MuJoCo Backend；位置/速度有效性和年龄联锁已有实现。尚待完成：网络端点工厂、接入授权、独立硬件 watchdog、逐轴序号追踪、IMU/策略输入联锁与独立客户端测试，不能声明网络运控或实机运控已完成。
+
+## 异步物理使能的 owner 预检
+
+同步 Backend 的 true 仍表示操作完成，不能表示已排队。产品 owner 若需要等待物理使能应答，可以先使用 `Guard::CheckArm` 校验上下文、权限、当前租期、管理序号、缓存容量和就绪状态；它不消耗该请求、不进入 Armed，也不启动目标 watchdog。设备确认后，owner 仍须用原请求正式执行 `Control(ARM)`，只有该提交成功才能对外报告完成；过期或被撤销时必须清理物理输出。
+
+`CheckArm` 不预留控制权或提供不可撤销保证，等待期间 owner 必须继续 Tick。只读 `CheckLease(producer, lease, now)` 用于输出门的当前租期校验，不复用旧请求的执行期限、不调用 Backend。产品还需校验当前权限及联锁，并在每个实际输出分组前复核，不能只依赖一次预检。
+
+这些方法不创建线程或网络入口，不放宽目标 watchdog、反馈期限或同步完成约定。物理操作 Accepted/Completed/Failed 的保存与上报仍由异步产品 owner 负责。
