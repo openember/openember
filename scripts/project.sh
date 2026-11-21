@@ -36,7 +36,13 @@ select_workspace() {
         requested_dir="$1"; shift ;;
     esac
   done
-  ACTIVE_FILE="${ROOT_DIR}/build/.ember-active"
+  BUILD_ARCH="$(uname -m)"
+  case "${BUILD_ARCH}" in
+    amd64|x86_64) BUILD_ARCH=x86_64 ;;
+    arm64|aarch64) BUILD_ARCH=aarch64 ;;
+  esac
+  [[ "${BUILD_ARCH}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || project_error "Unsupported native architecture: ${BUILD_ARCH}"
+  ACTIVE_FILE="${ROOT_DIR}/build/${BUILD_ARCH}/.ember-active"
   if [[ -n "${OPENEMBER_CUSTOM:-}" ]]; then
     if [[ -f "${ACTIVE_FILE}" ]]; then
       { read -r active_model; read -r active_dir || true; } < "${ACTIVE_FILE}"
@@ -65,12 +71,12 @@ select_workspace() {
       if [[ "${active_model}" == "${MODEL}" && -n "${active_dir}" && "${explicit_model}" == 0 ]]; then
         bd="${active_dir}"
       else
-        bd="${ROOT_DIR}/build/${MODEL}"
+        bd="${ROOT_DIR}/build/${BUILD_ARCH}/${MODEL}"
       fi
     fi
   else
     [[ -z "${MODEL}" ]] || project_error "--product requires a product workspace"
-    bd="${requested_dir:-${OPENEMBER_BUILD_DIR:-build}}"
+    bd="${requested_dir:-${OPENEMBER_BUILD_DIR:-build/${BUILD_ARCH}}}"
   fi
   [[ "${bd}" == /* ]] || bd="${ROOT_DIR}/${bd}"
   bd="$(realpath -m "${bd}")"
@@ -99,7 +105,7 @@ select_workspace() {
   if [[ "${cmd}" == build || "${cmd}" == all ]]; then
     ember_select_build_jobs
   fi
-  echo "[ember] model=${MODEL:-framework} build=${bd}" >&2
+  echo "[ember] arch=${BUILD_ARCH} model=${MODEL:-framework} build=${bd}" >&2
 }
 
 remember_workspace() {

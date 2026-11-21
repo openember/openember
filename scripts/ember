@@ -278,6 +278,7 @@ Environment:
   OPENEMBER_DIR        optional framework checkout for product workspaces
   OPENEMBER_BUILD_DIR   explicit build dir (default: build/<model>, native: build)
   OPENEMBER_CMAKE_LOCAL local CMake initial cache (default: .ember-local.cmake)
+  Native default: build/<architecture>/<model> (framework: build/<architecture>)
   OPENEMBER_JOBS        parallel jobs (default: half the logical CPUs, rounded down, min 1 / max 8)
   CARGO_BUILD_JOBS      optional Cargo override (default: selected build jobs)
   OPENEMBER_KCONFIG_NONINTERACTIVE=1  resolve .config without TUI (existing edits are preserved) (menuconfig)
