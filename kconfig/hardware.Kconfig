@@ -21,7 +21,7 @@ config OPENEMBER_COMPONENT_SENSOR
       plus mock sensor implementations for CI and no-hardware development.
 
 config OPENEMBER_SENSOR_YESENSE
-    bool "YESENSE YIS321 read-only IMU driver (LPIO)"
+    bool "YESENSE YIS321 IMU driver (LPIO)"
     default n
     depends on OPENEMBER_COMPONENT_SENSOR
     help

@@ -2,6 +2,8 @@
 
 #include <memory>
 #include "openember/sensor/imu.hpp"
+#include "openember/sensor/diagnostics.hpp"
+#include "openember/sensor/imu/calibration.hpp"
 
 namespace openember::sensor {
 
@@ -13,7 +15,7 @@ struct ImuReadDiagnostics {
     bool host_settings_restored = false;
 };
 
-// Diagnostic-only raw sensor frame. No device configuration, automatic reconnect,
+// Diagnostic-only raw sensor frame. Device control is opt-in. No automatic reconnect,
 // installation transform, or controller-ready orientation. One reading thread;
 // Stop can cancel it. Serialize lifecycle Start/Stop calls at the owner.
 struct YesenseImuOptions {
@@ -25,9 +27,10 @@ struct YesenseImuOptions {
     std::string sensor_id = "yesense0";
     std::string frame_id = "yesense_sensor_unverified";
     std::string model = "YIS321";
+    bool device_control = false;
 };
 
-class YesenseImu final : public openember::sensor::IImu {
+class YesenseImu final : public openember::sensor::IImu, public ISensorDiagnostics, public IImuConfiguration, public IImuCalibration {
 public:
     explicit YesenseImu(std::string device);
     explicit YesenseImu(YesenseImuOptions options);
@@ -38,7 +41,12 @@ public:
     void Stop() noexcept override;
     openember::hardware::Result<openember::sensor::ImuSample> ReadSample(
         std::chrono::milliseconds timeout) override;
+    ImuCapabilities Capabilities() const override;
+    hardware::Result<ImuDeviceConfiguration> ReadConfiguration() override;
+    hardware::Result<ImuConfigurationResult> ApplyConfiguration(const ImuConfigurationPatch&) override;
+    hardware::Result<ImuCalibrationResult> CalibrateStaticGyro(const ImuCalibrationRequest&) override;
     ImuReadDiagnostics Diagnostics() const;
+    std::vector<DiagnosticCounter> ReadDiagnostics() const override;
 private:
     struct Impl;
     std::unique_ptr<Impl> impl_;

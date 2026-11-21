@@ -32,4 +32,12 @@ config OPENEMBER_ENABLE_TOOLS_SBUS_RECEIVER
       Receive Futaba SBUS frames and print PWM / switch channels.
       Installed as executable sbus-receiver. Requires OPENEMBER_ENABLE_LPIO.
 
+config OPENEMBER_ENABLE_TOOLS_SENSOR_CLI
+    bool "Build interactive sensor diagnostic CLI"
+    depends on OPENEMBER_ENABLE_TOOLS && OPENEMBER_COMPONENT_SENSOR && OPENEMBER_COMPONENT_CONFIG
+    default y
+    help
+      Generic IMU diagnostics using enabled drivers (Mock and optional Yesense).
+      Read-only acquisition, interactive display, statistics and JSONL recording.
+
 endmenu

@@ -4,6 +4,7 @@
 #include <mutex>
 
 #include "openember/sensor/imu.hpp"
+#include "openember/sensor/imu/calibration.hpp"
 
 namespace openember::sensor {
 
@@ -14,7 +15,7 @@ struct MockImuOptions {
     double temperature_celsius = 25.0;
 };
 
-class MockImu final : public IImu {
+class MockImu final : public IImu, public IImuConfiguration, public IImuCalibration {
 public:
     explicit MockImu(MockImuOptions options = {});
     ~MockImu() override;
@@ -23,12 +24,17 @@ public:
     hardware::DeviceStatus Status() const override;
     hardware::Result<void> Start() override;
     void Stop() noexcept override;
+    ImuCapabilities Capabilities() const override;
+    hardware::Result<ImuDeviceConfiguration> ReadConfiguration() override;
+    hardware::Result<ImuConfigurationResult> ApplyConfiguration(const ImuConfigurationPatch&) override;
+    hardware::Result<ImuCalibrationResult> CalibrateStaticGyro(const ImuCalibrationRequest&) override;
     hardware::Result<ImuSample> ReadSample(std::chrono::milliseconds timeout) override;
 
 private:
     std::chrono::steady_clock::duration Period() const;
 
     MockImuOptions options_;
+    ImuOutputFields output_fields_ = 1|2|8;
     SensorInfo info_;
     mutable std::mutex mutex_;
     std::condition_variable cv_;

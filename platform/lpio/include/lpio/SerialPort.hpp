@@ -80,6 +80,8 @@ public:
     std::size_t write(std::span<const std::byte> buf) override;
     void        flush() override;
 
+    // Reconfigure the existing fd, preserving exclusive ownership.
+    void setBaudRate(uint32_t baudRate);
     const SerialPortConfig& config() const noexcept;
 
 private:

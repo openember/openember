@@ -285,6 +285,19 @@ void SerialPort::flush()
     }
 }
 
+void SerialPort::setBaudRate(uint32_t baudRate)
+{
+    requireOpen();
+    auto next = config_;
+    next.baudRate = baudRate;
+#ifdef __linux__
+    applyLineSettings(fd(), next);
+#else
+    throw DeviceError(std::errc::not_supported, "SerialPort requires Linux termios2");
+#endif
+    config_ = next;
+}
+
 const SerialPortConfig& SerialPort::config() const noexcept
 {
     return config_;

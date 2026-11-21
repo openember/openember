@@ -265,7 +265,7 @@ HardwareInterfaceConfig ParseDevices(const YAML::Node& root) {
                 throw std::runtime_error(prefix + ": an absolute connection.device is required");
             switch (endpoint.connection.baud_rate) {
             case 9600: case 19200: case 38400: case 57600: case 115200:
-            case 230400: case 460800: case 921600: break;
+            case 76800: case 230400: case 460800: case 921600: break;
             default: throw std::runtime_error(prefix + ": explicit supported connection.baud_rate required");
             }
         }

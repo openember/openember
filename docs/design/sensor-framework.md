@@ -1203,3 +1203,9 @@ system/device_manager
 ## 可选真实驱动
 
 [YESENSE YIS321 与统一设备配置](yesense-imu.md)说明核心可选驱动、HI 工厂、`device.yaml` 以及原始姿态的有效性边界。
+
+## 交互诊断与驱动装配
+
+通用工具 `openember_sensor_cli imu` 通过 `IImu` 后台采集，提供单帧、连续显示、统计和 JSONL 记录，支持 Mock 与可选 Yesense。`ImuDriverRegistry` 在 Sensor 层装配驱动，`ISensorDiagnostics` 提供可选命名计数器，CLI 不处理厂商报文。统一外设 YAML 可选择一个实例直接诊断，与正在运行的 HI 设备 owner 互斥。构建与命令见 [Sensor CLI](../../tools/sensor-cli/README.md)。
+
+IMU 专用能力现位于 `components/sensor/imu/`，基础 Sensor 仅统一通用生命周期和诊断。配置、校准、字段有效性和设备控制边界见 [IMU 子框架设计](imu-framework.md)。

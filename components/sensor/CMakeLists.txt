@@ -13,6 +13,7 @@ OPENEMBER_ADD_STATIC_LIBRARY(TARGET ${PROJECT_NAME}
     INCLUDES ${OPENEMBER_INCLUDE_DIRS}
              ${OPENEMBER_SOURCE_DIR}/components/hardware/include
              ${CMAKE_CURRENT_SOURCE_DIR}/include
+             ${CMAKE_CURRENT_SOURCE_DIR}/imu/include
     DESTINATION lib
 )
 
@@ -24,3 +25,5 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 if(OPENEMBER_SENSOR_YESENSE)
     add_subdirectory(drivers/yesense)
 endif()
+
+add_subdirectory(imu)

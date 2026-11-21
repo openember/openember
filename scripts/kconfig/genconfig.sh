@@ -296,6 +296,11 @@ if ! has_symbol CONFIG_OPENEMBER_ENABLE_TOOLS_GAMEPAD_MONITOR; then
   enable_tools_gamepad_monitor=ON
 fi
 
+enable_tools_sensor_cli="$(onoff CONFIG_OPENEMBER_ENABLE_TOOLS_SENSOR_CLI)"
+if ! has_symbol CONFIG_OPENEMBER_ENABLE_TOOLS_SENSOR_CLI; then
+  enable_tools_sensor_cli=ON
+fi
+
 spdlog_pattern="[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v"
 spdlog_pattern="$(awk '
   /^CONFIG_OPENEMBER_SPDLOG_PATTERN=/ {
@@ -758,6 +763,7 @@ set(OPENEMBER_ENABLE_LPIO_EXAMPLES ${enable_lpio_examples} CACHE BOOL "Build pla
 set(OPENEMBER_ENABLE_TOOLS ${enable_tools} CACHE BOOL "Build OpenEmber utilities (tools/)" FORCE)
 set(OPENEMBER_ENABLE_TOOLS_EMCOM ${enable_tools_emcom} CACHE BOOL "Build emcom serial console tool" FORCE)
 set(OPENEMBER_ENABLE_TOOLS_SBUS_RECEIVER ${enable_tools_sbus_receiver} CACHE BOOL "Build sbus-receiver SBUS monitor tool" FORCE)
+set(OPENEMBER_ENABLE_TOOLS_SENSOR_CLI ${enable_tools_sensor_cli} CACHE BOOL "Build interactive sensor CLI" FORCE)
 set(OPENEMBER_ENABLE_TOOLS_GAMEPAD_MONITOR ${enable_tools_gamepad_monitor} CACHE BOOL "Build F710 monitor tool" FORCE)
 
 set(OPENEMBER_THIRD_PARTY_BUNDLE_SPDLOG ${bundle_spdlog} CACHE BOOL "Third-party bundle: spdlog" FORCE)

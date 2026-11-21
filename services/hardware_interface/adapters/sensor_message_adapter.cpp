@@ -53,9 +53,11 @@ openember::msgs::sensor::v1::ImuSample ToProto(
     FillVector(msg.mutable_angular_velocity_radps(), sample.angular_velocity_radps);
     FillVector(msg.mutable_magnetic_field_tesla(), sample.magnetic_field_tesla);
     msg.set_temperature_celsius(sample.temperature_celsius);
-    auto* orientation = msg.mutable_orientation();
-    orientation->set_w(sample.orientation.w); orientation->set_x(sample.orientation.x);
-    orientation->set_y(sample.orientation.y); orientation->set_z(sample.orientation.z);
+    if (sample.orientation_present || sample.orientation_valid) {
+        auto* orientation = msg.mutable_orientation();
+        orientation->set_w(sample.orientation.w); orientation->set_x(sample.orientation.x);
+        orientation->set_y(sample.orientation.y); orientation->set_z(sample.orientation.z);
+    }
     msg.set_orientation_valid(sample.orientation_valid);
     msg.set_reference_frame_id(sample.reference_frame_id);
     msg.set_clock_domain(sample.clock_domain);
@@ -77,6 +79,7 @@ openember::sensor::ImuSample FromProto(const openember::msgs::sensor::v1::ImuSam
     sample.magnetic_field_tesla = {msg.magnetic_field_tesla().x(), msg.magnetic_field_tesla().y(), msg.magnetic_field_tesla().z()};
     sample.temperature_celsius = msg.temperature_celsius();
     sample.orientation = {msg.orientation().w(), msg.orientation().x(), msg.orientation().y(), msg.orientation().z()};
+    sample.orientation_present = msg.has_orientation();
     sample.orientation_valid = msg.orientation_valid() && msg.has_orientation(); sample.reference_frame_id = msg.reference_frame_id();
     sample.clock_domain = msg.clock_domain(); sample.mounting_revision = msg.mounting_revision();
     sample.receive_time_monotonic_ns = msg.receive_time_monotonic_ns();
