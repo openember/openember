@@ -227,7 +227,7 @@ EndpointConfig ParseEndpoint(const YAML::Node& node, std::size_t index) {
     return config;
 }
 
-HardwareInterfaceConfig ParseDevices(const YAML::Node& root) {
+HardwareInterfaceConfig ParseDevices(const YAML::Node& root, const std::string& type_filter) {
     CheckKeys(root, {"schema_version", "robot_id", "devices"}, "device config");
     if (!root["schema_version"] || root["schema_version"].as<int>() != 1)
         throw std::runtime_error("device config.schema_version must be 1");
@@ -241,6 +241,9 @@ HardwareInterfaceConfig ParseDevices(const YAML::Node& root) {
         const auto node = entry.second;
         const auto prefix = "devices." + id;
         if (id.empty() || !ids.insert(id).second) throw std::runtime_error("empty or duplicate device id: " + id);
+        // A driver-specific node validates only its selected device type. Other
+        // types may have their own schema, validated by their owning service.
+        if (!type_filter.empty() && RequiredString(node, "type", prefix) != type_filter) continue;
         CheckKeys(node, {"type", "driver", "model", "enabled", "mode", "topic", "frame_id",
                          "publish_rate_hz", "critical", "connection"}, prefix);
         // Reuse the endpoint defaults and rate validation without exposing YAML in public APIs.
@@ -351,7 +354,7 @@ HardwareInterfaceConfig DefaultMockConfig() {
 }
 
 openember::hardware::Result<HardwareInterfaceConfig> LoadConfigFromFile(
-    const std::string& path) {
+    const std::string& path, const std::string& device_type_filter) {
     if (path.empty()) {
         return ConfigError("config path must not be empty");
     }
@@ -363,7 +366,9 @@ openember::hardware::Result<HardwareInterfaceConfig> LoadConfigFromFile(
         }
 
         if (root["devices"] || root["schema_version"])
-            return openember::hardware::Result<HardwareInterfaceConfig>::Success(ParseDevices(root));
+            return openember::hardware::Result<HardwareInterfaceConfig>::Success(ParseDevices(root, device_type_filter));
+
+        if (!device_type_filter.empty()) return ConfigError("device type selection requires schema_version device config");
 
         HardwareInterfaceConfig config;
         const auto app_node = root["hardware_interface"];

@@ -1,5 +1,13 @@
 menu "Components Layer"
 
+config OPENEMBER_COMPONENT_POWER
+    bool "Build component: Power device interfaces and control validation"
+    depends on OPENEMBER_COMPONENT_HARDWARE
+    default n
+    help
+      Generic power resources, optional fan/light control and Mock backend.
+      Product drivers and whole-device response policies remain separate.
+
 config OPENEMBER_COMPONENT_CONFIG
     bool "Build component: YAML runtime configuration"
     depends on OPENEMBER_USE_YAMLCPP

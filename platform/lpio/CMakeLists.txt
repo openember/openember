@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 # LPIO — Linux Peripheral I/O (C++20, RAII + Builder)
 add_library(openember_lpio STATIC
     src/SerialPort.cpp
+    src/SerialSettings.cpp
     src/I2CBus.cpp
     src/SPIBus.cpp
     src/CANBus.cpp

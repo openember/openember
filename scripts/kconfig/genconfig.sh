@@ -180,6 +180,7 @@ if ! has_symbol CONFIG_OPENEMBER_COMPONENT_ALERTS; then
   component_alerts=ON
 fi
 component_system_state="$(onoff CONFIG_OPENEMBER_COMPONENT_SYSTEM_STATE)"
+component_power="$(onoff CONFIG_OPENEMBER_COMPONENT_POWER)"
 component_inference="$(onoff CONFIG_OPENEMBER_COMPONENT_INFERENCE)"
 component_config="$(onoff CONFIG_OPENEMBER_COMPONENT_CONFIG)"
 if ! has_symbol CONFIG_OPENEMBER_COMPONENT_CONFIG; then
@@ -738,6 +739,7 @@ set(OPENEMBER_COMPONENT_ALERTS_LINK ${component_alerts_link} CACHE BOOL "Publish
 set(OPENEMBER_COMPONENT_ALERTS ${component_alerts} CACHE BOOL "Build alert state, events and logging" FORCE)
 set(OPENEMBER_COMPONENT_CONFIG ${component_config} CACHE BOOL "Build YAML runtime configuration component" FORCE)
 set(OPENEMBER_COMPONENT_SYSTEM_STATE ${component_system_state} CACHE BOOL "Build whole-device state reducer" FORCE)
+set(OPENEMBER_COMPONENT_POWER ${component_power} CACHE BOOL "Build generic power component" FORCE)
 set(OPENEMBER_COMPONENT_INFERENCE ${component_inference} CACHE BOOL "Build optional ONNX inference component" FORCE)
 set(OPENEMBER_HARDWARE_ENDPOINT_IMU ${hardware_endpoint_imu} CACHE BOOL "Build Hardware Interface IMU endpoint" FORCE)
 set(OPENEMBER_HARDWARE_ENDPOINT_TEMPERATURE ${hardware_endpoint_temperature} CACHE BOOL "Build Hardware Interface Temperature endpoint" FORCE)

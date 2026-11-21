@@ -40,7 +40,9 @@ struct HardwareInterfaceConfig {
 };
 
 HardwareInterfaceConfig DefaultMockConfig();
+// For schema_version device files, an explicit filter validates only that type;
+// other driver schemas remain the responsibility of their owning service.
 openember::hardware::Result<HardwareInterfaceConfig> LoadConfigFromFile(
-    const std::string& path);
+    const std::string& path, const std::string& device_type_filter = {});
 
 }  // namespace openember::services::hardware_interface
