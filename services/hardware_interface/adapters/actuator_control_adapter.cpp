@@ -174,6 +174,7 @@ Result<domain::Capabilities> FromProto(const wire::ControllerCapabilities& messa
         c.max_velocity_radps = joint.max_velocity_radps(); c.max_effort_nm = joint.max_effort_nm();
         c.max_stiffness_nm_per_rad = joint.max_stiffness_nm_per_rad();
         c.max_damping_nms_per_rad = joint.max_damping_nms_per_rad(); c.max_feedback_age_ns = joint.max_feedback_age_ns();
+        c.hardware_effort_limit_supported = joint.hardware_effort_limit_supported();
         for (int i = 0; i < joint.supported_modes_size(); ++i) {
             Mode mode;
             if (!ModeIn(joint.supported_modes(i), mode))
@@ -200,6 +201,7 @@ Result<wire::ControllerCapabilities> ToProto(const domain::Capabilities& c) {
         joint->set_max_velocity_radps(j.max_velocity_radps); joint->set_max_effort_nm(j.max_effort_nm);
         joint->set_max_stiffness_nm_per_rad(j.max_stiffness_nm_per_rad);
         joint->set_max_damping_nms_per_rad(j.max_damping_nms_per_rad); joint->set_max_feedback_age_ns(j.max_feedback_age_ns);
+        joint->set_hardware_effort_limit_supported(j.hardware_effort_limit_supported);
         for (auto mode : j.supported_modes) {
             wire::JointControlMode encoded;
             if (!ModeOut(mode, encoded)) return Bad<wire::ControllerCapabilities>("unknown domain joint mode");

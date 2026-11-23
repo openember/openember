@@ -34,6 +34,8 @@ struct JointCapability {
     double max_stiffness_nm_per_rad = 0, max_damping_nms_per_rad = 0;
     std::vector<JointControlMode> supported_modes;
     std::uint64_t max_feedback_age_ns = 0;
+    // MIT gain/feedback torque is not hardware-limited when this is false.
+    bool hardware_effort_limit_supported = false;
 };
 
 struct Capabilities {

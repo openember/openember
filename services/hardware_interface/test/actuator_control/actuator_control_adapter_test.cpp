@@ -27,6 +27,7 @@ d::Capabilities Caps() {
         joint.joint_name = name; joint.continuous = joint.joint_name == "wheel";
         joint.min_position_rad = -1; joint.max_position_rad = 1; joint.max_velocity_radps = 10; joint.max_effort_nm = 20;
         joint.max_stiffness_nm_per_rad = 100; joint.max_damping_nms_per_rad = 10; joint.max_feedback_age_ns = 20;
+        joint.hardware_effort_limit_supported = joint.continuous;
         joint.supported_modes = {Mode::kDisabled, Mode::kPosition, Mode::kVelocity, Mode::kEffort, Mode::kMit};
         c.joints.push_back(joint);
     }
@@ -147,7 +148,8 @@ void TestCapabilities() {
     const auto encoded = a::ToProto(Caps()); Check(encoded.Ok(), "capability encoding failed");
     const auto decoded = a::FromProto(Wire(encoded.Value()));
     Check(decoded.Ok() && decoded.Value().joints[1].continuous && decoded.Value().joints[0].supported_modes.size() == 5 &&
-          decoded.Value().joints[0].max_feedback_age_ns == 20 && decoded.Value().clock_domain == Caps().clock_domain,
+          decoded.Value().joints[0].max_feedback_age_ns == 20 && decoded.Value().clock_domain == Caps().clock_domain &&
+          !decoded.Value().joints[0].hardware_effort_limit_supported && decoded.Value().joints[1].hardware_effort_limit_supported,
           "capability semantics lost");
     for (int i = 0; i < 7; ++i) {
         auto bad = encoded.Value();
