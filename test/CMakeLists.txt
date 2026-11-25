@@ -124,3 +124,7 @@ file(GLOB CONF_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.conf)
 if(CONF_FILES)
     file(COPY ${CONF_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endif()
+
+add_executable(test_confirmed_change test_confirmed_change.cpp)
+target_link_libraries(test_confirmed_change PRIVATE openember::core)
+add_test(NAME confirmed_change COMMAND test_confirmed_change)

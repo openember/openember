@@ -1,0 +1,15 @@
+// Install as /etc/polkit-1/rules.d/49-openember-network.rules.
+// Replace "openember" with the account running network_manager (not the Web login name).
+// Grant only the NetworkManager operations used by this service.
+polkit.addRule(function(action, subject) {
+    var actions = [
+        "org.freedesktop.NetworkManager.network-control",
+        "org.freedesktop.NetworkManager.settings.modify.system",
+        "org.freedesktop.NetworkManager.settings.modify.own",
+        "org.freedesktop.NetworkManager.wifi.scan",
+        "org.freedesktop.NetworkManager.wifi.share.protected",
+        "org.freedesktop.NetworkManager.checkpoint-rollback"
+    ];
+    if (subject.user === "openember" && actions.indexOf(action.id) >= 0)
+        return polkit.Result.YES;
+});

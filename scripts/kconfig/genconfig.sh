@@ -146,6 +146,7 @@ service_ota_update="$(onoff CONFIG_OPENEMBER_SERVICE_OTA_AGENT)"
 reference_sensor_data="$(onoff CONFIG_OPENEMBER_REFERENCE_SENSOR_DATA)"
 service_web_console="$(onoff CONFIG_OPENEMBER_SERVICE_WEB_CONSOLE)"
 service_logger="$(onoff CONFIG_OPENEMBER_SERVICE_LOGGER)"
+service_network_manager="$(onoff CONFIG_OPENEMBER_SERVICE_NETWORK_MANAGER)"
 service_host_monitor="$(onoff CONFIG_OPENEMBER_SERVICE_HOST_MONITOR)"
 if ! has_symbol CONFIG_OPENEMBER_SERVICE_HOST_MONITOR; then
   service_host_monitor=ON
@@ -727,6 +728,7 @@ set(OPENEMBER_SERVICE_OTA_AGENT ${service_ota_update} CACHE BOOL "Build services
 set(OPENEMBER_REFERENCE_SENSOR_DATA ${reference_sensor_data} CACHE BOOL "Build examples/references/sensor_data_reference" FORCE)
 set(OPENEMBER_SERVICE_WEB_CONSOLE ${service_web_console} CACHE BOOL "Build services/web_console" FORCE)
 set(OPENEMBER_SERVICE_LOGGER ${service_logger} CACHE BOOL "Build services/logger" FORCE)
+set(OPENEMBER_SERVICE_NETWORK_MANAGER ${service_network_manager} CACHE BOOL "Build services/network_manager" FORCE)
 set(OPENEMBER_SERVICE_HOST_MONITOR ${service_host_monitor} CACHE BOOL "Build services/host_monitor" FORCE)
 set(OPENEMBER_SERVICE_HARDWARE_INTERFACE ${service_hardware_interface} CACHE BOOL "Build services/hardware_interface" FORCE)
 set(OPENEMBER_COMPONENT_ALGORITHM ${component_algorithm} CACHE BOOL "Build Algorithm component" FORCE)

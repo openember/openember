@@ -1,0 +1,7 @@
+# Legacy polkit LocalAuthority (e.g. Ubuntu 22.04). Replace the service account.
+[OpenEmber network service]
+Identity=unix-user:openember
+Action=org.freedesktop.NetworkManager.network-control;org.freedesktop.NetworkManager.settings.modify.system;org.freedesktop.NetworkManager.settings.modify.own;org.freedesktop.NetworkManager.wifi.scan;org.freedesktop.NetworkManager.wifi.share.protected;org.freedesktop.NetworkManager.checkpoint-rollback
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes

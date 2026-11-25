@@ -35,6 +35,15 @@ config OPENEMBER_SERVICE_HOST_MONITOR
       Publish openember.msgs.host.v1.HostResourceSnapshot on /host/resources
       for Web Console and other Link subscribers. Disk sampling is opt-in.
 
+config OPENEMBER_SERVICE_NETWORK_MANAGER
+    bool "Build service: network_manager"
+    default n
+    depends on OPENEMBER_ENABLE_LINK && OPENEMBER_ENABLE_MSGS
+    help
+      Publish Linux interfaces, addresses, link state and 64-bit counters on
+      /network/state. Optional --manage uses NetworkManager D-Bus with OS
+      permissions. Requires gio-2.0 development headers on Linux.
+
 config OPENEMBER_SERVICE_LOGGER
     bool "Build service: logger"
     default y

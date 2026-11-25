@@ -1,0 +1,37 @@
+project(network_manager VERSION 0.1.0 LANGUAGES CXX)
+get_target_property(_network_contract openember::msgs_cpp OPENEMBER_NETWORK_CONTRACT_VERSION)
+if(NOT _network_contract OR _network_contract LESS 2)
+    message(FATAL_ERROR "network_manager requires openember-msgs network contract >= 2; update messages or select an updated local checkout")
+endif()
+unset(_network_contract)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(NETWORK_GIO REQUIRED IMPORTED_TARGET gio-2.0>=2.56)
+add_library(openember_network_client STATIC network_client.cpp)
+add_library(openember::network_client ALIAS openember_network_client)
+target_include_directories(openember_network_client PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(openember_network_client PUBLIC openember_core)
+target_compile_features(openember_network_client PUBLIC cxx_std_17)
+install(DIRECTORY include/ DESTINATION include)
+install(FILES config/openember-network.rules.example config/openember-network.pkla.example DESTINATION share/openember/network_manager)
+OPENEMBER_ADD_EXECUTABLE(TARGET network_manager
+    SRCS main.cpp network_sampler.cpp nm_backend.cpp management.cpp
+    LIBS ${OPENEMBER_LIBRARIES} openember_core openember_network_client PkgConfig::NETWORK_GIO
+    INCLUDES ${OPENEMBER_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}
+    DESTINATION bin
+)
+target_compile_features(network_manager PRIVATE cxx_std_17)
+if(TESTS_ENABLED OR OPENEMBER_ENABLE_TESTS)
+    add_executable(network_sampler_test test/sampler_test.cpp network_sampler.cpp)
+    target_include_directories(network_sampler_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(network_sampler_test PRIVATE openember::msgs_cpp)
+    target_compile_features(network_sampler_test PRIVATE cxx_std_17)
+    add_test(NAME network_sampler COMMAND network_sampler_test)
+    add_executable(network_backend_test test/backend_test.cpp nm_backend.cpp network_sampler.cpp)
+    target_include_directories(network_backend_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(network_backend_test PRIVATE openember_network_client PkgConfig::NETWORK_GIO)
+    target_compile_features(network_backend_test PRIVATE cxx_std_17)
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    add_test(NAME network_backend COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test/backend_test.py $<TARGET_FILE:network_backend_test>)
+    set_tests_properties(network_backend PROPERTIES TIMEOUT 30)
+endif()

@@ -4,7 +4,7 @@
 
 这些能力属于 OpenEmber 可裁剪的公共系统服务，复用现有 `services/host_monitor`，不放进实时运控线程或 Web HTTP 请求处理器。产品选择构建和部署，Web、CLI 与整机管理通过 Link 消费消息。`host_monitor` 只提供主机事实，不授予运动许可，不自动停机；资源阈值产生结构化 alerts，处置策略属于 system_manager。launch_manager 负责进程编排，不承担采集。
 
-网络管理是同类系统能力，采用独立 `network_manager` 服务，避免连接操作、权限或后端故障阻塞基础监测。它在本轮只完成设计，尚未实现。核心已有 `components/netdev` 的 ioctl/ethtool 接口辅助库，可评估复用其查询能力；它目前没有 Link 服务、连接配置模型或 Wi-Fi 管理。受 NetworkManager 管理的接口不能同时由 NetDevice 写接口竞争配置。Linux 首选适配已有 NetworkManager D-Bus API；其他后端按能力适配，不同时争用同一接口。OpenEmber 统一查询、变更、结果和事件协议；前端不直接执行 nmcli、修改系统文件或持有 Wi-Fi 密码日志。
+网络管理是同类系统能力，采用独立 `network_manager` 服务，避免连接操作、权限或后端故障阻塞基础监测。已实现独立的内核观测和可选 NetworkManager D-Bus 配置后端。核心已有 `components/netdev` 的 ioctl/ethtool 接口辅助库，可评估复用其查询能力；它目前没有 Link 服务、连接配置模型或 Wi-Fi 管理。受 NetworkManager 管理的接口不能同时由 NetDevice 写接口竞争配置。Linux 首选适配已有 NetworkManager D-Bus API；其他后端按能力适配，不同时争用同一接口。OpenEmber 统一查询、变更、结果和事件协议；前端不直接执行 nmcli、修改系统文件或持有 Wi-Fi 密码日志。
 
 ## 第一阶段
 
@@ -38,4 +38,16 @@
 
 Linux x86_64 完成采样器边界测试、Web 缓存隔离/重复帧/旧实例测试，以及真实本机 Link 编排的就绪、源暂停过期、恢复、进程重启和退出验证。四款产品 Kconfig 解析均选中 host_monitor。浏览器使用真实 Link 数据检查两种主题、等高卡片、核心展开、窄屏与过期显示。
 
-ARM64 原生构建 host_monitor 与产品 Web 已通过，使用既有只读台架预览验证 8 核、内存、系统运行时间、设备时区、内核/架构与进程列表。未使能电机，不构成实机运控验收。网络管理仍是后续阶段，资源阈值 alerts 尚未实施。
+ARM64 原生构建 host_monitor 与产品 Web 已通过，使用既有只读台架预览验证 8 核、内存、系统运行时间、设备时区、内核/架构与进程列表。未使能电机，不构成实机运控验收。随后实现独立 network_manager 的只读内核网络观测、Link 协议和产品 Web 接入。网络配置通过下述管理后端实现；资源阈值 alerts 尚未实施。
+
+## 网络只读阶段
+
+使用 Linux rtnetlink 查询接口、地址和 64 位统计，sysfs 仅辅助识别无线接口。无需额外网络守护进程或写权限，保留现有 NetworkManager 的配置所有权。采集期限、列表容量与消息大小有界，失败快照明确标记不可用。Web 按主机/实例及消息进展检查新鲜度，不推断互联网可达。配置后端后续仍优先采用 NetworkManager D-Bus，不能因为本轮引入内核观测而直接增加 rtnetlink 写操作。服务使用见 `services/network_manager/README.md`。
+
+网络只读阶段完成 x86_64 解码器、缓存、Link 暂停/恢复/重启及四款产品配置验证；ARM64 原生构建与目标板浏览器预览通过，接口、地址、链路与系统查询核对一致。无网络写入或电机使能。现已接入 NetworkManager D-Bus 配置和异步 Link RPC，提供以太网、Wi-Fi、保存连接与热点操作。
+
+## 克制的网络配置与轻量恢复
+
+沿用已有 Web 登录、同源校验与操作系统 NetworkManager 权限，不增加控制权租约、设备维护模式或额外用户角色。后端自动管理同机私有进程凭据，Web 不要求用户手动签发。操作在有界后台工作线程执行，前端显示执行与恢复结果；不自动重试不明写结果。当前接口和已保存连接由系统发现，YAML 不固定网卡名称。
+
+核心公共 `openember::ConfirmedChange` 负责等待确认与超时触发业务恢复，见 [确认式临时变更](confirmed-change.md)。网络后端提供恢复实现，并通过 NM 原生 checkpoint 覆盖进程异常退出；不建立通用事务或持久化框架。管理链路应用前创建 90 秒 checkpoint，成功后等待 40 秒确认；未确认恢复，确认后按显式 save 选项持久化。状态查询持续独立工作，连接管理延迟不阻塞内核遥测。

@@ -48,6 +48,10 @@ option( OPTIMIZATION_DISABLED "Whether to disable the optimization of compilatio
 option( CROSSCOMPILE_ENABLED "Whether to build for ARM" OFF)
 option( OPENMP_ENABLED "Whether to enable omp feature" OFF)
 option( TESTS_ENABLED "Whether to build/register tests (test/); prefer Kconfig test/Kconfig" OFF)
+# Register focused service tests without enabling the full core test suite.
+if(OPENEMBER_ENABLE_TESTS)
+    enable_testing()
+endif()
 option( OPENEMBER_ENABLE_OSAL "Build platform OSAL (Linux pthread)" ON)
 option( OPENEMBER_ENABLE_LPIO "Build platform LPIO (C++ Linux peripherals)" ON)
 option( OPENEMBER_ENABLE_LPIO_EXAMPLES "Build platform LPIO examples (serial_echo, i2c_scan, can_logger)" OFF)
