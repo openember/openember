@@ -55,6 +55,14 @@ volatile sig_atomic_t g_signal = 0;
 pid_t g_pid = 0;
 int g_lock_fd = -1;
 
+class ScopedLogging {
+public:
+    ScopedLogging() { log_init(APPLICATION_NAME); }
+    ~ScopedLogging() { log_deinit(); }
+    ScopedLogging(const ScopedLogging&) = delete;
+    ScopedLogging& operator=(const ScopedLogging&) = delete;
+};
+
 std::uint64_t UnixTimeNs();
 
 class RuntimeRegistry {
@@ -516,7 +524,8 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    log_init(APPLICATION_NAME);
+    // Clean up before spdlog's static registry, including lock-failure returns.
+    const ScopedLogging logging;
     LOG_I("Start openember app, version: %lu.%lu.%lu", EMBER_VERSION, EMBER_SUBVERSION,
           EMBER_REVISION);
     LOG_I("Process id is %d", getpid());
@@ -687,6 +696,5 @@ int main(int argc, char* argv[]) {
 
     openember::Shutdown();
     DestroyLockFile(cli.pid_file);
-    log_deinit();
     return exit_code;
 }
