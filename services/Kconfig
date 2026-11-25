@@ -31,9 +31,9 @@ config OPENEMBER_SERVICE_HOST_MONITOR
     depends on OPENEMBER_ENABLE_LINK
     depends on OPENEMBER_ENABLE_MSGS
     help
-      Sample host CPU, memory, load, and disk usage from /proc and publish
-      openember.msgs.host.v1.HostResourceSnapshot on /host/resources for
-      web_console and other subscribers.
+      Sample host CPU, memory, uptime and OS metadata with per-field validity.
+      Publish openember.msgs.host.v1.HostResourceSnapshot on /host/resources
+      for Web Console and other Link subscribers. Disk sampling is opt-in.
 
 config OPENEMBER_SERVICE_LOGGER
     bool "Build service: logger"
