@@ -16,6 +16,14 @@ config OPENEMBER_COMPONENT_CONFIG
       Immutable YAML snapshots with typed reads, validation and source diagnostics.
       Startup loading only; modules own their schema and application lifecycle.
 
+config OPENEMBER_COMPONENT_IMU_LINK
+    bool "Build authenticated IMU management over Link"
+    depends on OPENEMBER_COMPONENT_SENSOR && OPENEMBER_COMPONENT_CONFIG && OPENEMBER_ENABLE_LINK && OPENEMBER_ENABLE_MSGS
+    default n
+    help
+      Single-owner HI acquisition, protected-use and maintenance leases,
+      configuration, calibration and authenticated acquisition clock binding.
+
 config OPENEMBER_COMPONENT_INFERENCE
     bool "Build optional ONNX Runtime CPU inference"
     default n

@@ -738,6 +738,7 @@ set(OPENEMBER_COMPONENT_REMOTE_CONTROL ${component_remote_control} CACHE BOOL "B
 set(OPENEMBER_COMPONENT_ALERTS_LINK ${component_alerts_link} CACHE BOOL "Publish alerts through Link" FORCE)
 set(OPENEMBER_COMPONENT_ALERTS ${component_alerts} CACHE BOOL "Build alert state, events and logging" FORCE)
 set(OPENEMBER_COMPONENT_CONFIG ${component_config} CACHE BOOL "Build YAML runtime configuration component" FORCE)
+set(OPENEMBER_COMPONENT_IMU_LINK $(onoff CONFIG_OPENEMBER_COMPONENT_IMU_LINK) CACHE BOOL "Build authenticated IMU management" FORCE)
 set(OPENEMBER_COMPONENT_SYSTEM_STATE ${component_system_state} CACHE BOOL "Build whole-device state reducer" FORCE)
 set(OPENEMBER_COMPONENT_POWER ${component_power} CACHE BOOL "Build generic power component" FORCE)
 set(OPENEMBER_COMPONENT_INFERENCE ${component_inference} CACHE BOOL "Build optional ONNX inference component" FORCE)
